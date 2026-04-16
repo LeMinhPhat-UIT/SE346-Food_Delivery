@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Messaging.Abstractions/Messaging.Abstractions.csproj" />
+  <Project Path="Messaging.Contracts/Messaging.Contracts.csproj" />
+  <Project Path="Messaging.RabbitMq/Messaging.RabbitMq.csproj" />
+</Solution>

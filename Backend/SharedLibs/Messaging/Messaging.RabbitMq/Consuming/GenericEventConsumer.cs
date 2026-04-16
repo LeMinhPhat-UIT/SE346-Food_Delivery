@@ -1,6 +1,7 @@
 using Messaging.Abstractions.Dispatching;
 using Messaging.Abstractions.Registry;
 using Messaging.Contracts.Models;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;

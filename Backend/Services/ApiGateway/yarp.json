@@ -1,0 +1,26 @@
+{
+  "ReverseProxy": {
+    "Routes": {
+      "auth-route": {
+        "ClusterId": "authentication-cluster",
+        "Match": {
+          "Path": "/api/auth/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/auth/{**catch-all}"
+          }
+        ]
+      }
+    },
+    "Clusters": {
+      "authentication-cluster": {
+        "Destinations": {
+          "authentication-service": {
+            "Address": "http://authentication-service:8080"
+          }
+        }
+      }
+    }
+  }
+}

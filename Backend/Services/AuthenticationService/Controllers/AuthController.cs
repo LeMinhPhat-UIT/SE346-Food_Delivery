@@ -1,7 +1,6 @@
 using AuthenticationService.DTOs;
 using AuthenticationService.Services.Interfaces;
 using Messaging.Contracts.Common;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthenticationService.Controllers
@@ -99,12 +98,39 @@ namespace AuthenticationService.Controllers
             }
         }
 
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<ApiResponse<LoginResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                var response = await _authService.RefreshToken(request);
+
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpPost("logout")]
         public async Task<ActionResult<ApiResponse<LogoutResponse>>> Logout([FromBody] LogoutRequest request)
         {
             try
             {
+                var response = await _authService.Logout(request);
 
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
             }
             catch (Exception ex)
             {

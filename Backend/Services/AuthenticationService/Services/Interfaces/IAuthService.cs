@@ -9,7 +9,8 @@ namespace AuthenticationService.Services.Interfaces
         Task<ApiResponse<VerifyOtpResponse>> VerifyOtpAsync(VerifyOtpRequest request);
         Task<ApiResponse<SendOtpResponse>> ResendOtpAsync(string email);
         Task<ApiResponse<LoginResponse>> Login(LoginRequest request);
-        Task<ApiResponse<LogoutResponse>> RevokeToken(LogoutRequest request);
+        Task<ApiResponse<LogoutResponse>> Logout(LogoutRequest request);
+        Task<ApiResponse<LoginResponse>> RefreshToken(RefreshTokenRequest request);
         //Task<AuthResult> UpdatePhoneNumberAsync(UpdatePhoneNumberDTO dto);
     }
 }

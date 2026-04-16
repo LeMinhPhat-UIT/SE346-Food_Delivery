@@ -20,7 +20,7 @@ namespace AuthenticationService.Services.Implements
     public class AuthService : IAuthService
     {
         private readonly IAuthRepository _authRepository;
-        private readonly CustomerRegisterRequestMapper _mapper;
+        private readonly CustomerRegisterRequestMapper _customerRegisterRequestMapper;
         private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<AuthService> _logger;
         private readonly IOptions<AuthenticationOptions> _options;
@@ -30,15 +30,14 @@ namespace AuthenticationService.Services.Implements
 
         public AuthService(
             IAuthRepository authRepository,
-            CustomerRegisterRequestMapper mapper,
+            CustomerRegisterRequestMapper customerRegisterRequestMapper,
             IEventPublisher eventPublisher,
             ILogger<AuthService> logger,
-            IConfiguration configuration,
             IOptions<AuthenticationOptions> options,
             IOptions<JwtOptions> jwtOptions)
         {
             _authRepository = authRepository;
-            _mapper = mapper;
+            _customerRegisterRequestMapper = customerRegisterRequestMapper;
             _eventPublisher = eventPublisher;
             _logger = logger;
             _options = options;
@@ -85,7 +84,7 @@ namespace AuthenticationService.Services.Implements
                 });
             }
 
-            var user = _mapper.ToApplicationUser(request);
+            var user = _customerRegisterRequestMapper.ToApplicationUser(request);
 
             var otpCode = GenerateOtp();
             user.Otp = otpCode;
@@ -212,28 +211,24 @@ namespace AuthenticationService.Services.Implements
 
             await _authRepository.ResetAccessFailedCountAsync(user);
 
-            var accessToken = await new JwtTokenGenerator(_jwtOptions, _authRepository).AccessTokenGenerate(user);
-            var refreshToken = new JwtTokenGenerator(_jwtOptions, _authRepository).RefreshTokenGenerate();
+            var deviceName = NormalizeDeviceName(request.DeviceName);
+            var tokenGenerator = new JwtTokenGenerator(_jwtOptions, _authRepository);
+            var accessToken = await tokenGenerator.AccessTokenGenerate(user);
+            var refreshToken = await IssueRefreshTokenAsync(user.Id, deviceName);
 
             return new ApiResponse<LoginResponse>(StatusCodes.Status200OK, new LoginResponse
             {
                 AccessToken = accessToken,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.Value.AccessTokenMinutes),
                 UserId = user.Id,
-                PhoneNumber = user.PhoneNumber!,
                 RefreshToken = refreshToken
             });
         }
 
-        public async Task<ApiResponse<LogoutResponse>> RevokeToken(LogoutRequest request)
+        public async Task<ApiResponse<LogoutResponse>> Logout(LogoutRequest request)
         {
-            var refreshToken = await _authRepository.GetRefreshTokenAsync(request.RefreshToken);
-
-            if (
-                refreshToken == null || 
-                refreshToken.DeviceName != request.DeviceName || 
-                refreshToken.IsRevoked || 
-                refreshToken.ExpiresAt < DateTime.UtcNow)
+            var refreshToken = await ValidateRefreshTokenAsync(request.RefreshToken, request.DeviceName);
+            if (refreshToken is null)
             {
                 return new ApiResponse<LogoutResponse>(StatusCodes.Status400BadRequest, "Invalid refresh token");
             }
@@ -243,9 +238,42 @@ namespace AuthenticationService.Services.Implements
 
             await _authRepository.UpdateRefreshTokenAsync(refreshToken);
 
-            return new ApiResponse<LogoutResponse>(StatusCodes.Status200OK, new LogoutResponse()
+            return new ApiResponse<LogoutResponse>(StatusCodes.Status200OK, new LogoutResponse
             {
                 Message = "Logout successfully"
+            });
+        }
+
+        public async Task<ApiResponse<LoginResponse>> RefreshToken(RefreshTokenRequest request)
+        {
+            var refreshToken = await ValidateRefreshTokenAsync(request.RefreshToken, request.DeviceName);
+
+            if (refreshToken is null)
+            {
+                return new ApiResponse<LoginResponse>(StatusCodes.Status400BadRequest, "Invalid refresh token");
+            }
+
+            var user = await _authRepository.FindByIdAsync(refreshToken.UserId);
+            if (user is null)
+            {
+                return new ApiResponse<LoginResponse>(StatusCodes.Status404NotFound, "User not found");
+            }
+
+            refreshToken.IsRevoked = true;
+            refreshToken.RevokedAt = DateTime.UtcNow;
+
+            await _authRepository.UpdateRefreshTokenAsync(refreshToken);
+
+            var tokenGenerator = new JwtTokenGenerator(_jwtOptions, _authRepository);
+            var accessToken = await tokenGenerator.AccessTokenGenerate(user);
+            var newRefreshToken = await IssueRefreshTokenAsync(user.Id, refreshToken.DeviceName);
+
+            return new ApiResponse<LoginResponse>(StatusCodes.Status200OK, new LoginResponse()
+            {
+                UserId = refreshToken.UserId,
+                AccessToken = accessToken,
+                RefreshToken = newRefreshToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.Value.AccessTokenMinutes)
             });
         }
 
@@ -259,6 +287,44 @@ namespace AuthenticationService.Services.Implements
         {
             await _eventPublisher.PublishAsync(@event);
             _logger.LogInformation("OTP event published for user {UserId}", @event.UserId);
+        }
+
+        private async Task<string> IssueRefreshTokenAsync(Guid userId, string deviceName)
+        {
+            var refreshTokenValue = Guid.NewGuid().ToString("N");
+            var refreshToken = new RefreshToken
+            {
+                UserId = userId,
+                Token = refreshTokenValue,
+                DeviceName = deviceName,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.Value.RefreshTokenMinutes),
+                IsRevoked = false
+            };
+
+            await _authRepository.CreateRefreshTokenAsync(refreshToken);
+            return refreshTokenValue;
+        }
+
+        private async Task<RefreshToken?> ValidateRefreshTokenAsync(string token, string deviceName)
+        {
+            var normalizedDeviceName = NormalizeDeviceName(deviceName);
+            var refreshToken = await _authRepository.GetRefreshTokenAsync(token, normalizedDeviceName);
+
+            if (
+                refreshToken is null ||
+                refreshToken.IsRevoked ||
+                refreshToken.ExpiresAt < DateTime.UtcNow)
+            {
+                return null;
+            }
+
+            return refreshToken;
+        }
+
+        private static string NormalizeDeviceName(string? deviceName)
+        {
+            return string.IsNullOrWhiteSpace(deviceName) ? "default" : deviceName.Trim();
         }
     }
 }

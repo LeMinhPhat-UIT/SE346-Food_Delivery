@@ -10,5 +10,7 @@ namespace AuthenticationService.DTOs
         
         [Required]
         public string Password { get; set; } = null!;
+
+        public string? DeviceName { get; set; }
     }
 }

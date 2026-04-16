@@ -17,7 +17,8 @@ namespace AuthenticationService.Repositories.Interfaces
         Task<IdentityResult> ResetAccessFailedCountAsync(ApplicationUser user);
         Task<IList<Claim>> GetClaimsAsync(ApplicationUser user);
         Task<IList<string>> GetRolesAsync(ApplicationUser user);
-        Task<RefreshToken?> GetRefreshTokenAsync(string token);
+        Task<RefreshToken?> GetRefreshTokenAsync(string token, string deviceName);
+        Task<RefreshToken> CreateRefreshTokenAsync(RefreshToken token);
         Task UpdateRefreshTokenAsync(RefreshToken token);
     }
 }

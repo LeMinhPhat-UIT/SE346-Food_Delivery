@@ -12,14 +12,12 @@ namespace AuthenticationService.Repositories.Implements
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AuthenticationDbContext _context;
-        private readonly IConfiguration _configuration;
 
-        public AuthRepository(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, AuthenticationDbContext context, IConfiguration configuration)
+        public AuthRepository(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, AuthenticationDbContext context)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _context = context;
-            _configuration = configuration;
         }
 
         public async Task<IdentityResult> RegisterUserAsync(ApplicationUser user, string password)
@@ -78,14 +76,20 @@ namespace AuthenticationService.Repositories.Implements
             return await _userManager.GetRolesAsync(user);
         }
 
-        public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
+        public async Task<RefreshToken?> GetRefreshTokenAsync(string token, string deviceName)
         {
-            return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
+            return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token && rt.DeviceName == deviceName);
+        }
+
+        public async Task<RefreshToken> CreateRefreshTokenAsync(RefreshToken token)
+        {
+            await _context.RefreshTokens.AddAsync(token);
+            await _context.SaveChangesAsync();
+            return token;
         }
 
         public async Task UpdateRefreshTokenAsync(RefreshToken token)
         {
-            _context.RefreshTokens.Update(token);
             await _context.SaveChangesAsync();
         }
     }

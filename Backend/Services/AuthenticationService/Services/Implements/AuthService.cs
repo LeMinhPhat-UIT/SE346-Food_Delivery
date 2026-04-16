@@ -1,0 +1,264 @@
+using AuthenticationService.DTOs;
+using AuthenticationService.Entities;
+using AuthenticationService.Enums;
+using AuthenticationService.Helpers;
+using AuthenticationService.Mappers;
+using AuthenticationService.Options;
+using AuthenticationService.Repositories.Interfaces;
+using AuthenticationService.Services.Interfaces;
+using Messaging.Contracts.Common;
+using Messaging.Contracts.Events;
+using Messaging.RabbitMq.Publishing;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+
+namespace AuthenticationService.Services.Implements
+{
+    public class AuthService : IAuthService
+    {
+        private readonly IAuthRepository _authRepository;
+        private readonly CustomerRegisterRequestMapper _mapper;
+        private readonly IEventPublisher _eventPublisher;
+        private readonly ILogger<AuthService> _logger;
+        private readonly IOptions<AuthenticationOptions> _options;
+        private readonly IOptions<JwtOptions> _jwtOptions;
+
+        private readonly int OTP_EXPIRY_SECONDS;
+
+        public AuthService(
+            IAuthRepository authRepository,
+            CustomerRegisterRequestMapper mapper,
+            IEventPublisher eventPublisher,
+            ILogger<AuthService> logger,
+            IConfiguration configuration,
+            IOptions<AuthenticationOptions> options,
+            IOptions<JwtOptions> jwtOptions)
+        {
+            _authRepository = authRepository;
+            _mapper = mapper;
+            _eventPublisher = eventPublisher;
+            _logger = logger;
+            _options = options;
+            _jwtOptions = jwtOptions;
+
+            OTP_EXPIRY_SECONDS = _options.Value.OtpSettings.DefaultOtpExpiredTimeSpanInSeconds;
+        }
+
+        public async Task<ApiResponse<RegisterResponse>> RegisterCustomerAsync(CustomerRegistrationRequest request)
+        {
+            var existingUser = await _authRepository.FindByEmailAsync(request.Email);
+
+            if (existingUser != null)
+            {
+                if (existingUser.IsOtpVerified)
+                {
+                    return new ApiResponse<RegisterResponse>(400, new List<string>
+                    {
+                        "Email already registered"
+                    });
+                }
+
+                var otp = GenerateOtp();
+                existingUser.Otp = otp;
+                existingUser.OtpExpiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_SECONDS);
+
+                await _authRepository.UpdateUserAsync(existingUser);
+
+                var otpEvent = new OtpSendRequestedEvent(existingUser.Id, existingUser.Email!, otp)
+                {
+                    ExpiresAt = existingUser.OtpExpiresAt.Value
+                };
+
+                //await PublishOtpEventAsync(otpEvent);
+
+                await _eventPublisher.PublishAsync(otpEvent);
+
+                return new ApiResponse<RegisterResponse>(200, new RegisterResponse
+                {
+                    UserId = existingUser.Id,
+                    Email = existingUser.Email!,
+                    Message = "OTP resent. Please verify your email",
+                    RequiresOtpVerification = true
+                });
+            }
+
+            var user = _mapper.ToApplicationUser(request);
+
+            var otpCode = GenerateOtp();
+            user.Otp = otpCode;
+            user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_SECONDS);
+
+            var result = await _authRepository.RegisterUserAsync(user, request.Password);
+
+            if (!result.Succeeded)
+            {
+                return new ApiResponse<RegisterResponse>(400,
+                    result.Errors.Select(e => e.Description).ToList());
+            }
+
+            await _authRepository.AddToRoleAsync(user, "Customer");
+
+            var otpSendRequestedEvent = new OtpSendRequestedEvent(user.Id, user.Email!, otpCode)
+            {
+                ExpiresAt = user.OtpExpiresAt.Value
+            };
+
+            await PublishOtpEventAsync(otpSendRequestedEvent);
+
+            return new ApiResponse<RegisterResponse>(200, new RegisterResponse
+            {
+                UserId = user.Id,
+                Email = user.Email!,
+                Message = "Registration successful. Please verify OTP",
+                RequiresOtpVerification = true
+            });
+        }
+
+        public async Task<ApiResponse<VerifyOtpResponse>> VerifyOtpAsync(VerifyOtpRequest request)
+        {
+            var user = await _authRepository.FindByEmailAsync(request.Email);
+            if (user == null)
+                return new ApiResponse<VerifyOtpResponse>(StatusCodes.Status404NotFound, "Email invalid");
+
+            if (user.IsOtpVerified)
+                return new ApiResponse<VerifyOtpResponse>(StatusCodes.Status409Conflict, "User is already verified");
+
+            if (user.OtpExpiresAt < DateTime.UtcNow)
+                return new ApiResponse<VerifyOtpResponse>(StatusCodes.Status410Gone, "OTP has expired");
+
+            if (user.Otp != request.Otp)
+                return new ApiResponse<VerifyOtpResponse>(StatusCodes.Status400BadRequest, "OTP invalid");
+
+            user.IsOtpVerified = true;
+            user.EmailConfirmed = true;
+            user.Status = AuthStatus.Active;
+            user.Otp = null;
+            user.OtpExpiresAt = null;
+
+            await _authRepository.UpdateUserAsync(user);
+
+            _logger.LogInformation("User {UserId} verified successfully", user.Id);
+
+            return new ApiResponse<VerifyOtpResponse>(StatusCodes.Status200OK, new VerifyOtpResponse { Message = "Email verified successfully" });
+        }
+
+        public async Task<ApiResponse<SendOtpResponse>> ResendOtpAsync(string email)
+        {
+            var user = await _authRepository.FindByEmailAsync(email);
+            if (user == null)
+                return new ApiResponse<SendOtpResponse>(StatusCodes.Status404NotFound, "Email invalid");
+
+            if (user.IsOtpVerified)
+                return new ApiResponse<SendOtpResponse>(StatusCodes.Status409Conflict, "User is already verified");
+
+            var otp = GenerateOtp();
+            user.Otp = otp;
+            user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_SECONDS);
+
+            await _authRepository.UpdateUserAsync(user);
+
+            //[note] maybe will apply design pattern in future
+            var otpSendRequestedEvent = new OtpSendRequestedEvent(user.Id, user.Email!, otp)
+            {
+                ExpiresAt = user.OtpExpiresAt.Value
+            };
+
+            await PublishOtpEventAsync(otpSendRequestedEvent);
+
+            return new ApiResponse<SendOtpResponse>(StatusCodes.Status200OK, new SendOtpResponse
+            {
+                Message = "OTP resent successfully",
+                ExpiresInSeconds = OTP_EXPIRY_SECONDS
+            });
+        }
+
+        public async Task<ApiResponse<LoginResponse>> Login(LoginRequest request)
+        {
+            var user = await _authRepository.FindByEmailAsync(request.Email);
+            if (user is null || !user.IsOtpVerified)
+                return new ApiResponse<LoginResponse>(StatusCodes.Status404NotFound, "Invalid credentials");
+
+            var wasLocked = await _authRepository.IsLockedOutAsync(user);
+
+            var result = await _authRepository.CheckPasswordSignInAsync(
+                user,
+                request.Password,
+                _options.Value.LockoutSettings.IsLockoutOnFailure
+            );
+
+            if (result.IsLockedOut)
+            {
+                if (!wasLocked)
+                {
+                    var lockedOutEvent = new LockedOutEvent()
+                    {
+                        UserId = user.Id,
+                        Email = user.Email!,
+                        Message = "Your account is locked due to failed access multilple time",
+                        LockoutEndDate = DateTime.UtcNow.AddSeconds(_options.Value.LockoutSettings.DefaultLockoutTimeSpanInMinutes)
+                    };
+
+                    await _eventPublisher.PublishAsync(lockedOutEvent);
+
+                    return new ApiResponse<LoginResponse>(StatusCodes.Status403Forbidden, "User is locked");
+                }
+            }
+
+            if (!result.Succeeded)
+                return new ApiResponse<LoginResponse>(StatusCodes.Status401Unauthorized, "Invalid credentials");
+
+            await _authRepository.ResetAccessFailedCountAsync(user);
+
+            var accessToken = await new JwtTokenGenerator(_jwtOptions, _authRepository).AccessTokenGenerate(user);
+            var refreshToken = new JwtTokenGenerator(_jwtOptions, _authRepository).RefreshTokenGenerate();
+
+            return new ApiResponse<LoginResponse>(StatusCodes.Status200OK, new LoginResponse
+            {
+                AccessToken = accessToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.Value.AccessTokenMinutes),
+                UserId = user.Id,
+                PhoneNumber = user.PhoneNumber!,
+                RefreshToken = refreshToken
+            });
+        }
+
+        public async Task<ApiResponse<LogoutResponse>> RevokeToken(LogoutRequest request)
+        {
+            var refreshToken = await _authRepository.GetRefreshTokenAsync(request.RefreshToken);
+
+            if (
+                refreshToken == null || 
+                refreshToken.DeviceName != request.DeviceName || 
+                refreshToken.IsRevoked || 
+                refreshToken.ExpiresAt < DateTime.UtcNow)
+            {
+                return new ApiResponse<LogoutResponse>(StatusCodes.Status400BadRequest, "Invalid refresh token");
+            }
+
+            refreshToken.IsRevoked = true;
+            refreshToken.RevokedAt = DateTime.UtcNow;
+
+            await _authRepository.UpdateRefreshTokenAsync(refreshToken);
+
+            return new ApiResponse<LogoutResponse>(StatusCodes.Status200OK, new LogoutResponse()
+            {
+                Message = "Logout successfully"
+            });
+        }
+
+        private static string GenerateOtp()
+        {
+            var random = new Random();
+            return random.Next(100000, 999999).ToString();
+        }
+
+        private async Task PublishOtpEventAsync(OtpSendRequestedEvent @event)
+        {
+            await _eventPublisher.PublishAsync(@event);
+            _logger.LogInformation("OTP event published for user {UserId}", @event.UserId);
+        }
+    }
+}

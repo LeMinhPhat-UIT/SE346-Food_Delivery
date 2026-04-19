@@ -100,6 +100,17 @@ namespace AuthenticationService.Services.Implements
 
             await _authRepository.AddToRoleAsync(user, "Customer");
 
+            var userCreatedEvent = new UserCreatedEvent
+            {
+                UserId = user.Id,
+                FullName = user.FullName,
+                Email = user.Email ?? string.Empty,
+                Phone = user.PhoneNumber ?? string.Empty,
+                CorrelationId = Guid.NewGuid().ToString()
+            };
+
+            await _eventPublisher.PublishAsync(userCreatedEvent);
+
             var otpSendRequestedEvent = new OtpSendRequestedEvent(user.Id, user.Email!, otpCode)
             {
                 ExpiresAt = user.OtpExpiresAt.Value
@@ -138,6 +149,14 @@ namespace AuthenticationService.Services.Implements
             user.OtpExpiresAt = null;
 
             await _authRepository.UpdateUserAsync(user);
+
+            var otpVerifiedEvent = new OtpVerifiedEvent
+            {
+                UserId = user.Id,
+                CorrelationId = Guid.NewGuid().ToString()
+            };
+
+            await _eventPublisher.PublishAsync(otpVerifiedEvent);
 
             _logger.LogInformation("User {UserId} verified successfully", user.Id);
 

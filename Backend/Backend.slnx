@@ -3,12 +3,16 @@
     <Project Path="Services/ApiGateway/ApiGateway.csproj" />
     <Project Path="Services/AuthenticationService/AuthenticationService.csproj" />
     <Project Path="Services/NotificationService/NotificationService.csproj" Id="7871a4e5-2083-4c64-a74b-c1a5997623a4" />
+    <Project Path="Services/UserService/UserService.csproj" Id="747cab97-ea75-4e4d-b4e2-66674d067a04" />
   </Folder>
   <Folder Name="/SharedLibs/" />
   <Folder Name="/SharedLibs/Messaging/">
     <Project Path="SharedLibs/Messaging/Messaging.Abstractions/Messaging.Abstractions.csproj" />
     <Project Path="SharedLibs/Messaging/Messaging.Contracts/Messaging.Contracts.csproj" />
     <Project Path="SharedLibs/Messaging/Messaging.RabbitMq/Messaging.RabbitMq.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".env" />
   </Folder>
   <Project Path="docker-compose.dcproj">
     <Build />

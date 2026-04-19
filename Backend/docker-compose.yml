@@ -143,6 +143,43 @@ services:
     networks:
       - backend-network
 
+  catalog-service:
+    container_name: catalog-service
+    build:
+      context: ./Services/CatalogService 
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DB_HOST=catalog-db
+      - DB_PORT=5432
+      - DB_USER=catalog_service
+      - DB_PASS=catalog_service_password
+      - DB_NAME=catalog_db
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "8084:8080" 
+    depends_on:
+      - catalog-db
+      - rabbitmq
+    networks:
+      - backend-network  
+
+  catalog-db:
+    image: postgres:17-alpine
+    container_name: catalog-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: catalog_db
+      POSTGRES_USER: catalog_service
+      POSTGRES_PASSWORD: catalog_service_password
+    ports:
+      - "5434:5432" 
+    volumes:
+      - catalog_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
   rabbitmq:
     image: rabbitmq:4.1-management
     container_name: rabbitmq
@@ -169,4 +206,4 @@ networks:
 volumes:
   authentication_db_data:
   user_db_data:
-
+  catalog_db_data:

@@ -22,6 +22,15 @@
             "PathPattern": "/api/users/{**catch-all}"
           }
         ]
+      },
+      "catalog-route": {
+        "ClusterId": "catalog-cluster",
+        "Match": {
+          "Path": "/api/catalog/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/catalog/{**catch-all}" }
+        ]
       }
     },
     "Clusters": {
@@ -36,6 +45,13 @@
         "Destinations": {
           "user-service": {
             "Address": "http://user-service:8080"
+          }
+        }
+      },
+      "catalog-cluster": {
+        "Destinations": {
+          "catalog-service": {
+            "Address": "http://catalog-service:8080"
           }
         }
       }

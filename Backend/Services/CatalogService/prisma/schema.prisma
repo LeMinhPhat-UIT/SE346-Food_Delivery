@@ -1,0 +1,128 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"] 
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(100)
+  description String?
+  iconUrl     String?   @map("icon_url") @db.VarChar(500)
+  parentId    String?   @map("parent_id") @db.Uuid
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  deletedAt   DateTime? @map("deleted_at") // Soft delete
+
+  products       Product[]
+  productOptions ProductOption[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId    String    @map("merchant_id") @db.Uuid 
+  categoryId    String?   @map("category_id") @db.Uuid
+  category      Category? @relation(fields: [categoryId], references: [id])
+  name          String    @db.VarChar(255)
+  description   String?
+  imageUrl      String?   @map("image_url") @db.VarChar(500)
+  basePrice     Decimal   @map("base_price") @db.Decimal(12, 2)
+  discountPrice Decimal?  @map("discount_price") @db.Decimal(12, 2)
+  isAvailable   Boolean   @default(true) @map("is_available")
+  isFeatured    Boolean   @default(false) @map("is_featured")
+  prepTime      Int?      @map("prep_time") 
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  options          ProductOption[]
+  reviews          Review[]
+  productAnalytics ProductAnalytics[]
+
+  @@map("products")
+}
+
+model ProductOption {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId    String?   @map("product_id") @db.Uuid
+  product      Product?  @relation(fields: [productId], references: [id])
+  categoryId   String?   @map("category_id") @db.Uuid
+  category     Category? @relation(fields: [categoryId], references: [id])
+  name         String    @db.VarChar(100)
+  isRequired   Boolean   @default(false) @map("is_required")
+  maxSelections Int      @default(1) @map("max_selections")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  values       ProductOptionValue[]
+
+  @@map("product_options")
+}
+
+model ProductOptionValue {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  optionId        String        @map("option_id") @db.Uuid
+  option          ProductOption @relation(fields: [optionId], references: [id])
+  name            String        @db.VarChar(100)
+  additionalPrice Decimal       @default(0) @map("additional_price") @db.Decimal(12, 2)
+  isAvailable     Boolean       @default(true) @map("is_available")
+
+  @@map("product_option_values")
+}
+
+model Review {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid // Tham chiếu qua UserService
+  orderId       String    @map("order_id") @db.Uuid // Tham chiếu qua OrderService
+  merchantId    String?   @map("merchant_id") @db.Uuid
+  productId     String?   @map("product_id") @db.Uuid
+  product       Product?  @relation(fields: [productId], references: [id])
+  shipperId     String?   @map("shipper_id") @db.Uuid
+  rating        Int       // 1-5
+  comment       String?
+  images        Json?     // Array of image URLs
+  merchantReply String?   @map("merchant_reply")
+  repliedAt     DateTime? @map("replied_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  @@map("reviews")
+}
+
+model MerchantAnalytics {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  merchantId      String   @map("merchant_id") @db.Uuid
+  date            DateTime @db.Date
+  totalOrders     Int      @default(0) @map("total_orders")
+  completedOrders Int      @default(0) @map("completed_orders")
+  cancelledOrders Int      @default(0) @map("cancelled_orders")
+  totalRevenue    Decimal  @default(0) @map("total_revenue") @db.Decimal(14, 2)
+  avgRating       Decimal? @map("avg_rating") @db.Decimal(2, 1)
+  newCustomers    Int      @default(0) @map("new_customers")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([merchantId, date])
+  @@map("merchant_analytics")
+}
+
+model ProductAnalytics {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id])
+  date       DateTime @db.Date
+  views      Int      @default(0)
+  orders     Int      @default(0)
+  revenue    Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, date])
+  @@map("product_analytics")
+}

@@ -11,6 +11,17 @@
             "PathPattern": "/api/auth/{**catch-all}"
           }
         ]
+      },
+      "user-route": {
+        "ClusterId": "user-cluster",
+        "Match": {
+          "Path": "/api/users/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/users/{**catch-all}"
+          }
+        ]
       }
     },
     "Clusters": {
@@ -18,6 +29,13 @@
         "Destinations": {
           "authentication-service": {
             "Address": "http://authentication-service:8080"
+          }
+        }
+      },
+      "user-cluster": {
+        "Destinations": {
+          "user-service": {
+            "Address": "http://user-service:8080"
           }
         }
       }

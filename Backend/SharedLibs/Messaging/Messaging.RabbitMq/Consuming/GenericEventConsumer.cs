@@ -7,7 +7,7 @@ using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
 
-namespace NotificationService.Consuming
+namespace Messaging.RabbitMq.Consuming
 {
     public class GenericEventConsumer
     {

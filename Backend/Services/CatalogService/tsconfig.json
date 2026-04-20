@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                                  /* Phiên bản JS đầu ra */
+    "module": "CommonJS",                                /* Ép về CommonJS để ts-node-dev chạy mượt */
+    "moduleResolution": "node",                          /* Cách tìm kiếm thư viện trong node_modules */
+    "ignoreDeprecations": "6.0",                        /* Tắt cảnh báo deprecations theo khuyến nghị TS */
+    "esModuleInterop": true,                             /* Cho phép import các thư viện CommonJS bằng cú pháp ES Module */
+    "forceConsistentCasingInFileNames": true,            /* Tránh lỗi hoa/thường trên Windows/Linux */
+    "strict": true,                                      /* Bật kiểm tra kiểu dữ liệu nghiêm ngặt */
+    "skipLibCheck": true,                                /* Bỏ qua kiểm tra lỗi trong node_modules để build nhanh hơn */
+    "outDir": "./dist",                                  /* Thư mục chứa code sau khi build */
+    "rootDir": "./src"                                   /* Thư mục chứa mã nguồn gốc */
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
+}

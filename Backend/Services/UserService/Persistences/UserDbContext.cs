@@ -18,11 +18,11 @@ namespace UserService.Persistences
                 entity
                     .HasOne(u => u.Shipper)
                     .WithOne(s => s.User)
-                    .HasForeignKey<User>(u => u.ShipperId);
+                    .HasForeignKey<Shipper>(u => u.UserId);
                 entity
                     .HasOne(u => u.Merchant)
                     .WithOne(s => s.User)
-                    .HasForeignKey<User>(u => u.MerchantId);
+                    .HasForeignKey<Merchant>(u => u.UserId);
                 entity
                     .HasMany(u => u.Addresses)
                     .WithOne(a => a.User)
@@ -32,10 +32,6 @@ namespace UserService.Persistences
             modelBuilder.Entity<Shipper>(entity =>
             {
                 entity.HasKey(s => s.Id);
-                entity
-                    .HasOne(s => s.Ekyc)
-                    .WithOne(e => e.Shipper)
-                    .HasForeignKey<Shipper>(s => s.EkycId);
             });
 
             modelBuilder.Entity<Merchant>(entity =>
@@ -46,6 +42,34 @@ namespace UserService.Persistences
                     .WithOne(a => a.Merchant)
                     .HasForeignKey(a => a.MerchantId);
             });
+
+            modelBuilder.Entity<ShipperRequest>(entity =>
+            {
+                entity.HasKey(mr => mr.Id);
+                entity
+                    .HasOne(mr => mr.User)
+                    .WithMany(u => u.ShipperRequests)
+                    .HasForeignKey(mr => mr.UserId);
+
+                entity
+                    .HasOne(mr => mr.ReviewedUser)
+                    .WithMany()
+                    .HasForeignKey(mr => mr.ReviewedBy);
+            });
+
+            modelBuilder.Entity<MerchantRequest>(entity =>
+            {
+                entity.HasKey(mr => mr.Id);
+                entity
+                    .HasOne(mr => mr.User)
+                    .WithMany(u => u.MerchantRequests)
+                    .HasForeignKey(mr => mr.UserId);
+
+                entity
+                    .HasOne(mr => mr.ReviewedUser)
+                    .WithMany()
+                    .HasForeignKey(mr => mr.ReviewedBy);
+            });
         }
 
         public DbSet<User> Users { get; set; }
@@ -53,6 +77,8 @@ namespace UserService.Persistences
         public DbSet<Shipper> Shippers { get; set; }
         public DbSet<Address> Addresses { get; set; }
         public DbSet<MerchantAddress> MerchantAddresses { get; set; }
-        public DbSet<ShipperEkyc> ShipperEkycs { get; set; }
+        public DbSet<ShipperRequest> ShipperEkycs { get; set; }
+        public DbSet<MerchantRequest> MerchantRequests { get; set; }
+        public DbSet<ShipperRequest> ShipperRequests { get; set; }
     }
 }

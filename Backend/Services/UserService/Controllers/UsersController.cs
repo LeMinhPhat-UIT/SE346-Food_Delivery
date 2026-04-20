@@ -1,7 +1,9 @@
 ﻿using Messaging.Contracts.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserService.DTOs;
 using UserService.Entities;
+using UserService.Enums;
 using UserService.Services.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -10,7 +12,7 @@ namespace UserService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public partial class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
 
@@ -20,11 +22,11 @@ namespace UserService.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<IEnumerable<UserProfileResponse>>>> GetAllUsers()
+        public async Task<ActionResult<ApiResponse<PagedResult<UserProfileResponse>>>> GetAllUsers([FromQuery] PaginationRequest pagedOption)
         {
             try
             {
-                var response = await _userService.GetAllUserAsync();
+                var response = await _userService.GetAllUserAsync(pagedOption);
 
                 if (!response.Success)
                     return StatusCode(response.StatusCode, response);

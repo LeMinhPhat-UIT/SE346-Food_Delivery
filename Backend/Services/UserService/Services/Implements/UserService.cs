@@ -1,4 +1,5 @@
 ﻿using Messaging.Contracts.Common;
+using Messaging.Contracts.Extensions;
 using UserService.DTOs;
 using UserService.Mappers;
 using UserService.Repositories.Interfaces;
@@ -6,7 +7,7 @@ using UserService.Services.Interfaces;
 
 namespace UserService.Services.Implements
 {
-    public class UserService : IUserService
+    public partial class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly UserMapper _mapper;
@@ -17,12 +18,16 @@ namespace UserService.Services.Implements
             _mapper = mapper;
         }
 
-        public async Task<ApiResponse<IEnumerable<UserProfileResponse>>> GetAllUserAsync()
+        public async Task<ApiResponse<PagedResult<UserProfileResponse>>> GetAllUserAsync(PaginationRequest paginationRequest)
         {
             var userList = await _userRepository.GetAllUserAsync();
-            var response = _mapper.ToUserProfileResponseList(userList);
+            var pagedUserList = await userList.ToPagedResultAsync(paginationRequest);
 
-            return new ApiResponse<IEnumerable<UserProfileResponse>>(StatusCodes.Status200OK, response);
+            var response = _mapper.ToUserProfileResponseList(pagedUserList.Items);
+
+            return new ApiResponse<PagedResult<UserProfileResponse>>(
+                StatusCodes.Status200OK, 
+                new PagedResult<UserProfileResponse>(response));
         }
 
         public async Task<ApiResponse<UserProfileResponse>> GetUserAsync(Guid id)

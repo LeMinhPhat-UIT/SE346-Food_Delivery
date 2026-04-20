@@ -5,7 +5,7 @@ using UserService.Repositories.Interfaces;
 
 namespace UserService.Repositories.Implements
 {
-    public class UserRepository : IUserRepository
+    public partial class UserRepository : IUserRepository
     {
         private readonly UserDbContext _context;
 
@@ -34,11 +34,9 @@ namespace UserService.Repositories.Implements
             return false;
         }
 
-        public async Task<IReadOnlyList<User>> GetAllUserAsync()
+        public async Task<IQueryable<User>> GetAllUserAsync()
         {
-            return await _context.Users
-                .Where(u => u.DeletedAt == null)
-                .ToListAsync();
+            return _context.Users.Where(u => u.DeletedAt == null);
         }
 
         public async Task<User?> GetUserByIdAsync(Guid id)

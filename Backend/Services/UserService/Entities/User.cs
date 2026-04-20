@@ -17,5 +17,7 @@ namespace UserService.Entities
         public Shipper? Shipper { get; set; }
 
         public ICollection<Address> Addresses { get; set; } = null!;
+        public ICollection<ShipperRequest> ShipperRequests { get; set; } = null!;
+        public ICollection<MerchantRequest> MerchantRequests { get; set; } = null!;
     }
 }

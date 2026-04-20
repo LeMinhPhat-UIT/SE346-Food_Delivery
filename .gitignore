@@ -59,3 +59,6 @@ obj/
 *.user
 *.suo
 *.log
+
+.env
+firebase-auth.json

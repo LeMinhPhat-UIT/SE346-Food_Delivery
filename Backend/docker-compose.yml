@@ -1,0 +1,174 @@
+services:
+  apigateway:
+    container_name: api-gateway
+    build:
+      context: .
+      dockerfile: Services/ApiGateway/Dockerfile
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${API_GATEWAY_HTTP_PORT:-8080}
+    ports:
+      - "${API_GATEWAY_HTTP_PORT:-8080}:${API_GATEWAY_HTTP_PORT:-8080}"
+    depends_on:
+      authentication-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - backend-network
+
+  authentication-service:
+    container_name: authentication-service
+    build:
+      context: .
+      dockerfile: Services/AuthenticationService/Dockerfile
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${AUTH_SERVICE_CONTAINER_PORT:-8080}
+      ConnectionStrings__AuthenticationDbConnectionString: Host=authentication-db;Port=5432;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD}
+      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+    ports:
+      - "${AUTH_SERVICE_HOST_PORT:-8081}:${AUTH_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      authentication-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  authentication-db:
+    image: postgres:17-alpine
+    container_name: authentication-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME}
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+    ports:
+      - "${AUTH_DB_PORT:-5433}:5432"
+    volumes:
+      - authentication_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+  user-service:
+    container_name: user-service
+    build:
+      context: .
+      dockerfile: Services/UserService/Dockerfile
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${USER_SERVICE_CONTAINER_PORT:-8080}
+      ConnectionStrings__UserDbConnectionString: Host=user-db;Port=5432;Database=${USER_DB_NAME};Username=${USER_DB_USER};Password=${USER_DB_PASSWORD}
+      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+    ports:
+      - "${USER_SERVICE_HOST_PORT:-8082}:${USER_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  notification-service:
+    container_name: notification-service
+    build:
+      context: .
+      dockerfile: Services/NotificationService/Dockerfile
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}
+      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      SmtpSettings__Host: ${SMTP_HOST}
+      SmtpSettings__Port: ${SMTP_PORT}
+      SmtpSettings__EnableSsl: ${SMTP_ENABLE_SSL}
+      SmtpSettings__UserName: ${SMTP_USERNAME}
+      SmtpSettings__Password: ${SMTP_PASSWORD}
+      SmtpSettings__FromEmail: ${SMTP_FROM_EMAIL}
+      SmtpSettings__FromName: ${SMTP_FROM_NAME}
+    ports:
+      - "${NOTIFICATION_SERVICE_HOST_PORT:-8083}:${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  user-db:
+    image: postgres:17-alpine
+    container_name: user-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${USER_DB_NAME}
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-auth.json
+    ports:
+      - "${USER_DB_PORT:-5432}:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  authentication_db_data:
+  user_db_data:
+

@@ -10,6 +10,15 @@ export default class Send {
     return;
   }
 
+  static created(res: Response, data: any, message = "Resource created successfully") {
+    // 201 is for successful creation of a resource
+    res.status(201).json({
+      ok: true,
+      message,
+      data,
+    });
+  }
+
   static error(res: Response, data: any, message = "error") {
     // A generic 500 Internal Server Error is returned for unforeseen issues
     res.status(500).json({

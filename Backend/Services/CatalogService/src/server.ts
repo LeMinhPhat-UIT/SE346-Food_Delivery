@@ -1,20 +1,31 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import catalogRoutes from "./presentation/routes";
+import app from "./app";
+import { connectDatabase, disconnectDatabase } from "./config/db.config";
+import { env } from "./config/env.config";
+import { logger } from "./utils/logger";
 
-const app = express();
-const PORT = process.env.PORT || 8084;
+const startServer = async () => {
+  try {
+    await connectDatabase();
 
-app.use(cors());
-app.use(express.json());
+    const server = app.listen(env.PORT, () => {
+      logger.info(`Catalog Service is running on port ${env.PORT}`);
+    });
 
-app.use("/api/catalog", catalogRoutes);
+    const shutdown = async (signal: string) => {
+      logger.warn(`Received ${signal}. Shutting down Catalog Service...`);
 
-app.get("/health", (req, res) => {
-    res.status(200).send('Catalog Service is running healthy!');
-});
+      server.close(async () => {
+        await disconnectDatabase();
+        process.exit(0);
+      });
+    };
 
-app.listen(PORT, () => {
-  console.log(`Catalog Service is running on port ${PORT}`);
-});
+    process.on("SIGINT", () => void shutdown("SIGINT"));
+    process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  } catch (error) {
+    logger.error("Failed to start Catalog Service", error);
+    process.exit(1);
+  }
+};
+
+void startServer();

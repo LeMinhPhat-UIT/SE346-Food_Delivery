@@ -53,6 +53,14 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
+# TypeScript
+dist/
+lib/
+out/
+tsconfig.tsbuildinfo
+
+node_modules/
+
 bin/
 obj/
 .vs/

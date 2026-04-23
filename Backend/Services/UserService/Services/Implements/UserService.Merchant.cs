@@ -1,6 +1,6 @@
 ﻿using Messaging.Contracts.Common;
 using Messaging.Contracts.Extensions;
-using UserService.DTOs;
+using UserService.DTOs.MerchantDTOs;
 using UserService.Entities;
 using UserService.Enums;
 
@@ -41,7 +41,7 @@ namespace UserService.Services.Implements
             return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Create request for merchant role successfully"));
         }
 
-        public async Task<ApiResponse<PagedResult<MerchantRequestResponse>>> GetAllMerchantRequests(PaginationRequest paginationRequest)
+        public async Task<ApiResponse<PagedResult<MerchantRequestResponse>>> GetAllMerchantRequestsAsync(PaginationRequest paginationRequest)
         {
             var merchantRequests = await _userRepository.GetAllMerchantRequestAsync();
             var pagedMerchantRequests = await merchantRequests.ToPagedResultAsync(paginationRequest);

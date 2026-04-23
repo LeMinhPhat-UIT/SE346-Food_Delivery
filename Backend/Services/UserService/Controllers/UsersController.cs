@@ -22,6 +22,7 @@ namespace UserService.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<PagedResult<UserProfileResponse>>>> GetAllUsers([FromQuery] PaginationRequest pagedOption)
         {
             try
@@ -40,6 +41,7 @@ namespace UserService.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "SelfOrAdmin")]
         public async Task<ActionResult<ApiResponse<UserProfileResponse>>> GetUserProfile(Guid id)
         {
             try
@@ -58,6 +60,7 @@ namespace UserService.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = "SelfOrAdmin")]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateUserProfile(Guid id, [FromBody] UserProfileUpdateRequest request)
         {
             try
@@ -76,6 +79,7 @@ namespace UserService.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = "SelfOrAdmin")]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> DeleteUser(Guid id)
         {
             try

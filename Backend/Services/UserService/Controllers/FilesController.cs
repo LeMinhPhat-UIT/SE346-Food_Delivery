@@ -12,6 +12,7 @@ namespace UserService.Controllers
     public class FilesController : ControllerBase
     {
         [HttpGet("get-upload-url")]
+        [Authorize]
         public ActionResult<ApiResponse<PresignUrlResponse>> GetUploadUrl([FromQuery] string fileName, [FromQuery] string contentType)
         {
             var service = new FirebaseStorageHelper();

@@ -37,6 +37,11 @@ services:
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
       RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      JwtSettings__Key: ${JWT_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+      JwtSettings__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-2}
+      JwtSettings__RefreshTokenMinutes: ${JWT_REFRESH_TOKEN_MINUTES:-3}
     ports:
       - "${AUTH_SERVICE_HOST_PORT:-8081}:${AUTH_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:
@@ -83,6 +88,9 @@ services:
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
       RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      JwtSettings__Key: ${JWT_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
     ports:
       - "${USER_SERVICE_HOST_PORT:-8082}:${USER_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:

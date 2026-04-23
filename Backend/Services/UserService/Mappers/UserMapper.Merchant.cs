@@ -1,5 +1,5 @@
 ﻿using Riok.Mapperly.Abstractions;
-using UserService.DTOs;
+using UserService.DTOs.MerchantDTOs;
 using UserService.Entities;
 
 namespace UserService.Mappers

@@ -2,13 +2,15 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UserService.Enums;
-using UserService.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using UserService.DTOs.MerchantDTOs;
 
 namespace UserService.Controllers
 {
     public partial class UsersController : ControllerBase
     {
         [HttpPost("merchant-request")]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> RequestMerchantRole([FromBody] CreateMerchantRequest request)
         {
             try
@@ -31,14 +33,15 @@ namespace UserService.Controllers
         }
 
         [HttpGet("merchant-request")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantRequestResponse>>>> GetAllMerchantRequests([FromQuery] PaginationRequest paginationRequest)
         {
             try
             {
-                if (!IsCurrentUserAdmin())
-                    return StatusCode(StatusCodes.Status403Forbidden, "Only admin can view merchant requests");
+                //if (!IsCurrentUserAdmin())
+                //    return StatusCode(StatusCodes.Status403Forbidden, "Only admin can view merchant requests");
 
-                var response = await _userService.GetAllMerchantRequests(paginationRequest);
+                var response = await _userService.GetAllMerchantRequestsAsync(paginationRequest);
 
                 if (!response.Success)
                     return StatusCode(response.StatusCode, response);
@@ -52,12 +55,13 @@ namespace UserService.Controllers
         }
 
         [HttpPatch("merchant-request/{requestId:guid}/review")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> ReviewMerchantRequest(Guid requestId, [FromBody] ReviewMerchantRequest request)
         {
             try
             {
-                if (!IsCurrentUserAdmin())
-                    return StatusCode(StatusCodes.Status403Forbidden, "Only admin can review merchant requests");
+                //if (!IsCurrentUserAdmin())
+                //    return StatusCode(StatusCodes.Status403Forbidden, "Only admin can review merchant requests");
 
                 var reviewerId = GetCurrentUserId();
                 if (!reviewerId.HasValue)
@@ -113,10 +117,25 @@ namespace UserService.Controllers
         }
 
         [HttpPut("merchants/{merchantId:guid}")]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateMerchant(Guid merchantId, [FromBody] UpdateMerchantRequest request)
         {
             try
             {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(merchantId);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own merchant profile");
+                }
+
                 var response = await _userService.UpdateMerchantAsync(merchantId, request);
 
                 if (!response.Success)
@@ -131,10 +150,25 @@ namespace UserService.Controllers
         }
 
         [HttpDelete("merchants/{merchantId:guid}")]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> DeleteMerchant(Guid merchantId)
         {
             try
             {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(merchantId);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own merchant profile");
+                }
+
                 var response = await _userService.DeleteMerchantAsync(merchantId);
 
                 if (!response.Success)

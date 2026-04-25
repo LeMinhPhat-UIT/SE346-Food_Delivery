@@ -5,6 +5,7 @@ import {
   CreateProductDto,
   ProductResponseDto,
   UpdateProductDto,
+  CreateProductOptionDto,
 } from "./product.dto";
 import { toProductResponseDto } from "./product.mapper";
 import { ProductRepository } from "./product.repository";
@@ -12,7 +13,7 @@ import { ProductRepository } from "./product.repository";
 export class ProductService {
   constructor(
     private readonly productRepository: ProductRepository,
-    private readonly categoryRepository: CategoryRepository
+    private readonly categoryRepository: CategoryRepository,
   ) {}
 
   async getAllProducts(): Promise<ProductResponseDto[]> {
@@ -35,13 +36,15 @@ export class ProductService {
       await this.ensureCategoryExists(data.categoryId);
     }
 
+    await this.validateOptionCategories(data.options);
+
     const product = await this.productRepository.create(data);
     return toProductResponseDto(product);
   }
 
   async updateProduct(
     id: string,
-    data: UpdateProductDto
+    data: UpdateProductDto,
   ): Promise<ProductResponseDto> {
     const existingProduct = await this.ensureProductExists(id);
 
@@ -49,20 +52,33 @@ export class ProductService {
       await this.ensureCategoryExists(data.categoryId);
     }
 
-    const nextBasePrice = data.basePrice ?? existingProduct.basePrice.toNumber();
+    await this.validateOptionCategories(data.options);
+
+    const nextBasePrice =
+      data.basePrice ?? existingProduct.basePrice.toNumber();
     const nextDiscountPrice =
       data.discountPrice !== undefined
         ? data.discountPrice
-        : existingProduct.discountPrice?.toNumber() ?? null;
+        : (existingProduct.discountPrice?.toNumber() ?? null);
 
     if (nextDiscountPrice !== null && nextDiscountPrice > nextBasePrice) {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
-        "Discount price cannot be greater than base price"
+        "Discount price cannot be greater than base price",
       );
     }
 
-    const product = await this.productRepository.update(id, data);
+    const { options, ...productData } = data;
+
+    const product =
+      options !== undefined
+        ? await this.productRepository.replaceProductWithOptions(
+            id,
+            productData,
+            options,
+          )
+        : await this.productRepository.update(id, productData);
+        
     return toProductResponseDto(product);
   }
 
@@ -93,8 +109,22 @@ export class ProductService {
     if (!category || !category.isActive) {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
-        "Category does not exist or is inactive"
+        "Category does not exist or is inactive",
       );
     }
+  }
+
+  private async validateOptionCategories(options?: CreateProductOptionDto[]) {
+    if (!options?.length) {
+      return;
+    }
+
+    const categoryIds = options
+      .map((option) => option.categoryId)
+      .filter((categoryId): categoryId is string => Boolean(categoryId));
+
+    await Promise.all(
+      categoryIds.map((categoryId) => this.ensureCategoryExists(categoryId)),
+    );
   }
 }

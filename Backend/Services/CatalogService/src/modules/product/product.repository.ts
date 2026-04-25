@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../prisma/prisma.client";
-import { CreateProductDto } from "./product.dto";
+import { CreateProductDto, CreateProductOptionDto } from "./product.dto";
 
 export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
   id: true,
@@ -21,6 +21,30 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
     select: {
       id: true,
       name: true,
+    },
+  },
+  options: {
+    select: {
+      id: true,
+      categoryId: true,
+      name: true,
+      isRequired: true,
+      maxSelections: true,
+      createdAt: true,
+      values: {
+        select: {
+          id: true,
+          name: true,
+          additionalPrice: true,
+          isAvailable: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "asc",
     },
   },
 });
@@ -54,8 +78,15 @@ export class ProductRepository {
   }
 
   async create(data: CreateProductDto) {
+    const { options = [], ...productData } = data;
+
     return prisma.product.create({
-      data,
+      data: {
+        ...productData,
+        options: {
+          create: this.mapOptionCreates(options),
+        },
+      },
       select: productSelect,
     });
   }
@@ -66,5 +97,54 @@ export class ProductRepository {
       data,
       select: productSelect,
     });
+  }
+
+  async replaceProductWithOptions(
+    id: string,
+    data: Prisma.ProductUpdateInput,
+    options: CreateProductOptionDto[],
+  ) {
+    return prisma.$transaction(async (tx) => {
+      await tx.productOptionValue.deleteMany({
+        where: {
+          option: {
+            productId: id,
+          },
+        },
+      });
+
+      await tx.productOption.deleteMany({
+        where: {
+          productId: id,
+        },
+      });
+
+      return tx.product.update({
+        where: { id },
+        data: {
+          ...data,
+          options: {
+            create: this.mapOptionCreates(options),
+          },
+        },
+        select: productSelect,
+      });
+    });
+  }
+
+  private mapOptionCreates(options: CreateProductOptionDto[]) {
+    return options.map((option) => ({
+      categoryId: option.categoryId,
+      name: option.name,
+      isRequired: option.isRequired,
+      maxSelections: option.maxSelections,
+      values: {
+        create: option.values.map((value) => ({
+          name: value.name,
+          additionalPrice: value.additionalPrice,
+          isAvailable: value.isAvailable,
+        })),
+      },
+    }));
   }
 }

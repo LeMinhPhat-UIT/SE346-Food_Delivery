@@ -2,7 +2,7 @@ import { ProductResponseDto } from "./product.dto";
 import { ProductRecord } from "./product.repository";
 
 export const toProductResponseDto = (
-  product: ProductRecord
+  product: ProductRecord,
 ): ProductResponseDto => {
   return {
     id: product.id,
@@ -12,9 +12,8 @@ export const toProductResponseDto = (
     description: product.description,
     imageUrl: product.imageUrl,
     basePrice: product.basePrice.toNumber(),
-    discountPrice: product.discountPrice !== null
-      ? product.discountPrice.toNumber()
-      : null,
+    discountPrice:
+      product.discountPrice !== null ? product.discountPrice.toNumber() : null,
     isAvailable: product.isAvailable,
     isFeatured: product.isFeatured,
     prepTime: product.prepTime,
@@ -27,5 +26,19 @@ export const toProductResponseDto = (
           name: product.category.name,
         }
       : null,
+    options: product.options?.map((option) => ({
+      id: option.id,
+      categoryId: option.categoryId,
+      name: option.name,
+      isRequired: option.isRequired,
+      maxSelections: option.maxSelections,
+      createdAt: option.createdAt.toISOString(),
+      values: option.values.map((value) => ({
+        id: value.id,
+        name: value.name,
+        additionalPrice: value.additionalPrice.toNumber(),
+        isAvailable: value.isAvailable,
+      })),
+    })),
   };
 };

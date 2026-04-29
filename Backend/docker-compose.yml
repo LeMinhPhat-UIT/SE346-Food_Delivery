@@ -153,6 +153,23 @@ services:
     networks:
       - backend-network
 
+  catalog-service:
+    container_name: catalog-service
+    build:
+      context: ./Services/CatalogService 
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "8084:8080" 
+    depends_on:
+      - rabbitmq
+    networks:
+      - backend-network  
+
   rabbitmq:
     image: rabbitmq:4.1-management
     container_name: rabbitmq

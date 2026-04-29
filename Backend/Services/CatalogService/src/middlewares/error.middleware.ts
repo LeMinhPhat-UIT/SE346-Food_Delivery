@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { MulterError } from "multer";
 import { HTTP_STATUS } from "../constants/httpStatus";
 import { ApiError } from "../utils/apiError";
 import Send from "../utils/response";
@@ -16,6 +17,15 @@ export const errorMiddleware = (
       message: error.message,
       data: error.details ?? null,
     });
+  }
+
+  if (error instanceof MulterError) {
+    return Send.error(
+      res,
+      null,
+      error.message,
+      HTTP_STATUS.BAD_REQUEST
+    );
   }
 
   logger.error("Unhandled error", error);

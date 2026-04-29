@@ -19,7 +19,7 @@ export default class Send {
     res: Response,
     data: unknown,
     message = "error",
-    statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR
+    statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR
   ) {
     return res.status(statusCode).json({
       ok: false,

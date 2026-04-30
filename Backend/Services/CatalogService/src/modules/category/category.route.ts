@@ -3,6 +3,9 @@ import { validate } from "../../middlewares/validate.middleware";
 import {
   categoryIdSchema,
   createCategorySchema,
+  listCategoriesSchema,
+  restoreCategorySchema,
+  updateCategoryStatusSchema,
   updateCategorySchema,
 } from "./category.schema";
 import { CategoryController } from "./category.controller";
@@ -10,12 +13,26 @@ import { CategoryController } from "./category.controller";
 const router = Router();
 const categoryController = new CategoryController();
 
-router.get("/", categoryController.getAllCategories);
+router.get("/", validate(listCategoriesSchema), categoryController.getAllCategories);
+router.get("/tree", categoryController.getCategoryTree);
+router.get("/root", categoryController.getRootCategories);
 
 router.post(
   "/",
   validate(createCategorySchema),
   categoryController.createCategory
+);
+
+router.patch(
+  "/:id/status",
+  validate(updateCategoryStatusSchema),
+  categoryController.updateCategoryStatus
+);
+
+router.patch(
+  "/:id/restore",
+  validate(restoreCategorySchema),
+  categoryController.restoreCategory
 );
 
 router.get(

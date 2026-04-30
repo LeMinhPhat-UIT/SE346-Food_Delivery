@@ -24,5 +24,6 @@ export const toCategoryResponseDto = (
       id: child.id,
       name: child.name,
     })),
+    productCount: category._count.products,
   };
 };

@@ -22,10 +22,6 @@ export const toProductOptionResponseDto = (
 
 export const toProductResponseDto = (
   product: ProductRecord,
-  rating?: {
-    averageRating: number | null;
-    reviewCount: number;
-  },
 ): ProductResponseDto => {
   return {
     id: product.id,
@@ -49,8 +45,9 @@ export const toProductResponseDto = (
           name: product.category.name,
         }
       : null,
-    reviewCount: rating?.reviewCount ?? product._count.reviews,
-    averageRating: rating?.averageRating ?? null,
+    reviewCount: product.totalReviews,
+    averageRating:
+      product.averageRating !== null ? Number(product.averageRating) : null,
     options: product.options?.map(toProductOptionResponseDto),
   };
 };

@@ -20,7 +20,7 @@ export const baseProductQuerySchema = z.object({
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   sortBy: z
-    .enum(["name", "basePrice", "createdAt", "updatedAt"])
+    .enum(["name", "basePrice", "createdAt", "updatedAt", "averageRating", "totalReviews"])
     .default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });

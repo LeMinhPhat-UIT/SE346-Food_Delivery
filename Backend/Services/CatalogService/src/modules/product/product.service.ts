@@ -29,12 +29,10 @@ export class ProductService {
       await this.ensureCategoryExists(filters.categoryId);
     }
 
-    const { items, totalCount, ratingMap } = await this.productRepository.findAll(filters);
+    const { items, totalCount } = await this.productRepository.findAll(filters);
 
     return {
-      items: items.map((product) =>
-        toProductResponseDto(product, ratingMap.get(product.id))
-      ),
+      items: items.map((product) => toProductResponseDto(product)),
       totalCount,
       page: filters.page,
       limit: filters.limit,
@@ -49,9 +47,7 @@ export class ProductService {
       throw new ApiError(HTTP_STATUS.NOT_FOUND, "Product not found");
     }
 
-    const ratingMap = await this.productRepository.getRatingsForProductIds([product.id]);
-
-    return toProductResponseDto(product, ratingMap.get(product.id));
+    return toProductResponseDto(product);
   }
 
   async createProduct(data: CreateProductDto): Promise<ProductResponseDto> {
@@ -153,22 +149,13 @@ export class ProductService {
   async batchUpdateProductAvailability(
     data: BatchUpdateProductAvailabilityDto,
   ): Promise<ProductResponseDto[]> {
-    const existingProducts = await Promise.all(
+    await Promise.all(
       data.productIds.map((productId) => this.ensureProductExists(productId)),
     );
 
     const products = await this.productRepository.batchUpdateAvailability(data);
 
-    return products.map((product) => {
-      const existingProduct = existingProducts.find(
-        (item) => item.id === product.id,
-      );
-
-      return toProductResponseDto(product, {
-        averageRating: null,
-        reviewCount: existingProduct?._count.reviews ?? product._count.reviews,
-      });
-    });
+    return products.map((product) => toProductResponseDto(product));
   }
 
   async updateProductFeatured(

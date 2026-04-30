@@ -20,6 +20,8 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
   isAvailable: true,
   isFeatured: true,
   prepTime: true,
+  averageRating: true,
+  totalReviews: true,
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
@@ -52,15 +54,6 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
     },
     orderBy: {
       createdAt: "asc",
-    },
-  },
-  _count: {
-    select: {
-      reviews: {
-        where: {
-          deletedAt: null,
-        },
-      },
     },
   },
 });
@@ -154,9 +147,7 @@ export class ProductRepository {
       prisma.product.count({ where }),
     ]);
 
-    const ratingMap = await this.getRatingsForProductIds(items.map((item) => item.id));
-
-    return { items, totalCount, ratingMap };
+    return { items, totalCount };
   }
 
   async findById(id: string) {
@@ -326,6 +317,30 @@ export class ProductRepository {
     });
   }
 
+  async syncProductReviewStats(productId: string) {
+    const aggregate = await prisma.review.aggregate({
+      where: {
+        productId,
+        deletedAt: null,
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    return prisma.product.update({
+      where: { id: productId },
+      data: {
+        averageRating: aggregate._avg.rating ?? 0,
+        totalReviews: aggregate._count._all,
+      },
+      select: productSelect,
+    });
+  }
+
   private mapOptionCreates(options: CreateProductOptionDto[]) {
     return options.map((option) => ({
       categoryId: option.categoryId,
@@ -340,44 +355,5 @@ export class ProductRepository {
         })),
       },
     }));
-  }
-
-  async getRatingsForProductIds(productIds: string[]) {
-    if (!productIds.length) {
-      return new Map<string, { averageRating: number | null; reviewCount: number }>();
-    }
-
-    const aggregates = await prisma.review.groupBy({
-      by: ["productId"],
-      where: {
-        productId: {
-          in: productIds,
-        },
-        deletedAt: null,
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        _all: true,
-      },
-    });
-
-    return new Map(
-      aggregates
-        .filter(
-          (
-            aggregate
-          ): aggregate is typeof aggregate & { productId: string } =>
-            aggregate.productId !== null
-        )
-        .map((aggregate) => [
-          aggregate.productId,
-          {
-            averageRating: aggregate._avg.rating,
-            reviewCount: aggregate._count._all,
-          },
-        ])
-    );
   }
 }

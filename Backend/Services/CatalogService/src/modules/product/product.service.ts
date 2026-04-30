@@ -2,12 +2,20 @@ import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
 import { CategoryRepository } from "../category/category.repository";
 import {
+  BatchUpdateProductAvailabilityDto,
   CreateProductDto,
+  CreateProductOptionRequestDto,
+  ProductListResponseDto,
+  ProductOptionResponseDto,
+  ProductQueryDto,
   ProductResponseDto,
   UpdateProductDto,
   CreateProductOptionDto,
+  UpdateProductAvailabilityDto,
+  UpdateProductOptionDto,
+  UpdateProductFeaturedDto,
 } from "./product.dto";
-import { toProductResponseDto } from "./product.mapper";
+import { toProductOptionResponseDto, toProductResponseDto } from "./product.mapper";
 import { ProductRepository } from "./product.repository";
 
 export class ProductService {
@@ -16,9 +24,22 @@ export class ProductService {
     private readonly categoryRepository: CategoryRepository,
   ) {}
 
-  async getAllProducts(): Promise<ProductResponseDto[]> {
-    const products = await this.productRepository.findAll();
-    return products.map(toProductResponseDto);
+  async getAllProducts(filters: ProductQueryDto): Promise<ProductListResponseDto> {
+    if (filters.categoryId) {
+      await this.ensureCategoryExists(filters.categoryId);
+    }
+
+    const { items, totalCount, ratingMap } = await this.productRepository.findAll(filters);
+
+    return {
+      items: items.map((product) =>
+        toProductResponseDto(product, ratingMap.get(product.id))
+      ),
+      totalCount,
+      page: filters.page,
+      limit: filters.limit,
+      totalPages: Math.ceil(totalCount / filters.limit),
+    };
   }
 
   async getProductById(id: string): Promise<ProductResponseDto> {
@@ -28,7 +49,9 @@ export class ProductService {
       throw new ApiError(HTTP_STATUS.NOT_FOUND, "Product not found");
     }
 
-    return toProductResponseDto(product);
+    const ratingMap = await this.productRepository.getRatingsForProductIds([product.id]);
+
+    return toProductResponseDto(product, ratingMap.get(product.id));
   }
 
   async createProduct(data: CreateProductDto): Promise<ProductResponseDto> {
@@ -40,6 +63,20 @@ export class ProductService {
 
     const product = await this.productRepository.create(data);
     return toProductResponseDto(product);
+  }
+
+  async createProductOption(
+    productId: string,
+    data: CreateProductOptionRequestDto,
+  ): Promise<ProductOptionResponseDto> {
+    await this.ensureProductExists(productId);
+
+    if (data.categoryId) {
+      await this.ensureCategoryExists(data.categoryId);
+    }
+
+    const option = await this.productRepository.createOption(productId, data);
+    return toProductOptionResponseDto(option);
   }
 
   async updateProduct(
@@ -82,6 +119,97 @@ export class ProductService {
     return toProductResponseDto(product);
   }
 
+  async updateProductOption(
+    optionId: string,
+    data: UpdateProductOptionDto,
+  ): Promise<ProductOptionResponseDto> {
+    const existingOption = await this.ensureOptionExists(optionId);
+
+    if (existingOption.productId) {
+      await this.ensureProductExists(existingOption.productId);
+    }
+
+    if (data.categoryId) {
+      await this.ensureCategoryExists(data.categoryId);
+    }
+
+    const option = await this.productRepository.updateOption(optionId, data);
+    return toProductOptionResponseDto(option);
+  }
+
+  async updateProductAvailability(
+    id: string,
+    data: UpdateProductAvailabilityDto,
+  ): Promise<ProductResponseDto> {
+    await this.ensureProductExists(id);
+
+    const product = await this.productRepository.update(id, {
+      isAvailable: data.isAvailable,
+    });
+
+    return toProductResponseDto(product);
+  }
+
+  async batchUpdateProductAvailability(
+    data: BatchUpdateProductAvailabilityDto,
+  ): Promise<ProductResponseDto[]> {
+    const existingProducts = await Promise.all(
+      data.productIds.map((productId) => this.ensureProductExists(productId)),
+    );
+
+    const products = await this.productRepository.batchUpdateAvailability(data);
+
+    return products.map((product) => {
+      const existingProduct = existingProducts.find(
+        (item) => item.id === product.id,
+      );
+
+      return toProductResponseDto(product, {
+        averageRating: null,
+        reviewCount: existingProduct?._count.reviews ?? product._count.reviews,
+      });
+    });
+  }
+
+  async updateProductFeatured(
+    id: string,
+    data: UpdateProductFeaturedDto,
+  ): Promise<ProductResponseDto> {
+    await this.ensureProductExists(id);
+
+    const product = await this.productRepository.update(id, {
+      isFeatured: data.isFeatured,
+    });
+
+    return toProductResponseDto(product);
+  }
+
+  async restoreProduct(id: string): Promise<ProductResponseDto> {
+    const product = await this.productRepository.findByIdIncludingDeleted(id);
+
+    if (!product) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Product not found");
+    }
+
+    if (product.deletedAt === null) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Product is already active",
+      );
+    }
+
+    if (product.categoryId) {
+      await this.ensureCategoryExists(product.categoryId);
+    }
+
+    const restoredProduct = await this.productRepository.update(id, {
+      deletedAt: null,
+      isAvailable: true,
+    });
+
+    return toProductResponseDto(restoredProduct);
+  }
+
   async deleteProduct(id: string): Promise<ProductResponseDto> {
     await this.ensureProductExists(id);
 
@@ -91,6 +219,17 @@ export class ProductService {
     });
 
     return toProductResponseDto(product);
+  }
+
+  async deleteProductOption(optionId: string): Promise<ProductOptionResponseDto> {
+    const existingOption = await this.ensureOptionExists(optionId);
+
+    if (existingOption.productId) {
+      await this.ensureProductExists(existingOption.productId);
+    }
+
+    const option = await this.productRepository.deleteOption(optionId);
+    return toProductOptionResponseDto(option);
   }
 
   private async ensureProductExists(id: string) {
@@ -126,5 +265,15 @@ export class ProductService {
     await Promise.all(
       categoryIds.map((categoryId) => this.ensureCategoryExists(categoryId)),
     );
+  }
+
+  private async ensureOptionExists(optionId: string) {
+    const option = await this.productRepository.findOptionById(optionId);
+
+    if (!option) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Product option not found");
+    }
+
+    return option;
   }
 }

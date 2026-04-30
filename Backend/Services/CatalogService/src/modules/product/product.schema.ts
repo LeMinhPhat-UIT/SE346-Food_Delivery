@@ -4,6 +4,39 @@ export const productIdParamSchema = z.object({
   id: z.string().uuid("Product id must be a valid UUID"),
 });
 
+export const productOptionIdParamSchema = z.object({
+  optionId: z.string().uuid("Option id must be a valid UUID"),
+});
+
+export const baseProductQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().trim().optional(),
+  merchantId: z.string().uuid("Merchant ID must be a valid UUID").optional(),
+  categoryId: z.string().uuid("Category ID must be a valid UUID").optional(),
+  isAvailable: z.coerce.boolean().optional(),
+  isFeatured: z.coerce.boolean().optional(),
+  includeDeleted: z.coerce.boolean().default(false),
+  minPrice: z.coerce.number().min(0).optional(),
+  maxPrice: z.coerce.number().min(0).optional(),
+  sortBy: z
+    .enum(["name", "basePrice", "createdAt", "updatedAt"])
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export const productQuerySchema = baseProductQuerySchema
+  .refine(
+    (data) =>
+      data.minPrice === undefined ||
+      data.maxPrice === undefined ||
+      data.minPrice <= data.maxPrice,
+    {
+      message: "minPrice cannot be greater than maxPrice",
+      path: ["minPrice"],
+    }
+  );
+
 export const productOptionValueSchema = z.object({
   name: z
     .string()
@@ -109,8 +142,42 @@ export const updateProductBodySchema = baseProductBodySchema
     },
   );
 
+export const updateProductAvailabilityBodySchema = z.object({
+  isAvailable: z.boolean(),
+});
+
+export const updateProductFeaturedBodySchema = z.object({
+  isFeatured: z.boolean(),
+});
+
+export const createProductOptionSchema = {
+  params: productIdParamSchema,
+  body: productOptionSchema,
+};
+
+export const updateProductOptionSchema = {
+  params: productOptionIdParamSchema,
+  body: productOptionSchema,
+};
+
+export const productOptionIdSchema = {
+  params: productOptionIdParamSchema,
+};
+
+export const batchUpdateProductAvailabilityBodySchema = z.object({
+  productIds: z
+    .array(z.string().uuid("Each product id must be a valid UUID"))
+    .min(1, "productIds must contain at least one product id")
+    .max(100, "productIds can contain at most 100 product ids"),
+  isAvailable: z.boolean(),
+});
+
 export const createProductSchema = {
   body: createProductBodySchema,
+};
+
+export const listProductsSchema = {
+  query: productQuerySchema,
 };
 
 export const updateProductSchema = {
@@ -120,4 +187,37 @@ export const updateProductSchema = {
 
 export const productIdSchema = {
   params: productIdParamSchema,
+};
+
+export const merchantProductsSchema = {
+  query: baseProductQuerySchema
+    .omit({ merchantId: true })
+    .refine(
+      (data) =>
+        data.minPrice === undefined ||
+        data.maxPrice === undefined ||
+        data.minPrice <= data.maxPrice,
+      {
+        message: "minPrice cannot be greater than maxPrice",
+        path: ["minPrice"],
+      }
+    ),
+};
+
+export const updateProductAvailabilitySchema = {
+  params: productIdParamSchema,
+  body: updateProductAvailabilityBodySchema,
+};
+
+export const updateProductFeaturedSchema = {
+  params: productIdParamSchema,
+  body: updateProductFeaturedBodySchema,
+};
+
+export const restoreProductSchema = {
+  params: productIdParamSchema,
+};
+
+export const batchUpdateProductAvailabilitySchema = {
+  body: batchUpdateProductAvailabilityBodySchema,
 };

@@ -1,8 +1,31 @@
-import { ProductResponseDto } from "./product.dto";
-import { ProductRecord } from "./product.repository";
+import { ProductOptionResponseDto, ProductResponseDto } from "./product.dto";
+import { ProductOptionRecord, ProductRecord } from "./product.repository";
+
+export const toProductOptionResponseDto = (
+  option: ProductOptionRecord,
+): ProductOptionResponseDto => {
+  return {
+    id: option.id,
+    categoryId: option.categoryId,
+    name: option.name,
+    isRequired: option.isRequired,
+    maxSelections: option.maxSelections,
+    createdAt: option.createdAt.toISOString(),
+    values: option.values.map((value) => ({
+      id: value.id,
+      name: value.name,
+      additionalPrice: value.additionalPrice.toNumber(),
+      isAvailable: value.isAvailable,
+    })),
+  };
+};
 
 export const toProductResponseDto = (
   product: ProductRecord,
+  rating?: {
+    averageRating: number | null;
+    reviewCount: number;
+  },
 ): ProductResponseDto => {
   return {
     id: product.id,
@@ -26,19 +49,8 @@ export const toProductResponseDto = (
           name: product.category.name,
         }
       : null,
-    options: product.options?.map((option) => ({
-      id: option.id,
-      categoryId: option.categoryId,
-      name: option.name,
-      isRequired: option.isRequired,
-      maxSelections: option.maxSelections,
-      createdAt: option.createdAt.toISOString(),
-      values: option.values.map((value) => ({
-        id: value.id,
-        name: value.name,
-        additionalPrice: value.additionalPrice.toNumber(),
-        isAvailable: value.isAvailable,
-      })),
-    })),
+    reviewCount: rating?.reviewCount ?? product._count.reviews,
+    averageRating: rating?.averageRating ?? null,
+    options: product.options?.map(toProductOptionResponseDto),
   };
 };

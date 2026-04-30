@@ -1,5 +1,6 @@
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
+import { UploadService } from "../upload/upload.service";
 import {
   CategoryListResponseDto,
   CategoryQueryDto,
@@ -13,6 +14,8 @@ import { toCategoryResponseDto } from "./category.mapper";
 import { CategoryRepository } from "./category.repository";
 
 export class CategoryService {
+  private readonly uploadService = new UploadService();
+
   constructor(private readonly categoryRepository: CategoryRepository) {}
 
   async getAllCategories(
@@ -61,7 +64,7 @@ export class CategoryService {
     id: string,
     data: UpdateCategoryDto,
   ): Promise<CategoryResponseDto> {
-    await this.ensureCategoryExists(id);
+    const existingCategory = await this.ensureCategoryExists(id);
 
     if (data.parentId !== undefined) {
       if (data.parentId === id) {
@@ -78,6 +81,15 @@ export class CategoryService {
     }
 
     const category = await this.categoryRepository.update(id, data);
+
+    if (
+      data.iconUrl !== undefined &&
+      existingCategory.iconUrl &&
+      data.iconUrl !== existingCategory.iconUrl
+    ) {
+      await this.uploadService.deleteFilesByPublicUrls([existingCategory.iconUrl]);
+    }
+
     return toCategoryResponseDto(category);
   }
 

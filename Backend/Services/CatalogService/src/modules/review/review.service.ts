@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
 import { ProductRepository } from "../product/product.repository";
+import { UploadService } from "../upload/upload.service";
 import {
   CreateReviewDto,
   ReviewQueryDto,
@@ -15,6 +16,8 @@ import { toReviewResponseDto } from "./review.mapper";
 import { ReviewRepository } from "./review.repository";
 
 export class ReviewService {
+  private readonly uploadService = new UploadService();
+
   constructor(
     private readonly reviewRepository: ReviewRepository,
     private readonly productRepository: ProductRepository
@@ -167,6 +170,7 @@ export class ReviewService {
     data: UpdateReviewDto
   ): Promise<ReviewResponseDto> {
     const existingReview = await this.ensureReviewExists(id);
+    const oldImages = this.normalizeImages(existingReview.images);
 
     if (data.productId !== undefined && data.productId !== null) {
       await this.ensureProductExists(data.productId);
@@ -190,6 +194,17 @@ export class ReviewService {
         this.reviewRepository.syncProductReviewStats(productId)
       )
     );
+
+    if (data.images !== undefined) {
+      const nextImages = data.images ?? [];
+      const removedImages = oldImages.filter(
+        (imageUrl) => !nextImages.includes(imageUrl)
+      );
+
+      if (removedImages.length > 0) {
+        await this.uploadService.deleteFilesByPublicUrls(removedImages);
+      }
+    }
 
     return toReviewResponseDto(review);
   }
@@ -275,5 +290,13 @@ export class ReviewService {
     }
 
     return normalizedData;
+  }
+
+  private normalizeImages(images: Prisma.JsonValue | null) {
+    if (!Array.isArray(images)) {
+      return [];
+    }
+
+    return images.filter((image): image is string => typeof image === "string");
   }
 }

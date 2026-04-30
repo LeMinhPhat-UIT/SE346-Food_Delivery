@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { uploadBodySchema } from "./upload.schema";
+import { deleteUploadBodySchema, uploadBodySchema } from "./upload.schema";
 
 export type UploadBodyDto = z.infer<typeof uploadBodySchema>;
+export type DeleteUploadDto = z.infer<typeof deleteUploadBodySchema>;
 
 export type UploadFileResponseDto = {
   bucket: string;
@@ -13,4 +14,9 @@ export type UploadFileResponseDto = {
   size: number;
   path: string;
   publicUrl: string;
+};
+
+export type DeleteUploadResponseDto = {
+  bucket: string;
+  deletedPaths: string[];
 };

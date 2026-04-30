@@ -1,6 +1,7 @@
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
 import { CategoryRepository } from "../category/category.repository";
+import { UploadService } from "../upload/upload.service";
 import {
   BatchUpdateProductAvailabilityDto,
   CreateProductDto,
@@ -19,6 +20,8 @@ import { toProductOptionResponseDto, toProductResponseDto } from "./product.mapp
 import { ProductRepository } from "./product.repository";
 
 export class ProductService {
+  private readonly uploadService = new UploadService();
+
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly categoryRepository: CategoryRepository,
@@ -111,6 +114,14 @@ export class ProductService {
             options,
           )
         : await this.productRepository.update(id, productData);
+
+    if (
+      data.imageUrl !== undefined &&
+      existingProduct.imageUrl &&
+      data.imageUrl !== existingProduct.imageUrl
+    ) {
+      await this.uploadService.deleteFilesByPublicUrls([existingProduct.imageUrl]);
+    }
         
     return toProductResponseDto(product);
   }

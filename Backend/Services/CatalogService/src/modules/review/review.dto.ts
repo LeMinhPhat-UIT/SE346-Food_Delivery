@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   createReviewBodySchema,
+  reviewReplyBodySchema,
   reviewQuerySchema,
   updateReviewBodySchema,
 } from "./review.schema";
@@ -8,6 +9,7 @@ import {
 export type CreateReviewDto = z.infer<typeof createReviewBodySchema>;
 export type UpdateReviewDto = z.infer<typeof updateReviewBodySchema>;
 export type ReviewQueryDto = z.infer<typeof reviewQuerySchema>;
+export type ReviewReplyDto = z.infer<typeof reviewReplyBodySchema>;
 
 export type ReviewResponseDto = {
   id: string;
@@ -27,4 +29,25 @@ export type ReviewResponseDto = {
     id: string;
     name: string;
   } | null;
+};
+
+export type ReviewListResponseDto = {
+  items: ReviewResponseDto[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export type ReviewSummaryDto = {
+  productId: string;
+  averageRating: number;
+  totalReviews: number;
+  counts: {
+    oneStar: number;
+    twoStar: number;
+    threeStar: number;
+    fourStar: number;
+    fiveStar: number;
+  };
 };

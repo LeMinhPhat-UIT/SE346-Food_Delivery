@@ -30,19 +30,54 @@ export type ReviewRecord = Prisma.ReviewGetPayload<{
 
 export class ReviewRepository {
   async findAll(filters: ReviewQueryDto) {
-    const { page, limit, ...whereFilters } = filters; 
+    const {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      hasImages,
+      ...whereFilters
+    } = filters; 
     const skip = (page! - 1) * limit!;
+    const where: Prisma.ReviewWhereInput = {
+      deletedAt: null,
+      ...whereFilters,
+      ...(hasImages === undefined
+        ? {}
+        : hasImages
+          ? {
+              NOT: {
+                images: {
+                  equals: Prisma.JsonNull,
+                },
+              },
+            }
+          : {
+              OR: [
+                {
+                  images: {
+                    equals: Prisma.JsonNull,
+                  },
+                },
+                {
+                  images: {
+                    equals: [],
+                  },
+                },
+              ],
+            }),
+    };
 
     const [items, totalCount] = await Promise.all([
       prisma.review.findMany({
-        where: { deletedAt: null, ...whereFilters },
-        orderBy: [{ createdAt: "desc" }],
+        where,
+        orderBy: [{ [sortBy!]: sortOrder! }],
         skip: skip,
         take: limit,
         select: reviewSelect,
       }),
       prisma.review.count({
-        where: { deletedAt: null, ...whereFilters },
+        where,
       }),
     ]);
 
@@ -77,6 +112,69 @@ export class ReviewRepository {
       where: { id },
       data,
       select: reviewSelect,
+    });
+  }
+
+  async findByIdIncludingDeleted(id: string) {
+    return prisma.review.findUnique({
+      where: { id },
+      select: reviewSelect,
+    });
+  }
+
+  async getProductReviewSummary(productId: string) {
+    const [aggregate, grouped] = await Promise.all([
+      prisma.review.aggregate({
+        where: {
+          productId,
+          deletedAt: null,
+        },
+        _avg: {
+          rating: true,
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+      prisma.review.groupBy({
+        by: ["rating"],
+        where: {
+          productId,
+          deletedAt: null,
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+    ]);
+
+    return {
+      averageRating: aggregate._avg.rating ?? 0,
+      totalReviews: aggregate._count._all,
+      grouped,
+    };
+  }
+
+  async syncProductReviewStats(productId: string) {
+    const aggregate = await prisma.review.aggregate({
+      where: {
+        productId,
+        deletedAt: null,
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    return prisma.product.update({
+      where: { id: productId },
+      data: {
+        averageRating: aggregate._avg.rating ?? 0,
+        totalReviews: aggregate._count._all,
+      },
     });
   }
 }

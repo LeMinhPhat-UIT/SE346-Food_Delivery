@@ -4,13 +4,29 @@ export const reviewIdParamSchema = z.object({
   id: z.string().uuid("Review id must be a valid UUID"),
 });
 
+export const reviewProductIdParamSchema = z.object({
+  productId: z.string().uuid("Product ID must be a valid UUID"),
+});
+
+export const reviewUserIdParamSchema = z.object({
+  userId: z.string().uuid("User ID must be a valid UUID"),
+});
+
+export const reviewMerchantIdParamSchema = z.object({
+  merchantId: z.string().uuid("Merchant ID must be a valid UUID"),
+});
+
 export const reviewQuerySchema = z.object({
   productId: z.string().uuid("Product ID must be a valid UUID").optional(),
   userId: z.string().uuid("User ID must be a valid UUID").optional(),
   orderId: z.string().uuid("Order ID must be a valid UUID").optional(),
   merchantId: z.string().uuid("Merchant ID must be a valid UUID").optional(),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
+  hasImages: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
+  sortBy: z.enum(["createdAt", "rating"]).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const baseReviewBodySchema = z.object({
@@ -64,6 +80,14 @@ export const updateReviewBodySchema = baseReviewBodySchema
     message: "At least one field is required for update",
   });
 
+export const reviewReplyBodySchema = z.object({
+  merchantReply: z
+    .string()
+    .trim()
+    .min(1, "Merchant reply is required")
+    .max(2000, "Merchant reply must be at most 2000 characters"),
+});
+
 export const createReviewSchema = {
   body: createReviewBodySchema,
 };
@@ -79,4 +103,28 @@ export const reviewIdSchema = {
 
 export const listReviewsSchema = {
   query: reviewQuerySchema,
+};
+
+export const reviewReplySchema = {
+  params: reviewIdParamSchema,
+  body: reviewReplyBodySchema,
+};
+
+export const reviewProductIdSchema = {
+  params: reviewProductIdParamSchema,
+  query: reviewQuerySchema.omit({ productId: true }),
+};
+
+export const reviewUserIdSchema = {
+  params: reviewUserIdParamSchema,
+  query: reviewQuerySchema.omit({ userId: true }),
+};
+
+export const reviewMerchantIdSchema = {
+  params: reviewMerchantIdParamSchema,
+  query: reviewQuerySchema.omit({ merchantId: true }),
+};
+
+export const restoreReviewSchema = {
+  params: reviewIdParamSchema,
 };

@@ -2,28 +2,28 @@ import { Prisma } from "@prisma/client";
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
 import { ProductRepository } from "../product/product.repository";
+import { UploadService } from "../upload/upload.service";
 import {
   CreateReviewDto,
   ReviewQueryDto,
+  ReviewListResponseDto,
+  ReviewReplyDto,
   ReviewResponseDto,
+  ReviewSummaryDto,
   UpdateReviewDto,
 } from "./review.dto";
 import { toReviewResponseDto } from "./review.mapper";
 import { ReviewRepository } from "./review.repository";
 
 export class ReviewService {
+  private readonly uploadService = new UploadService();
+
   constructor(
     private readonly reviewRepository: ReviewRepository,
     private readonly productRepository: ProductRepository
   ) {}
 
-  async getAllReviews(filters: ReviewQueryDto): Promise<{
-    items: ReviewResponseDto[];
-    totalCount: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
+  async getAllReviews(filters: ReviewQueryDto): Promise<ReviewListResponseDto> {
     if (filters.productId) {
       await this.ensureProductExists(filters.productId);
     }
@@ -34,11 +34,43 @@ export class ReviewService {
 
     return {
       items: items.map(toReviewResponseDto),
-      totalCount: totalCount,
-      page: page,
-      limit: limit,
-      totalPages: Math.ceil(totalCount / limit)
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
     };
+  }
+
+  async getProductReviews(
+    productId: string,
+    filters: ReviewQueryDto,
+  ): Promise<ReviewListResponseDto> {
+    await this.ensureProductExists(productId);
+
+    return this.getAllReviews({
+      ...filters,
+      productId,
+    });
+  }
+
+  async getUserReviews(
+    userId: string,
+    filters: ReviewQueryDto,
+  ): Promise<ReviewListResponseDto> {
+    return this.getAllReviews({
+      ...filters,
+      userId,
+    });
+  }
+
+  async getMerchantReviews(
+    merchantId: string,
+    filters: ReviewQueryDto,
+  ): Promise<ReviewListResponseDto> {
+    return this.getAllReviews({
+      ...filters,
+      merchantId,
+    });
   }
 
   async getReviewById(id: string): Promise<ReviewResponseDto> {
@@ -59,14 +91,86 @@ export class ReviewService {
     const normalizedData = this.normalizeCreateReviewPayload(data);
     const review = await this.reviewRepository.create(normalizedData);
 
+    if (review.productId) {
+      await this.reviewRepository.syncProductReviewStats(review.productId);
+    }
+
     return toReviewResponseDto(review);
+  }
+
+  async replyToReview(
+    id: string,
+    data: ReviewReplyDto,
+  ): Promise<ReviewResponseDto> {
+    await this.ensureReviewExists(id);
+
+    const review = await this.reviewRepository.update(id, {
+      merchantReply: data.merchantReply,
+      repliedAt: new Date(),
+    });
+
+    return toReviewResponseDto(review);
+  }
+
+  async deleteReviewReply(id: string): Promise<ReviewResponseDto> {
+    await this.ensureReviewExists(id);
+
+    const review = await this.reviewRepository.update(id, {
+      merchantReply: null,
+      repliedAt: null,
+    });
+
+    return toReviewResponseDto(review);
+  }
+
+  async restoreReview(id: string): Promise<ReviewResponseDto> {
+    const review = await this.reviewRepository.findByIdIncludingDeleted(id);
+
+    if (!review) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Review not found");
+    }
+
+    if (review.deletedAt === null) {
+      throw new ApiError(HTTP_STATUS.BAD_REQUEST, "Review is already active");
+    }
+
+    const restoredReview = await this.reviewRepository.update(id, {
+      deletedAt: null,
+    });
+
+    if (restoredReview.productId) {
+      await this.reviewRepository.syncProductReviewStats(restoredReview.productId);
+    }
+
+    return toReviewResponseDto(restoredReview);
+  }
+
+  async getProductReviewSummary(productId: string): Promise<ReviewSummaryDto> {
+    await this.ensureProductExists(productId);
+
+    const { averageRating, totalReviews, grouped } =
+      await this.reviewRepository.getProductReviewSummary(productId);
+
+    return {
+      productId,
+      averageRating,
+      totalReviews,
+      counts: {
+        oneStar: grouped.find((item) => item.rating === 1)?._count._all ?? 0,
+        twoStar: grouped.find((item) => item.rating === 2)?._count._all ?? 0,
+        threeStar: grouped.find((item) => item.rating === 3)?._count._all ?? 0,
+        fourStar: grouped.find((item) => item.rating === 4)?._count._all ?? 0,
+        fiveStar: grouped.find((item) => item.rating === 5)?._count._all ?? 0,
+      },
+    };
   }
 
   async updateReview(
     id: string,
     data: UpdateReviewDto
   ): Promise<ReviewResponseDto> {
-    await this.ensureReviewExists(id);
+    const existingReview = await this.ensureReviewExists(id);
+    const oldImages = this.normalizeImages(existingReview.images);
 
     if (data.productId !== undefined && data.productId !== null) {
       await this.ensureProductExists(data.productId);
@@ -75,15 +179,46 @@ export class ReviewService {
     const normalizedData = this.normalizeUpdateReviewPayload(data);
     const review = await this.reviewRepository.update(id, normalizedData);
 
+    const affectedProductIds = new Set<string>();
+
+    if (existingReview.productId) {
+      affectedProductIds.add(existingReview.productId);
+    }
+
+    if (review.productId) {
+      affectedProductIds.add(review.productId);
+    }
+
+    await Promise.all(
+      Array.from(affectedProductIds).map((productId) =>
+        this.reviewRepository.syncProductReviewStats(productId)
+      )
+    );
+
+    if (data.images !== undefined) {
+      const nextImages = data.images ?? [];
+      const removedImages = oldImages.filter(
+        (imageUrl) => !nextImages.includes(imageUrl)
+      );
+
+      if (removedImages.length > 0) {
+        await this.uploadService.deleteFilesByPublicUrls(removedImages);
+      }
+    }
+
     return toReviewResponseDto(review);
   }
 
   async deleteReview(id: string): Promise<ReviewResponseDto> {
-    await this.ensureReviewExists(id);
+    const existingReview = await this.ensureReviewExists(id);
 
     const review = await this.reviewRepository.update(id, {
       deletedAt: new Date(),
     });
+
+    if (existingReview.productId) {
+      await this.reviewRepository.syncProductReviewStats(existingReview.productId);
+    }
 
     return toReviewResponseDto(review);
   }
@@ -155,5 +290,13 @@ export class ReviewService {
     }
 
     return normalizedData;
+  }
+
+  private normalizeImages(images: Prisma.JsonValue | null) {
+    if (!Array.isArray(images)) {
+      return [];
+    }
+
+    return images.filter((image): image is string => typeof image === "string");
   }
 }

@@ -6,6 +6,7 @@ import { ProductRepository } from "../product/product.repository";
 import {
   CreateReviewDto,
   ReviewQueryDto,
+  ReviewReplyDto,
   UpdateReviewDto,
 } from "./review.dto";
 import { ReviewRepository } from "./review.repository";
@@ -21,6 +22,30 @@ export class ReviewController {
     const reviews = await reviewService.getAllReviews(filters);
 
     return Send.success(res, reviews, "Reviews fetched successfully");
+  });
+
+  getProductReviews = asyncHandler(async (req: Request, res: Response) => {
+    const filters = (req.validated?.query ?? {}) as ReviewQueryDto;
+    const { productId } = req.validated?.params as { productId: string };
+    const reviews = await reviewService.getProductReviews(productId, filters);
+
+    return Send.success(res, reviews, "Product reviews fetched successfully");
+  });
+
+  getUserReviews = asyncHandler(async (req: Request, res: Response) => {
+    const filters = (req.validated?.query ?? {}) as ReviewQueryDto;
+    const { userId } = req.validated?.params as { userId: string };
+    const reviews = await reviewService.getUserReviews(userId, filters);
+
+    return Send.success(res, reviews, "User reviews fetched successfully");
+  });
+
+  getMerchantReviews = asyncHandler(async (req: Request, res: Response) => {
+    const filters = (req.validated?.query ?? {}) as ReviewQueryDto;
+    const { merchantId } = req.validated?.params as { merchantId: string };
+    const reviews = await reviewService.getMerchantReviews(merchantId, filters);
+
+    return Send.success(res, reviews, "Merchant reviews fetched successfully");
   });
 
   getReviewById = asyncHandler(async (req: Request, res: Response) => {
@@ -48,6 +73,35 @@ export class ReviewController {
     const review = await reviewService.updateReview(id, payload);
 
     return Send.success(res, review, "Review updated successfully");
+  });
+
+  replyToReview = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.validated?.params as { id: string };
+    const payload = req.validated?.body as ReviewReplyDto;
+    const review = await reviewService.replyToReview(id, payload);
+
+    return Send.success(res, review, "Review reply updated successfully");
+  });
+
+  deleteReviewReply = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.validated?.params as { id: string };
+    const review = await reviewService.deleteReviewReply(id);
+
+    return Send.success(res, review, "Review reply deleted successfully");
+  });
+
+  restoreReview = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.validated?.params as { id: string };
+    const review = await reviewService.restoreReview(id);
+
+    return Send.success(res, review, "Review restored successfully");
+  });
+
+  getProductReviewSummary = asyncHandler(async (req: Request, res: Response) => {
+    const { productId } = req.validated?.params as { productId: string };
+    const summary = await reviewService.getProductReviewSummary(productId);
+
+    return Send.success(res, summary, "Product review summary fetched successfully");
   });
 
   deleteReview = asyncHandler(async (req: Request, res: Response) => {

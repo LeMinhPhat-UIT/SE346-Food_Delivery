@@ -3,6 +3,7 @@ import cors from "cors";
 import categoryRouter from "./modules/category/category.route";
 import productRouter from "./modules/product/product.route";
 import reviewRouter from "./modules/review/review.route";
+import uploadRouter from "./modules/upload/upload.route";
 import { errorMiddleware } from "./middlewares/error.middleware";
 
 const app = express();
@@ -17,6 +18,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/catalog/categories", categoryRouter);
 app.use("/api/catalog/products", productRouter);
 app.use("/api/catalog/reviews", reviewRouter);
+app.use("/api/catalog/uploads", uploadRouter);
 
 app.use(errorMiddleware);
 

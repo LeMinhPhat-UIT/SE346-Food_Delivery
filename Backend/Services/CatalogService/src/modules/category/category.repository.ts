@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../prisma/prisma.client";
-import { CreateCategoryDto } from "./category.dto";
+import { CategoryQueryDto, CreateCategoryDto } from "./category.dto";
 
 export const categorySelect = Prisma.validator<Prisma.CategorySelect>()({
   id: true,
@@ -30,6 +30,15 @@ export const categorySelect = Prisma.validator<Prisma.CategorySelect>()({
       sortOrder: "asc",
     },
   },
+  _count: {
+    select: {
+      products: {
+        where: {
+          deletedAt: null,
+        },
+      },
+    },
+  },
 });
 
 export type CategoryRecord = Prisma.CategoryGetPayload<{
@@ -37,14 +46,63 @@ export type CategoryRecord = Prisma.CategoryGetPayload<{
 }>;
 
 export class CategoryRepository {
-  async findAll() {
-    return prisma.category.findMany({
-      where: {
-        deletedAt: null,
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      select: categorySelect,
-    });
+  async findAll(filters: CategoryQueryDto) {
+    const {
+      page,
+      limit,
+      search,
+      parentId,
+      isActive,
+      includeDeleted,
+      sortBy,
+      sortOrder,
+    } = filters;
+
+    const where: Prisma.CategoryWhereInput = {
+      deletedAt: includeDeleted ? undefined : null,
+      parentId,
+      isActive,
+      ...(search
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                description: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, totalCount] = await Promise.all([
+      prisma.category.findMany({
+        where,
+        orderBy:
+          sortBy === "productCount"
+            ? {
+                products: {
+                  _count: sortOrder,
+                },
+              }
+            : {
+                [sortBy]: sortOrder,
+              },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: categorySelect,
+      }),
+      prisma.category.count({ where }),
+    ]);
+
+    return { items, totalCount };
   }
 
   async findById(id: string) {
@@ -56,6 +114,13 @@ export class CategoryRepository {
     if (!category || category.deletedAt !== null) return null;
 
     return category;
+  }
+
+  async findByIdIncludingDeleted(id: string) {
+    return prisma.category.findUnique({
+      where: { id },
+      select: categorySelect,
+    });
   }
 
   async findByName(name: string) {
@@ -79,6 +144,29 @@ export class CategoryRepository {
     return prisma.category.update({
       where: { id },
       data,
+      select: categorySelect,
+    });
+  }
+
+  async findRoots() {
+    return prisma.category.findMany({
+      where: {
+        parentId: null,
+        deletedAt: null,
+        isActive: true,
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: categorySelect,
+    });
+  }
+
+  async findTreeCategories() {
+    return prisma.category.findMany({
+      where: {
+        deletedAt: null,
+        isActive: true,
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: categorySelect,
     });
   }

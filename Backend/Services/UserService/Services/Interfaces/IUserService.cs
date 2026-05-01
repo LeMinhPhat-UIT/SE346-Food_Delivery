@@ -1,7 +1,7 @@
 ﻿using Messaging.Contracts.Common;
-using UserService.DTOs;
 using UserService.DTOs.MerchantDTOs;
 using UserService.DTOs.ShipperDTOs;
+using UserService.DTOs.User;
 
 namespace UserService.Services.Interfaces
 {
@@ -10,13 +10,25 @@ namespace UserService.Services.Interfaces
         Task<ApiResponse<PagedResult<UserProfileResponse>>> GetAllUserAsync(PaginationRequest pagedOption);
         Task<ApiResponse<UserProfileResponse>> GetUserAsync(Guid id);
         Task<ApiResponse<ConfirmationResponse>> DeleteUserAsync(Guid id);
-        Task<ApiResponse<ConfirmationResponse>> UpdateUserProfileAsync(Guid id, UserProfileUpdateRequest request);
+        Task<ApiResponse<ConfirmationResponse>> UpdateUserProfileAsync(Guid id, UpdateUserProfileRequest request);
+
+        Task<ApiResponse<PagedResult<UserAddressResponse>>> GetAllUserAddressesAsync(PaginationRequest paginationRequest);
+        Task<ApiResponse<PagedResult<UserAddressResponse>>> GetAllUserAddressesByUserIdAsync(Guid userId, PaginationRequest paginationRequest);
+        Task<ApiResponse<UserAddressResponse>> GetUserAddressByIdAsync(Guid addressId);
+        Task<ApiResponse<ConfirmationResponse>> AddUserAddressAsync(Guid id, CreateUserAddressRequest request);
+        Task<ApiResponse<ConfirmationResponse>> UpdateUserAddressAsync(Guid addressId, UpdateUserAddressRequest request);
+        Task<ApiResponse<ConfirmationResponse>> DeleteUserAddressAsync(Guid addressId);
 
         Task<ApiResponse<ConfirmationResponse>> RequestForMerchantRole(Guid userId, CreateMerchantRequest request);
         Task<ApiResponse<PagedResult<MerchantRequestResponse>>> GetAllMerchantRequestsAsync(PaginationRequest pagedOption);
         Task<ApiResponse<ConfirmationResponse>> ReviewMerchantRequestAsync(Guid requestId, Guid reviewerId, ReviewMerchantRequest request);
         Task<ApiResponse<PagedResult<MerchantResponse>>> GetAllMerchantsAsync(PaginationRequest pagedOption);
         Task<ApiResponse<MerchantResponse>> GetMerchantByIdAsync(Guid merchantId);
+        Task<ApiResponse<PagedResult<MerchantAddressResponse>>> GetMerchantAddressesByMerchantIdAsync(PaginationRequest paginationRequest, Guid merchantId);
+        Task<ApiResponse<MerchantAddressResponse>> GetMerchantAddressByIdAsync(Guid addressId);
+        Task<ApiResponse<ConfirmationResponse>> AddMerchantAddressAsync(Guid merchantId, CreateMerchantAddressRequest request);
+        Task<ApiResponse<ConfirmationResponse>> UpdateMerchantAddressAsync(Guid addressId, UpdateMerchantAddressRequest request);
+        Task<ApiResponse<ConfirmationResponse>> DeleteMerchantAddressAsync(Guid addressId);
         Task<ApiResponse<ConfirmationResponse>> UpdateMerchantAsync(Guid merchantId, UpdateMerchantRequest request);
         Task<ApiResponse<ConfirmationResponse>> DeleteMerchantAsync(Guid merchantId);
 

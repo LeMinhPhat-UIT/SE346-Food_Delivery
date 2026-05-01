@@ -1,4 +1,4 @@
-﻿namespace UserService.Commons
+﻿namespace UserService.Commons.Entities
 {
     public class BaseAuditableEntity : BaseEntity
     {

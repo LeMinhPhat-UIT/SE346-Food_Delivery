@@ -49,5 +49,55 @@ namespace UserService.Repositories.Implements
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
+        
+        public async Task<bool> CreateUserAddressAsync(Address address)
+        {
+            await _context.Addresses.AddAsync(address);
+            return await _context.SaveChangesAsync() != 0; 
+        }
+
+        public async Task<Address?> GetUserAddressByIdAsync(Guid addressId)
+        {
+            return await _context.Addresses.FirstOrDefaultAsync(a => a.Id == addressId && a.DeletedAt == null);
+        }
+
+        public async Task UpdateUserAddressAsync(Address address)
+        {
+            _context.Addresses.Update(address);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteUserAddressAsync(Guid addressId)
+        {
+            var address = await _context.Addresses.FirstOrDefaultAsync(a => a.Id == addressId && a.DeletedAt == null);
+
+            if (address == null)
+                return false;
+
+            address.DeletedAt = DateTime.UtcNow;
+            address.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IQueryable<Address>?> GetAllUserAddressesAsync()
+        {
+            return _context.Addresses
+                .Where(a => a.DeletedAt == null)
+                .OrderByDescending(a => a.CreatedAt);
+        }
+
+        public async Task<IQueryable<Address>?> GetAllUserAddressesByUserIdAsync(Guid userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.Addresses)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            return user?.Addresses
+                .Where(a => a.DeletedAt == null)
+                .OrderByDescending(a => a.CreatedAt)
+                .AsQueryable();
+        }
     }
 }

@@ -116,6 +116,201 @@ namespace UserService.Controllers
             }
         }
 
+        [HttpGet("merchant/{merchantId:guid}/location")]
+        public async Task<ActionResult<ApiResponse<PagedResult<MerchantAddressResponse>>>> GetMerchantAddress([FromQuery] PaginationRequest paginationRequest, Guid merchantId)
+        {
+            var response = await _userService.GetMerchantAddressesByMerchantIdAsync(paginationRequest, merchantId);
+
+            if (!response.Success)
+                return StatusCode(response.StatusCode, response);
+
+            return Ok(response);
+        }
+
+        [HttpGet("merchants/{id:guid}/addresses")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<PagedResult<MerchantAddressResponse>>>> GetMerchantAddresses(Guid id, [FromQuery] PaginationRequest paginationRequest)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(id);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant addresses");
+                }
+
+                var response = await _userService.GetMerchantAddressesByMerchantIdAsync(paginationRequest, id);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpGet("merchants/{id:guid}/addresses/{addressId:guid}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<MerchantAddressResponse>>> GetMerchantAddressById(Guid id, Guid addressId)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(id);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant addresses");
+                }
+
+                var response = await _userService.GetMerchantAddressByIdAsync(addressId);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                if (response.Data.MerchantId != id && !IsCurrentUserAdmin())
+                    return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant addresses");
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("merchants/{id:guid}/addresses")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> AddMerchantAddress(Guid id, [FromBody] CreateMerchantAddressRequest request)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(id);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only add addresses to your own merchant profile");
+                }
+
+                var response = await _userService.AddMerchantAddressAsync(id, request);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPut("merchants/{id:guid}/addresses/{addressId:guid}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateMerchantAddress(Guid id, Guid addressId, [FromBody] UpdateMerchantAddressRequest request)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(id);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own merchant addresses");
+                }
+
+                var addressResponse = await _userService.GetMerchantAddressByIdAsync(addressId);
+
+                if (!addressResponse.Success)
+                    return StatusCode(addressResponse.StatusCode, addressResponse);
+
+                if (addressResponse.Data.MerchantId != id && !IsCurrentUserAdmin())
+                    return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own merchant addresses");
+
+                var response = await _userService.UpdateMerchantAddressAsync(addressId, request);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpDelete("merchants/{id:guid}/addresses/{addressId:guid}")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> DeleteMerchantAddress(Guid id, Guid addressId)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var userId = GetCurrentUserId();
+                    if (!userId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    var merchantResult = await _userService.GetMerchantByIdAsync(id);
+                    if (!merchantResult.Success)
+                        return StatusCode(merchantResult.StatusCode, merchantResult);
+
+                    if (merchantResult.Data.UserId != userId.Value)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own merchant addresses");
+                }
+
+                var addressResponse = await _userService.GetMerchantAddressByIdAsync(addressId);
+
+                if (!addressResponse.Success)
+                    return StatusCode(addressResponse.StatusCode, addressResponse);
+
+                if (addressResponse.Data.MerchantId != id && !IsCurrentUserAdmin())
+                    return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own merchant addresses");
+
+                var response = await _userService.DeleteMerchantAddressAsync(addressId);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpPut("merchants/{merchantId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateMerchant(Guid merchantId, [FromBody] UpdateMerchantRequest request)

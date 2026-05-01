@@ -59,5 +59,11 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(Merchant.User))]
         [MapperIgnoreSource(nameof(Merchant.DeletedAt))]
         public partial MerchantResponse ToMerchantResponse(Merchant merchant);
+
+        public partial MerchantAddressResponse ToMerchantAddressResponse(MerchantAddress merchantAddress);
+
+        public partial IEnumerable<MerchantAddressResponse> ToMerchantAddressResponseList(IEnumerable<MerchantAddress> merchantAddresses);
+
+        public partial MerchantAddress ToMerchantAddress(CreateMerchantAddressRequest request);
     }
 }

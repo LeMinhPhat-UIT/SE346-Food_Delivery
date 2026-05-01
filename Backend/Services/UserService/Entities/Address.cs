@@ -1,4 +1,4 @@
-﻿using UserService.Commons;
+﻿using UserService.Commons.Entities;
 
 namespace UserService.Entities
 {

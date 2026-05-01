@@ -208,5 +208,102 @@ namespace UserService.Services.Implements
 
             return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Delete merchant successfully"));
         }
+
+        public async Task<ApiResponse<PagedResult<MerchantAddressResponse>>> GetMerchantAddressesByMerchantIdAsync(PaginationRequest paginationRequest, Guid merchantId)
+        {
+            if (merchantId == Guid.Empty)
+                return new ApiResponse<PagedResult<MerchantAddressResponse>>(StatusCodes.Status400BadRequest, "Invalid merchant id");
+
+            var merchantLocations = await _userRepository.GetMerchantAddressesByMerchantIdAsync(merchantId);
+
+            if (merchantLocations == null)
+                return new ApiResponse<PagedResult<MerchantAddressResponse>>(StatusCodes.Status404NotFound, "No merchant found");
+
+            var pagedMerchantLocations = await merchantLocations.ToPagedResultAsync(paginationRequest);
+            var result = _mapper.ToMerchantAddressResponseList(pagedMerchantLocations.Items);
+
+            return new ApiResponse<PagedResult<MerchantAddressResponse>>(StatusCodes.Status200OK, new PagedResult<MerchantAddressResponse>(result));
+        }
+
+        public async Task<ApiResponse<MerchantAddressResponse>> GetMerchantAddressByIdAsync(Guid addressId)
+        {
+            if (addressId == Guid.Empty)
+                return new ApiResponse<MerchantAddressResponse>(StatusCodes.Status400BadRequest, "Invalid merchant address id");
+
+            var merchantAddress = await _userRepository.GetMerchantAddressByIdAsync(addressId);
+
+            if (merchantAddress == null)
+                return new ApiResponse<MerchantAddressResponse>(StatusCodes.Status404NotFound, "No merchant address found");
+
+            var response = _mapper.ToMerchantAddressResponse(merchantAddress);
+
+            return new ApiResponse<MerchantAddressResponse>(StatusCodes.Status200OK, response);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> AddMerchantAddressAsync(Guid merchantId, CreateMerchantAddressRequest request)
+        {
+            if (merchantId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid merchant id");
+
+            var merchant = await _userRepository.GetMerchantByIdAsync(merchantId);
+            if (merchant == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No merchant found");
+
+            var merchantAddress = _mapper.ToMerchantAddress(request);
+            merchantAddress.MerchantId = merchantId;
+            merchantAddress.CreatedAt = DateTime.UtcNow;
+
+            var created = await _userRepository.CreateMerchantAddressAsync(merchantAddress);
+            if (!created)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Can not add merchant address");
+
+            return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Merchant address added successfully"));
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> UpdateMerchantAddressAsync(Guid addressId, UpdateMerchantAddressRequest request)
+        {
+            if (addressId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid merchant address id");
+
+            var merchantAddress = await _userRepository.GetMerchantAddressByIdAsync(addressId);
+            if (merchantAddress == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No merchant address found");
+
+            if (!string.IsNullOrWhiteSpace(request.AddressLine))
+                merchantAddress.AddressLine = request.AddressLine;
+
+            if (!string.IsNullOrWhiteSpace(request.Ward))
+                merchantAddress.Ward = request.Ward;
+
+            if (!string.IsNullOrWhiteSpace(request.District))
+                merchantAddress.District = request.District;
+
+            if (!string.IsNullOrWhiteSpace(request.City))
+                merchantAddress.City = request.City;
+
+            if (request.Lat.HasValue)
+                merchantAddress.Lat = request.Lat;
+
+            if (request.Lng.HasValue)
+                merchantAddress.Lng = request.Lng;
+
+            merchantAddress.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.UpdateMerchantAddressAsync(merchantAddress);
+
+            return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Merchant address updated successfully"));
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> DeleteMerchantAddressAsync(Guid addressId)
+        {
+            if (addressId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid merchant address id");
+
+            var isDeleted = await _userRepository.DeleteMerchantAddressAsync(addressId);
+            if (!isDeleted)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No merchant address found");
+
+            return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Merchant address deleted successfully"));
+        }
     }
 }

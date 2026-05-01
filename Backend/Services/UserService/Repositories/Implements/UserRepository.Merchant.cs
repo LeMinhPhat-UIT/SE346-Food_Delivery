@@ -24,6 +24,51 @@ namespace UserService.Repositories.Implements
                 .OrderByDescending(mr => mr.CreatedAt);
         }
 
+        public async Task<IQueryable<MerchantAddress>?> GetMerchantAddressesByMerchantIdAsync(Guid merchantId)
+        {
+            var merchant = await _context.Merchants
+                .Include(m => m.Addresses)
+                .FirstOrDefaultAsync(m => m.Id == merchantId);
+
+            return merchant?.Addresses
+                .Where(a => a.DeletedAt == null)
+                .OrderByDescending(a => a.CreatedAt)
+                .AsQueryable();
+        }
+
+        public async Task<MerchantAddress?> GetMerchantAddressByIdAsync(Guid addressId)
+        {
+            return await _context.MerchantAddresses.FirstOrDefaultAsync(a => a.Id == addressId && a.DeletedAt == null);
+        }
+
+        public async Task<bool> CreateMerchantAddressAsync(MerchantAddress merchantAddress)
+        {
+            await _context.MerchantAddresses.AddAsync(merchantAddress);
+
+            var result = await _context.SaveChangesAsync();
+            return result > 0;
+        }
+
+        public async Task UpdateMerchantAddressAsync(MerchantAddress merchantAddress)
+        {
+            _context.MerchantAddresses.Update(merchantAddress);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteMerchantAddressAsync(Guid addressId)
+        {
+            var merchantAddress = await _context.MerchantAddresses.FirstOrDefaultAsync(a => a.Id == addressId && a.DeletedAt == null);
+
+            if (merchantAddress == null)
+                return false;
+
+            merchantAddress.DeletedAt = DateTime.UtcNow;
+            merchantAddress.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<MerchantRequest?> GetMerchantRequestByIdAsync(Guid requestId)
         {
             return await _context.MerchantRequests

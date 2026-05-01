@@ -10,6 +10,13 @@ namespace UserService.Repositories.Interfaces
         Task<bool> DeleteUserAsync(Guid id);
         Task UpdateUserAsync(User user);
 
+        Task<bool> CreateUserAddressAsync(Address address);
+        Task<IQueryable<Address>?> GetAllUserAddressesAsync();
+        Task<IQueryable<Address>?> GetAllUserAddressesByUserIdAsync(Guid userId);
+        Task<Address?> GetUserAddressByIdAsync(Guid addressId);
+        Task UpdateUserAddressAsync(Address address);
+        Task<bool> DeleteUserAddressAsync(Guid addressId);
+
         Task<bool> CreateMerchantRequest(MerchantRequest merchantRequest);
         Task<IQueryable<MerchantRequest>> GetAllMerchantRequestAsync();
         Task<MerchantRequest?> GetMerchantRequestByIdAsync(Guid requestId);
@@ -19,6 +26,11 @@ namespace UserService.Repositories.Interfaces
         Task<bool> CreateMerchantAsync(Merchant merchant);
         Task<IQueryable<Merchant>> GetAllMerchantsAsync();
         Task<Merchant?> GetMerchantByIdAsync(Guid merchantId);
+        Task<IQueryable<MerchantAddress>?> GetMerchantAddressesByMerchantIdAsync(Guid merchantId);
+        Task<MerchantAddress?> GetMerchantAddressByIdAsync(Guid addressId);
+        Task<bool> CreateMerchantAddressAsync(MerchantAddress merchantAddress);
+        Task UpdateMerchantAddressAsync(MerchantAddress merchantAddress);
+        Task<bool> DeleteMerchantAddressAsync(Guid addressId);
         Task<Merchant?> GetMerchantByUserIdAsync(Guid userId);
         Task UpdateMerchantAsync(Merchant merchant);
         Task<bool> DeleteMerchantAsync(Guid merchantId);

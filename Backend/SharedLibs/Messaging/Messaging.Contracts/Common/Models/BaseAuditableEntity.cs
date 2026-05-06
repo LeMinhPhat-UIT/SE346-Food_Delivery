@@ -1,4 +1,4 @@
-﻿namespace DeliveryService.Commons
+﻿namespace Messaging.Contracts.Common.Models
 {
     public class BaseAuditableEntity : BaseEntity
     {

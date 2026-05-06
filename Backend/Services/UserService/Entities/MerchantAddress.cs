@@ -1,4 +1,4 @@
-﻿using UserService.Commons.Entities;
+﻿using Messaging.Contracts.Common.Models;
 
 namespace UserService.Entities
 {

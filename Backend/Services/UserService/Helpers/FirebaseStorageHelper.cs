@@ -10,6 +10,12 @@ namespace UserService.Helpers
     {
         //private readonly string _bucketName = "your-project-id.appspot.com"; // Tên bucket của bạn
         //private readonly string _credentialPath = "path/to/firebase-auth.json"; // Đường dẫn file JSON ở Bước 1
+        private readonly IConfiguration _configuration;
+
+        public FirebaseStorageHelper(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public string GenerateUploadUrl(string objectName, string contentType)
         {
@@ -20,7 +26,7 @@ namespace UserService.Helpers
             var options = UrlSigner.Options.FromDuration(TimeSpan.FromMinutes(15));
 
             var requestTemplate = UrlSigner.RequestTemplate
-                .FromBucket("se346-food-delivery-1179d.firebasestorage.app")
+                .FromBucket(_configuration.GetValue<string>("BUCKET_NAME"))
                 .WithObjectName(objectName)
                 .WithHttpMethod(HttpMethod.Put)
                 .WithContentHeaders(new Dictionary<string, IEnumerable<string>>

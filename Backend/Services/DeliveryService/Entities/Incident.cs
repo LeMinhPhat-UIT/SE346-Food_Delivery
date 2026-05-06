@@ -1,5 +1,5 @@
-﻿using DeliveryService.Commons;
-using DeliveryService.Enums;
+﻿using DeliveryService.Enums;
+using Messaging.Contracts.Common.Models;
 
 namespace DeliveryService.Entities
 {

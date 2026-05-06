@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace DeliveryService.Enums
+namespace NotificationService.Enums
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum DeviceType

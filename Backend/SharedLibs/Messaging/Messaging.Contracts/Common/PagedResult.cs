@@ -2,8 +2,8 @@
 {
     public class PagedResult<T>
     {
-        public IEnumerable<T> Items { get; set; }
-        public PaginationRequest PaginationRequest { get; set; }
+        public IEnumerable<T> Items { get; set; } = new List<T>();
+        public PaginationRequest PaginationRequest { get; set; } = new PaginationRequest();
         public int TotalCount { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalCount / PaginationRequest.PageSize);
 
@@ -12,7 +12,6 @@
 
         public PagedResult()
         {
-            Items = new List<T>();
         }
 
         public PagedResult(IEnumerable<T> itemList)

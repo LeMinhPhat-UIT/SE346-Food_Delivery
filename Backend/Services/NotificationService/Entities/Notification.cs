@@ -1,6 +1,6 @@
-﻿using DeliveryService.Commons;
+﻿using Messaging.Contracts.Common.Models;
 
-namespace DeliveryService.Entities
+namespace NotificationService.Entities
 {
     public class Notification : BaseEntity
     {

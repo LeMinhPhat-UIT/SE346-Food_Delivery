@@ -10,8 +10,8 @@ namespace Messaging.Contracts.Events
         public override string RoutingKey => "shipper.found";
 
         public Guid OrderId { get; set; }
-        public string OrderNumber { get; set; } = null!;
-        public IEnumerable<Guid> ShipperIds { get; set; } = null!;
+        public string OrderNumber { get; set; } = string.Empty;
+        public IEnumerable<Guid> ShipperIds { get; set; } = Array.Empty<Guid>();
 
         public double MerchantLng { get; set; }
         public double MerchantLat { get; set; }

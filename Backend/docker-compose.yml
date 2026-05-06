@@ -91,6 +91,9 @@ services:
       JwtSettings__Key: ${JWT_KEY}
       JwtSettings__Issuer: ${JWT_ISSUER}
       JwtSettings__Audience: ${JWT_AUDIENCE}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
+    volumes:
+      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
     ports:
       - "${USER_SERVICE_HOST_PORT:-8082}:${USER_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:
@@ -111,6 +114,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}
+      ConnectionStrings__NotificationDbConnectionString: Host=notification-db;Port=5432;Database=${NOTIFICATION_DB_NAME};Username=${NOTIFICATION_DB_USER};Password=${NOTIFICATION_DB_PASSWORD}
       RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
@@ -131,6 +135,26 @@ services:
     networks:
       - backend-network
 
+  notification-db:
+    image: postgres:17-alpine
+    container_name: notification-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+    ports:
+      - "${NOTIFICATION_DB_PORT:-5433}:5432"
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
   user-db:
     image: postgres:17-alpine
     container_name: user-db
@@ -139,12 +163,10 @@ services:
       POSTGRES_DB: ${USER_DB_NAME}
       POSTGRES_USER: ${USER_DB_USER}
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
-      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-auth.json
     ports:
       - "${USER_DB_PORT:-5432}:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
-      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
       interval: 10s
@@ -256,4 +278,4 @@ volumes:
   authentication_db_data:
   user_db_data:
   delivery_db_data:
-
+  notification_db_data:

@@ -1,6 +1,12 @@
+using DeliveryService.Consuming;
+using DeliveryService.HostedService;
 using DeliveryService.Persistences;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+using Messaging.Abstractions.Dispatching;
+using Messaging.Contracts.Events;
+using Messaging.RabbitMq.Extensions;
+using DeliveryService.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +19,14 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<DeliveryDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DeliveryDbConnectionString")));
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
 
+builder.Services.AddRabbitMq(builder.Configuration);
+builder.Services.AddEventDispatcher();
+builder.Services.AddEventTypeRegistry();
 
+builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
+builder.Services.AddHostedService<EventConsumerHostedService>();
+
+builder.Services.Configure<DeliveryOption>(builder.Configuration.GetSection("DeliveryOptions"));
 
 var app = builder.Build();
 

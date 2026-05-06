@@ -1,7 +1,7 @@
-﻿using DeliveryService.Commons;
-using DeliveryService.Enums;
+﻿using NotificationService.Enums;
+using Messaging.Contracts.Common.Models;
 
-namespace DeliveryService.Entities
+namespace NotificationService.Entities
 {
     public class UserDevice : BaseAuditableEntity
     {

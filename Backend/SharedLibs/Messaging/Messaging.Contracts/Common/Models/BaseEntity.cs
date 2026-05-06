@@ -1,4 +1,4 @@
-﻿namespace UserService.Commons.Entities
+﻿namespace Messaging.Contracts.Common.Models
 {
     public class BaseEntity
     {

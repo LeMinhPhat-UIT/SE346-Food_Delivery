@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../constants/httpStatus";
+import { ROLES } from "../../constants/roles";
+import { ApiError } from "../../utils/apiError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import Send from "../../utils/response";
 import { ProductRepository } from "../product/product.repository";
@@ -17,6 +19,21 @@ const productRepository = new ProductRepository();
 const reviewService = new ReviewService(reviewRepository, productRepository);
 
 export class ReviewController {
+  private async ensureMerchantCanReply(req: Request, reviewId: string) {
+    if (
+      req.auth?.roles.includes(ROLES.MERCHANT) &&
+      !req.auth.roles.includes(ROLES.ADMIN)
+    ) {
+      const merchantId = req.auth.merchantId;
+
+      if (!merchantId) {
+        throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant context is missing");
+      }
+
+      await reviewService.assertMerchantCanReply(reviewId, merchantId);
+    }
+  }
+
   getAllReviews = asyncHandler(async (req: Request, res: Response) => {
     const filters = (req.validated?.query ?? {}) as ReviewQueryDto;
     const reviews = await reviewService.getAllReviews(filters);
@@ -77,6 +94,7 @@ export class ReviewController {
 
   replyToReview = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantCanReply(req, id);
     const payload = req.validated?.body as ReviewReplyDto;
     const review = await reviewService.replyToReview(id, payload);
 
@@ -85,6 +103,7 @@ export class ReviewController {
 
   deleteReviewReply = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantCanReply(req, id);
     const review = await reviewService.deleteReviewReply(id);
 
     return Send.success(res, review, "Review reply deleted successfully");

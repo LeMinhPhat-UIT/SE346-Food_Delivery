@@ -64,6 +64,34 @@ export class ProductService {
     return toProductResponseDto(product);
   }
 
+  async assertMerchantOwnsProduct(productId: string, merchantId: string) {
+    const product = await this.ensureProductExists(productId);
+
+    if (product.merchantId !== merchantId) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "You can only modify your own products",
+      );
+    }
+
+    return product;
+  }
+
+  async assertMerchantOwnsProductOption(optionId: string, merchantId: string) {
+    const option = await this.ensureOptionExists(optionId);
+
+    if (!option.productId) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Product option is not attached to a product",
+      );
+    }
+
+    await this.assertMerchantOwnsProduct(option.productId, merchantId);
+
+    return option;
+  }
+
   async createProductOption(
     productId: string,
     data: CreateProductOptionRequestDto,

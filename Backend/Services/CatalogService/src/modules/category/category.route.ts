@@ -1,3 +1,5 @@
+import { ROLES } from "../../constants/roles";
+import { authenticate, requireRoles } from "../../middlewares/auth.middleware";
 import { Router } from "express";
 import { validate } from "../../middlewares/validate.middleware";
 import {
@@ -19,18 +21,24 @@ router.get("/root", categoryController.getRootCategories);
 
 router.post(
   "/",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(createCategorySchema),
   categoryController.createCategory
 );
 
 router.patch(
   "/:id/status",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(updateCategoryStatusSchema),
   categoryController.updateCategoryStatus
 );
 
 router.patch(
   "/:id/restore",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(restoreCategorySchema),
   categoryController.restoreCategory
 );
@@ -43,18 +51,24 @@ router.get(
 
 router.put(
   "/:id",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(updateCategorySchema),
   categoryController.updateCategory
 );
 
 router.patch(
   "/:id",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(updateCategorySchema),
   categoryController.updateCategory
 );
 
 router.delete(
   "/:id",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(categoryIdSchema),
   categoryController.deleteCategory
 );

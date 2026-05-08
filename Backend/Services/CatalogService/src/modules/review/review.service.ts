@@ -98,6 +98,32 @@ export class ReviewService {
     return toReviewResponseDto(review);
   }
 
+  async assertMerchantCanReply(reviewId: string, merchantId: string) {
+    const review = await this.ensureReviewExists(reviewId);
+
+    if (!review.productId) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Review is not attached to a product",
+      );
+    }
+
+    const product = await this.productRepository.findById(review.productId);
+
+    if (!product) {
+      throw new ApiError(HTTP_STATUS.BAD_REQUEST, "Product does not exist");
+    }
+
+    if (product.merchantId !== merchantId) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "You can only reply to reviews of your own products",
+      );
+    }
+
+    return review;
+  }
+
   async replyToReview(
     id: string,
     data: ReviewReplyDto,

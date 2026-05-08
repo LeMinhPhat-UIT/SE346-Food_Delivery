@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { validate as isUuid } from "uuid";
 import { HTTP_STATUS } from "../../constants/httpStatus";
+import { ROLES } from "../../constants/roles";
 import { ApiError } from "../../utils/apiError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import Send from "../../utils/response";
@@ -23,20 +23,34 @@ const categoryRepository = new CategoryRepository();
 const productService = new ProductService(productRepository, categoryRepository);
 
 export class ProductController {
-  private getMerchantIdFromRequest(req: Request) {
-    const merchantIdHeader = req.headers["x-merchant-id"];
-    const merchantId = Array.isArray(merchantIdHeader)
-      ? merchantIdHeader[0]
-      : merchantIdHeader;
+  private async ensureMerchantOwnsProduct(req: Request, productId: string) {
+    if (
+      req.auth?.roles.includes(ROLES.MERCHANT) &&
+      !req.auth.roles.includes(ROLES.ADMIN)
+    ) {
+      const merchantId = req.auth.merchantId;
 
-    if (!merchantId || !isUuid(merchantId)) {
-      throw new ApiError(
-        HTTP_STATUS.BAD_REQUEST,
-        "Valid x-merchant-id header is required",
-      );
+      if (!merchantId) {
+        throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant context is missing");
+      }
+
+      await productService.assertMerchantOwnsProduct(productId, merchantId);
     }
+  }
 
-    return merchantId;
+  private async ensureMerchantOwnsOption(req: Request, optionId: string) {
+    if (
+      req.auth?.roles.includes(ROLES.MERCHANT) &&
+      !req.auth.roles.includes(ROLES.ADMIN)
+    ) {
+      const merchantId = req.auth.merchantId;
+
+      if (!merchantId) {
+        throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant context is missing");
+      }
+
+      await productService.assertMerchantOwnsProductOption(optionId, merchantId);
+    }
   }
 
   getAllProducts = asyncHandler(async (req: Request, res: Response) => {
@@ -52,7 +66,12 @@ export class ProductController {
 
   getMyProducts = asyncHandler(async (req: Request, res: Response) => {
     const queryFilters = (req.validated?.query ?? {}) as ProductQueryDto;
-    const merchantId = this.getMerchantIdFromRequest(req);
+    const merchantId = req.auth?.merchantId;
+
+    if (!merchantId) {
+      throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant context is missing");
+    }
+
     const products = await productService.getAllProducts({
       ...queryFilters,
       merchantId,
@@ -76,7 +95,15 @@ export class ProductController {
   });
 
   createProduct = asyncHandler(async (req: Request, res: Response) => {
-    const payload = req.validated?.body as CreateProductDto;
+    const payload = { ...(req.validated?.body as CreateProductDto) };
+
+    if (
+      req.auth?.roles.includes(ROLES.MERCHANT) &&
+      !req.auth.roles.includes(ROLES.ADMIN)
+    ) {
+      payload.merchantId = req.auth.merchantId!;
+    }
+
     const product = await productService.createProduct(payload);
 
     return Send.success(
@@ -89,6 +116,7 @@ export class ProductController {
 
   updateProduct = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantOwnsProduct(req, id);
     const payload = req.validated?.body as UpdateProductDto;
     const product = await productService.updateProduct(id, payload);
 
@@ -97,6 +125,7 @@ export class ProductController {
 
   createProductOption = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantOwnsProduct(req, id);
     const payload = req.validated?.body as CreateProductOptionRequestDto;
     const option = await productService.createProductOption(id, payload);
 
@@ -110,6 +139,7 @@ export class ProductController {
 
   updateProductOption = asyncHandler(async (req: Request, res: Response) => {
     const { optionId } = req.validated?.params as { optionId: string };
+    await this.ensureMerchantOwnsOption(req, optionId);
     const payload = req.validated?.body as UpdateProductOptionDto;
     const option = await productService.updateProductOption(optionId, payload);
 
@@ -118,6 +148,7 @@ export class ProductController {
 
   updateProductAvailability = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantOwnsProduct(req, id);
     const payload = req.validated?.body as UpdateProductAvailabilityDto;
     const product = await productService.updateProductAvailability(id, payload);
 
@@ -126,6 +157,24 @@ export class ProductController {
 
   batchUpdateProductAvailability = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.validated?.body as BatchUpdateProductAvailabilityDto;
+
+    if (
+      req.auth?.roles.includes(ROLES.MERCHANT) &&
+      !req.auth.roles.includes(ROLES.ADMIN)
+    ) {
+      const merchantId = req.auth.merchantId;
+
+      if (!merchantId) {
+        throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant context is missing");
+      }
+
+      await Promise.all(
+        payload.productIds.map((productId) =>
+          productService.assertMerchantOwnsProduct(productId, merchantId),
+        ),
+      );
+    }
+
     const products = await productService.batchUpdateProductAvailability(payload);
 
     return Send.success(
@@ -137,6 +186,7 @@ export class ProductController {
 
   updateProductFeatured = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantOwnsProduct(req, id);
     const payload = req.validated?.body as UpdateProductFeaturedDto;
     const product = await productService.updateProductFeatured(id, payload);
 
@@ -145,6 +195,7 @@ export class ProductController {
 
   restoreProduct = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantOwnsProduct(req, id);
     const product = await productService.restoreProduct(id);
 
     return Send.success(res, product, "Product restored successfully");
@@ -152,6 +203,7 @@ export class ProductController {
 
   deleteProduct = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureMerchantOwnsProduct(req, id);
     const product = await productService.deleteProduct(id);
 
     return Send.success(res, product, "Product deleted successfully");
@@ -159,6 +211,7 @@ export class ProductController {
 
   deleteProductOption = asyncHandler(async (req: Request, res: Response) => {
     const { optionId } = req.validated?.params as { optionId: string };
+    await this.ensureMerchantOwnsOption(req, optionId);
     const option = await productService.deleteProductOption(optionId);
 
     return Send.success(res, option, "Product option deleted successfully");

@@ -1,3 +1,5 @@
+import { ROLES } from "../../constants/roles";
+import { authenticate, requireRoles } from "../../middlewares/auth.middleware";
 import { Router } from "express";
 import { validate } from "../../middlewares/validate.middleware";
 import { ReviewController } from "./review.controller";
@@ -44,34 +46,56 @@ router.get(
 
 router.get("/:id", validate(reviewIdSchema), reviewController.getReviewById);
 
-router.post("/", validate(createReviewSchema), reviewController.createReview);
+router.post(
+  "/",
+  authenticate,
+  validate(createReviewSchema),
+  reviewController.createReview
+);
 
-router.put("/:id", validate(updateReviewSchema), reviewController.updateReview);
+router.put(
+  "/:id",
+  authenticate,
+  validate(updateReviewSchema),
+  reviewController.updateReview
+);
 
 router.patch(
   "/:id",
+  authenticate,
   validate(updateReviewSchema),
   reviewController.updateReview,
 );
 
 router.patch(
   "/:id/reply",
+  authenticate,
+  requireRoles(ROLES.MERCHANT, ROLES.ADMIN),
   validate(reviewReplySchema),
   reviewController.replyToReview,
 );
 
 router.delete(
   "/:id/reply",
+  authenticate,
+  requireRoles(ROLES.MERCHANT, ROLES.ADMIN),
   validate(reviewIdSchema),
   reviewController.deleteReviewReply,
 );
 
 router.patch(
   "/:id/restore",
+  authenticate,
+  requireRoles(ROLES.ADMIN),
   validate(restoreReviewSchema),
   reviewController.restoreReview,
 );
 
-router.delete("/:id", validate(reviewIdSchema), reviewController.deleteReview);
+router.delete(
+  "/:id",
+  authenticate,
+  validate(reviewIdSchema),
+  reviewController.deleteReview
+);
 
 export default router;

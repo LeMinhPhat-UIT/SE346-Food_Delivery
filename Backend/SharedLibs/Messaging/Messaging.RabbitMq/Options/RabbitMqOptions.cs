@@ -32,5 +32,7 @@ namespace Messaging.RabbitMq.Options
         public string? DeadLetterExchange { get; set; }
 
         public List<string> RoutingKeys { get; set; } = new();
+        public int BatchSize { get; set; } = 100;
+        public int FlushIntervalSeconds { get; set; } = 5;
     }
 }

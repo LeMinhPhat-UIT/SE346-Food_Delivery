@@ -7,5 +7,6 @@ namespace DeliveryService.Repositories.Interfaces
         Task<IQueryable<ShipperAvailability>> GetAllShipperAvailabilityAsync();
         Task UpdateShipperAvailabilityAsync(ShipperAvailability shipperAvailability);
         Task<ShipperAvailability?> GetShipperAvailabilityByShipperIdAsync(Guid shipperId);
+        Task AddShipperLocationHistoriesAsync(IEnumerable<ShipperLocationHistory> histories, CancellationToken cancellationToken = default);
     }
 }

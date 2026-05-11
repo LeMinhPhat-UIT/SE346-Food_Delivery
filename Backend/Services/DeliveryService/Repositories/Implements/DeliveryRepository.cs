@@ -1,9 +1,7 @@
 ﻿using DeliveryService.Entities;
 using DeliveryService.Persistences;
 using DeliveryService.Repositories.Interfaces;
-using Messaging.Contracts.Common;
 using Microsoft.EntityFrameworkCore;
-using StackExchange.Redis;
 
 namespace DeliveryService.Repositories.Implements
 {
@@ -33,6 +31,13 @@ namespace DeliveryService.Repositories.Implements
         public async Task UpdateShipperAvailabilityAsync(ShipperAvailability shipperAvailability)
         {
             _context.ShipperAvailabilities.Update(shipperAvailability);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddShipperLocationHistoriesAsync(IEnumerable<ShipperLocationHistory> histories, CancellationToken cancellationToken = default)
+        {
+            await _context.ShipperLocationHistories.AddRangeAsync(histories, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

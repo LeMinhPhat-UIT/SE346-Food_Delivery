@@ -1,6 +1,9 @@
 using DeliveryService.Consuming;
 using DeliveryService.HostedService;
+using DeliveryService.Hubs.Implements;
 using DeliveryService.Persistences;
+using DeliveryService.Repositories.Implements;
+using DeliveryService.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using Messaging.Abstractions.Dispatching;
@@ -18,12 +21,17 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<DeliveryDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DeliveryDbConnectionString")));
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
+builder.Services.AddScoped<IDeliveryRepository, DeliveryRepository>();
+builder.Services.AddScoped<IRedisRepository, RedisRepository>();
 
 builder.Services.AddRabbitMq(builder.Configuration);
 builder.Services.AddEventDispatcher();
 builder.Services.AddEventTypeRegistry();
 
+builder.Services.AddSignalR();
+
 builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
+builder.Services.AddHostedService<DeliveryTrackingHostedService>();
 builder.Services.AddHostedService<EventConsumerHostedService>();
 
 builder.Services.Configure<DeliveryOption>(builder.Configuration.GetSection("DeliveryOptions"));
@@ -41,5 +49,6 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<TrackingHub>("/hubs/tracking");
 
 app.Run();

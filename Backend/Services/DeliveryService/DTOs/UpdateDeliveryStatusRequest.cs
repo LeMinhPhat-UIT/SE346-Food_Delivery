@@ -6,5 +6,6 @@ namespace DeliveryService.DTOs
     {
         public DeliveryStatus Status { get; set; }
         public string Note { get; set; } = null!;
+        public string? ProofFileKey { get; set; }
     }
 }

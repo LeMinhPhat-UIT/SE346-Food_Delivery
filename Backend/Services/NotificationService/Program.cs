@@ -21,6 +21,7 @@ builder.Services.AddTransient<IEventHandler<OtpSendRequestedEvent>, OtpEmailEven
 builder.Services.AddTransient<IEventHandler<LockedOutEvent>, LockedOutEventHandler>();
 builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
 builder.Services.AddTransient<IEventHandler<ShipperFoundEvent>, ShipperFoundEventHandler>();
+builder.Services.AddTransient<IEventHandler<DeliveryMilestoneEvent>, DeliveryMilestoneEventHandler>();
 
 builder.Services.AddHostedService<EventConsumerHostedService>();
 

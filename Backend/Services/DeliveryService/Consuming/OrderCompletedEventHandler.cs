@@ -1,4 +1,5 @@
 ﻿using DeliveryService.Enums;
+using DeliveryService.Entities;
 using DeliveryService.Options;
 using DeliveryService.Repositories.Implements;
 using DeliveryService.Repositories.Interfaces;
@@ -45,6 +46,22 @@ namespace DeliveryService.Consuming
                 .Where(s => s != null && s.Status == ShipperWorkStatus.ActiveIdle && shipperMembers.Contains(s.ShipperId.ToString()))
                 .Select(s => s.ShipperId)
                 .ToList();
+
+            if (availableShipper.Any())
+            {
+                var assignments = availableShipper.Select(shipperId => new ShipperAssignment
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = @event.OrderId,
+                    CustomerId = @event.UserId,
+                    OrderNumber = @event.OrderNumber,
+                    ShipperId = shipperId,
+                    Status = AssignmentStatus.Pending,
+                    AssignedAt = DateTime.UtcNow
+                }).ToList();
+
+                await _deliveryRepository.CreateShipperAssignmentsAsync(assignments);
+            }
 
             var shipperFoundEvent = new ShipperFoundEvent()
             {

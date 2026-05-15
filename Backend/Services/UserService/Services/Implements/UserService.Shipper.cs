@@ -1,4 +1,5 @@
 ﻿using Messaging.Contracts.Common;
+using Messaging.Contracts.Events;
 using Messaging.Contracts.Extensions;
 using UserService.DTOs.ShipperDTOs;
 using UserService.Entities;
@@ -155,6 +156,17 @@ namespace UserService.Services.Implements
                 shipperRequest.RejectedReason = request.RejectedReason.Trim();
                 await _userRepository.UpdateShipperRequestAsync(shipperRequest);
 
+                var rejectedEvent = new ShipperRequestReviewedEvent()
+                {
+                    RequestId = requestId,
+                    UserId = shipperRequest.UserId,
+                    ReviewerId = reviewerId,
+                    IsApproved = false,
+                    RejectedReason = request.RejectedReason
+                };
+
+                await _eventPublisher.PublishAsync(rejectedEvent);
+
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Shipper request rejected successfully"));
             }
 
@@ -174,6 +186,17 @@ namespace UserService.Services.Implements
             shipperRequest.RejectedReason = string.Empty;
 
             await _userRepository.UpdateShipperRequestAsync(shipperRequest);
+
+            var approvedEvent = new ShipperRequestReviewedEvent()
+            {
+                RequestId = requestId,
+                UserId = shipperRequest.UserId,
+                ReviewerId = reviewerId,
+                IsApproved = true,
+                RejectedReason = request.RejectedReason
+            };
+
+            await _eventPublisher.PublishAsync(approvedEvent);
 
             return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Shipper request approved successfully"));
         }

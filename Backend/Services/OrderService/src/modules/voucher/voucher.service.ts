@@ -1,10 +1,12 @@
 import { HTTP_STATUS } from "../../constants/httpStatus";
+import { ROLES } from "../../constants/roles";
 import { ApiError } from "../../utils/apiError";
 import {
   CreateVoucherDto,
   UpdateVoucherDto,
   UpdateVoucherStatusDto,
   ValidateVoucherDto,
+  VoucherActorContext,
   VoucherListResponseDto,
   VoucherQueryDto,
   VoucherResponseDto,
@@ -16,15 +18,24 @@ import { VoucherRecord, VoucherRepository } from "./voucher.repository";
 export class VoucherService {
   constructor(private readonly voucherRepository: VoucherRepository) {}
 
-  async getAllVouchers(filters: VoucherQueryDto): Promise<VoucherListResponseDto> {
-    const { items, totalCount } = await this.voucherRepository.findAll(filters);
+  async getAllVouchers(
+    filters: VoucherQueryDto,
+    actor?: VoucherActorContext,
+  ): Promise<VoucherListResponseDto> {
+    const effectiveFilters = { ...filters };
+
+    if (this.isMerchant(actor) && actor?.merchantId) {
+      effectiveFilters.merchantId = actor.merchantId;
+    }
+
+    const { items, totalCount } = await this.voucherRepository.findAll(effectiveFilters);
 
     return {
       items: items.map(toVoucherResponseDto),
       totalCount,
-      page: filters.page,
-      limit: filters.limit,
-      totalPages: Math.ceil(totalCount / filters.limit),
+      page: effectiveFilters.page,
+      limit: effectiveFilters.limit,
+      totalPages: Math.ceil(totalCount / effectiveFilters.limit),
     };
   }
 
@@ -43,12 +54,17 @@ export class VoucherService {
     return toVoucherResponseDto(voucher);
   }
 
-  async createVoucher(data: CreateVoucherDto): Promise<VoucherResponseDto> {
+  async createVoucher(
+    data: CreateVoucherDto,
+    actor: VoucherActorContext,
+  ): Promise<VoucherResponseDto> {
     await this.ensureVoucherCodeAvailable(this.normalizeCode(data.code));
 
+    const normalizedPayload = this.normalizeVoucherPayload(data, actor);
+
     const voucher = await this.voucherRepository.create({
-      ...data,
-      code: this.normalizeCode(data.code),
+      ...normalizedPayload,
+      code: this.normalizeCode(normalizedPayload.code),
     });
 
     return toVoucherResponseDto(voucher);
@@ -57,16 +73,21 @@ export class VoucherService {
   async updateVoucher(
     id: string,
     data: UpdateVoucherDto,
+    actor: VoucherActorContext,
   ): Promise<VoucherResponseDto> {
-    await this.ensureVoucherExists(id);
+    const existingVoucher = await this.ensureVoucherExists(id);
+    this.assertVoucherOwnership(existingVoucher, actor);
 
     if (data.code) {
       await this.ensureVoucherCodeAvailable(this.normalizeCode(data.code), id);
     }
 
+    const normalizedPayload = this.normalizeVoucherPayload(data, actor);
     const voucher = await this.voucherRepository.update(id, {
-      ...data,
-      ...(data.code ? { code: this.normalizeCode(data.code) } : {}),
+      ...normalizedPayload,
+      ...(normalizedPayload.code
+        ? { code: this.normalizeCode(normalizedPayload.code) }
+        : {}),
     });
 
     return toVoucherResponseDto(voucher);
@@ -75,8 +96,10 @@ export class VoucherService {
   async updateVoucherStatus(
     id: string,
     data: UpdateVoucherStatusDto,
+    actor: VoucherActorContext,
   ): Promise<VoucherResponseDto> {
-    await this.ensureVoucherExists(id);
+    const existingVoucher = await this.ensureVoucherExists(id);
+    this.assertVoucherOwnership(existingVoucher, actor);
 
     const voucher = await this.voucherRepository.update(id, {
       isActive: data.isActive,
@@ -85,12 +108,17 @@ export class VoucherService {
     return toVoucherResponseDto(voucher);
   }
 
-  async restoreVoucher(id: string): Promise<VoucherResponseDto> {
+  async restoreVoucher(
+    id: string,
+    actor: VoucherActorContext,
+  ): Promise<VoucherResponseDto> {
     const voucher = await this.voucherRepository.findByIdIncludingDeleted(id);
 
     if (!voucher) {
       throw new ApiError(HTTP_STATUS.NOT_FOUND, "Voucher not found");
     }
+
+    this.assertVoucherOwnership(voucher, actor);
 
     if (voucher.deletedAt === null) {
       throw new ApiError(HTTP_STATUS.BAD_REQUEST, "Voucher is already active");
@@ -104,8 +132,12 @@ export class VoucherService {
     return toVoucherResponseDto(restoredVoucher);
   }
 
-  async deleteVoucher(id: string): Promise<VoucherResponseDto> {
-    await this.ensureVoucherExists(id);
+  async deleteVoucher(
+    id: string,
+    actor: VoucherActorContext,
+  ): Promise<VoucherResponseDto> {
+    const existingVoucher = await this.ensureVoucherExists(id);
+    this.assertVoucherOwnership(existingVoucher, actor);
 
     const voucher = await this.voucherRepository.update(id, {
       deletedAt: new Date(),
@@ -193,6 +225,48 @@ export class VoucherService {
 
   private normalizeCode(code: string) {
     return code.trim().toUpperCase();
+  }
+
+  private normalizeVoucherPayload<T extends CreateVoucherDto | UpdateVoucherDto>(
+    data: T,
+    actor: VoucherActorContext,
+  ): T {
+    if (this.isMerchant(actor)) {
+      return {
+        ...data,
+        merchantId: actor.merchantId ?? null,
+      };
+    }
+
+    return data;
+  }
+
+  private assertVoucherOwnership(
+    voucher: VoucherRecord,
+    actor: VoucherActorContext,
+  ) {
+    if (!this.isMerchant(actor)) {
+      return;
+    }
+
+    if (!actor.merchantId) {
+      throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant context is missing");
+    }
+
+    if (voucher.merchantId !== actor.merchantId) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "You can only modify vouchers that belong to your own store",
+      );
+    }
+  }
+
+  private isMerchant(actor?: VoucherActorContext) {
+    return Boolean(
+      actor?.roles.some(
+        (role) => role.toLowerCase() === ROLES.MERCHANT.toLowerCase(),
+      ),
+    );
   }
 
   private assertVoucherUsable(

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { HTTP_STATUS } from "../../constants/httpStatus";
+import { ApiError } from "../../utils/apiError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import Send from "../../utils/response";
 import {
@@ -7,6 +8,7 @@ import {
   UpdateVoucherDto,
   UpdateVoucherStatusDto,
   ValidateVoucherDto,
+  VoucherActorContext,
   VoucherQueryDto,
 } from "./voucher.dto";
 import { VoucherRepository } from "./voucher.repository";
@@ -16,9 +18,26 @@ const voucherRepository = new VoucherRepository();
 const voucherService = new VoucherService(voucherRepository);
 
 export class VoucherController {
+  private getActorContext(req: Request): VoucherActorContext {
+    const auth = req.auth;
+
+    if (!auth) {
+      throw new ApiError(401, "Invalid user context");
+    }
+
+    return {
+      userId: auth.userId,
+      roles: auth.roles,
+      merchantId: auth.merchantId,
+    };
+  }
+
   getAllVouchers = asyncHandler(async (req: Request, res: Response) => {
     const filters = (req.validated?.query ?? {}) as VoucherQueryDto;
-    const vouchers = await voucherService.getAllVouchers(filters);
+    const vouchers = await voucherService.getAllVouchers(
+      filters,
+      req.auth ? this.getActorContext(req) : undefined,
+    );
 
     return Send.success(res, vouchers, "Vouchers fetched successfully");
   });
@@ -39,7 +58,10 @@ export class VoucherController {
 
   createVoucher = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.validated?.body as CreateVoucherDto;
-    const voucher = await voucherService.createVoucher(payload);
+    const voucher = await voucherService.createVoucher(
+      payload,
+      this.getActorContext(req),
+    );
 
     return Send.success(
       res,
@@ -52,7 +74,11 @@ export class VoucherController {
   updateVoucher = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
     const payload = req.validated?.body as UpdateVoucherDto;
-    const voucher = await voucherService.updateVoucher(id, payload);
+    const voucher = await voucherService.updateVoucher(
+      id,
+      payload,
+      this.getActorContext(req),
+    );
 
     return Send.success(res, voucher, "Voucher updated successfully");
   });
@@ -60,21 +86,31 @@ export class VoucherController {
   updateVoucherStatus = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
     const payload = req.validated?.body as UpdateVoucherStatusDto;
-    const voucher = await voucherService.updateVoucherStatus(id, payload);
+    const voucher = await voucherService.updateVoucherStatus(
+      id,
+      payload,
+      this.getActorContext(req),
+    );
 
     return Send.success(res, voucher, "Voucher status updated successfully");
   });
 
   restoreVoucher = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
-    const voucher = await voucherService.restoreVoucher(id);
+    const voucher = await voucherService.restoreVoucher(
+      id,
+      this.getActorContext(req),
+    );
 
     return Send.success(res, voucher, "Voucher restored successfully");
   });
 
   deleteVoucher = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
-    const voucher = await voucherService.deleteVoucher(id);
+    const voucher = await voucherService.deleteVoucher(
+      id,
+      this.getActorContext(req),
+    );
 
     return Send.success(res, voucher, "Voucher deleted successfully");
   });

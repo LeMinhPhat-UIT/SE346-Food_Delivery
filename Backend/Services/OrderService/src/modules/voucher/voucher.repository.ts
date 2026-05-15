@@ -194,6 +194,16 @@ export class VoucherRepository {
     })) as VoucherRecord | null;
   }
 
+  async findByMerchantId(merchantId: string) {
+    return (await prisma.voucher.findMany({
+      where: {
+        merchantId,
+        deletedAt: null,
+      },
+      select: voucherSelect,
+    })) as VoucherRecord[];
+  }
+
   async create(data: CreateVoucherDto) {
     return (await prisma.voucher.create({
       data: {

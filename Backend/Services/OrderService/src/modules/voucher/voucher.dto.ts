@@ -62,3 +62,9 @@ export type VoucherValidationResponseDto = {
   finalDeliveryFee: number;
   finalTotal: number;
 };
+
+export type VoucherActorContext = {
+  userId: string;
+  roles: string[];
+  merchantId?: string;
+};

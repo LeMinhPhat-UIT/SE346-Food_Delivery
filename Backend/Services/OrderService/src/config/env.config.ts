@@ -8,10 +8,15 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(8084),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   DIRECT_URL: z.string().optional(),
-  SUPABASE_PROJECT_URL: z.string().url("SUPABASE_PROJECT_URL must be a valid URL"),
-  SUPABASE_ANON_KEY: z.string().min(1, "SUPABASE_ANON_KEY is required"),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  SUPABASE_STORAGE_BUCKET: z.string().default("catalog-bucket"),
+  JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
+  JWT_ISSUER: z.string().optional(),
+  JWT_AUDIENCE: z.string().optional(),
+  USER_SERVICE_URL: z.string().url("USER_SERVICE_URL must be a valid URL"),
+  CATALOG_SERVICE_URL: z.string().url("CATALOG_SERVICE_URL must be a valid URL"),
+  REDIS_HOST: z.string().min(1, "REDIS_HOST is required"),
+  REDIS_PORT: z.coerce.number().int().positive().default(6379),
+  REDIS_PASSWORD: z.string().optional(),
+  CART_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
 });
 
 export const env = envSchema.parse(process.env);

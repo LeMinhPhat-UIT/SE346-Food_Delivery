@@ -1,11 +1,13 @@
 import app from "./app";
 import { connectDatabase, disconnectDatabase } from "./config/db.config";
 import { env } from "./config/env.config";
+import { connectRedis, disconnectRedis } from "./config/redis.config";
 import { logger } from "./utils/logger";
 
 const startServer = async () => {
   try {
     await connectDatabase();
+    await connectRedis();
 
     const server = app.listen(env.PORT, () => {
       logger.info(`Order Service is running on port ${env.PORT}`);
@@ -15,6 +17,7 @@ const startServer = async () => {
       logger.warn(`Received ${signal}. Shutting down Order Service...`);
 
       server.close(async () => {
+        await disconnectRedis();
         await disconnectDatabase();
         process.exit(0);
       });

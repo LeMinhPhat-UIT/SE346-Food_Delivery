@@ -86,6 +86,7 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 });
 
 builder.Services.AddRabbitMq(builder.Configuration);
+builder.Services.AddRabbitMqPublisher();
 builder.Services.AddEventDispatcher();
 builder.Services.AddEventTypeRegistry();
 

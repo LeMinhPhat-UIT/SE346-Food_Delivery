@@ -5,7 +5,6 @@ using DeliveryService.Hubs.Implements;
 using DeliveryService.Persistences;
 using DeliveryService.Repositories.Implements;
 using DeliveryService.Repositories.Interfaces;
-using DeliveryService.Services.Implements;
 using DeliveryService.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -25,7 +24,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<DeliveryDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DeliveryDbConnectionString")));
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
 builder.Services.AddScoped<IDeliveryRepository, DeliveryRepository>();
-builder.Services.AddScoped<IDeliveryService, DeliveryService>();
+builder.Services.AddScoped<IDeliveryService, DeliveryService.Services.Implements.DeliveryService>();
 builder.Services.AddScoped<IRedisRepository, RedisRepository>();
 builder.Services.AddScoped<FirebaseStorageHelper>();
 

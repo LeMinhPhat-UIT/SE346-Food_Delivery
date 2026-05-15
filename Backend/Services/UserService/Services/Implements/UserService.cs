@@ -1,5 +1,6 @@
 ﻿using Messaging.Contracts.Common;
 using Messaging.Contracts.Extensions;
+using Messaging.RabbitMq.Publishing;
 using UserService.DTOs.MerchantDTOs;
 using UserService.DTOs.User;
 using UserService.Mappers;
@@ -11,11 +12,13 @@ namespace UserService.Services.Implements
     public partial class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IEventPublisher _eventPublisher;
         private readonly UserMapper _mapper;
 
-        public UserService(IUserRepository userRepository, UserMapper mapper)
+        public UserService(IUserRepository userRepository, IEventPublisher eventPublisher, UserMapper mapper)
         {
             _userRepository = userRepository;
+            _eventPublisher = eventPublisher;
             _mapper = mapper;
         }
 

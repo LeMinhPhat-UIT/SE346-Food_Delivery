@@ -1,4 +1,5 @@
 ﻿using Messaging.Contracts.Common;
+using Messaging.Contracts.Events;
 using Messaging.Contracts.Extensions;
 using UserService.DTOs.MerchantDTOs;
 using UserService.Entities;
@@ -94,6 +95,17 @@ namespace UserService.Services.Implements
                 merchantRequest.RejectedReason = request.RejectedReason.Trim();
                 await _userRepository.UpdateMerchantRequestAsync(merchantRequest);
 
+                var rejectedEvent = new MerchantRequestReviewedEvent()
+                {
+                    RequestId = requestId,
+                    UserId = merchantRequest.UserId,
+                    ReviewerId = reviewerId,
+                    IsApproved = false,
+                    RejectedReason = request.RejectedReason
+                };
+
+                await _eventPublisher.PublishAsync(rejectedEvent);
+
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Merchant request rejected successfully"));
             }
 
@@ -115,6 +127,17 @@ namespace UserService.Services.Implements
 
             merchantRequest.RejectedReason = string.Empty;
             await _userRepository.UpdateMerchantRequestAsync(merchantRequest);
+
+            var approvedEvent = new MerchantRequestReviewedEvent()
+            {
+                RequestId = requestId,
+                UserId = merchantRequest.UserId,
+                ReviewerId = reviewerId,
+                IsApproved = true,
+                RejectedReason = request.RejectedReason
+            };
+
+            await _eventPublisher.PublishAsync(approvedEvent);
 
             return new ApiResponse<ConfirmationResponse>(StatusCodes.Status200OK, new ConfirmationResponse("Merchant request approved successfully"));
         }

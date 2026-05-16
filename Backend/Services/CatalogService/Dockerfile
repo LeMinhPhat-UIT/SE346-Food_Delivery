@@ -7,6 +7,10 @@ COPY tsconfig.json ./
 
 RUN npm install
 
+COPY prisma ./prisma
+
+RUN npx prisma generate
+
 COPY . .
 
 RUN npm run build
@@ -17,6 +21,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
 
 RUN npm install --only=production
 

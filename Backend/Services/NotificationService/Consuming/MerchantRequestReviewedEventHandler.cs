@@ -1,5 +1,6 @@
 ﻿using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
+using NotificationService.Entities;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Interfaces;
 
@@ -25,9 +26,22 @@ namespace NotificationService.Consuming
                 { "RequestId", @event.RequestId.ToString() },
                 { "ReviewerId", @event.ReviewerId.ToString() },
                 { "IsApproved", @event.IsApproved.ToString() },
-                { "RejectedReason", @event.RejectedReason },
+                { "RejectedReason", @event.RejectedReason ?? string.Empty },
                 { "Type", "request_reviewed" }
             };
+
+            await _notificationRepository.CreateNotificationAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = @event.UserId,
+                Title = TITLE,
+                Body = BODY,
+                Type = "request_reviewed",
+                ReferenceId = @event.RequestId,
+                ReferenceType = "merchant_request",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await SendToMerchant(@event.UserId, TITLE, BODY, DATA);
         }

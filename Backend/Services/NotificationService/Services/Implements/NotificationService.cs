@@ -28,8 +28,9 @@ namespace NotificationService.Services.Implements
 
             var pagedUserDevices = await userDevices.ToPagedResultAsync(paginationRequest);
             var response = _mapper.ToUserDeviceResponseList(pagedUserDevices.Items);
+            var result = new PagedResult<UserDeviceResponse>(response, pagedUserDevices.PaginationRequest, pagedUserDevices.TotalCount);
 
-            return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status200OK, new PagedResult<UserDeviceResponse>(response));
+            return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status200OK, result);
         }
 
         public async Task<ApiResponse<PagedResult<UserDeviceResponse>>> GetAllUserDevicesByUserIdAsync(Guid userId, PaginationRequest paginationRequest)
@@ -44,8 +45,9 @@ namespace NotificationService.Services.Implements
 
             var pagedUserDevices = await userDevices.ToPagedResultAsync(paginationRequest);
             var response = _mapper.ToUserDeviceResponseList(pagedUserDevices.Items);
+            var result = new PagedResult<UserDeviceResponse>(response, pagedUserDevices.PaginationRequest, pagedUserDevices.TotalCount);
 
-            return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status200OK, new PagedResult<UserDeviceResponse>(response));
+            return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status200OK, result);
         }
     }
 }

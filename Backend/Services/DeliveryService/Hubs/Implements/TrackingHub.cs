@@ -4,11 +4,13 @@ using DeliveryService.Hubs.Interfaces;
 using DeliveryService.Repositories.Interfaces;
 using Messaging.Contracts.Events;
 using Messaging.RabbitMq.Publishing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace DeliveryService.Hubs.Implements
 {
+    [Authorize]
     public class TrackingHub : Hub<ITrackingHub>
     {
         private readonly IRedisRepository _redisRepository;

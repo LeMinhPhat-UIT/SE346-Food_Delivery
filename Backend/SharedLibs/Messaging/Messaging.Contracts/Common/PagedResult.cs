@@ -18,5 +18,12 @@
         {
             Items = itemList;
         }
+
+        public PagedResult(IEnumerable<T> itemList, PaginationRequest paginationRequest, int totalCount)
+        {
+            Items = itemList;
+            PaginationRequest = paginationRequest;
+            TotalCount = totalCount;
+        }
     }
 }

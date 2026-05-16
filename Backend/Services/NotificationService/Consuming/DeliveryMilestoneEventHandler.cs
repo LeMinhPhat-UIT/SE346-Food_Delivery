@@ -1,5 +1,6 @@
 using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
+using NotificationService.Entities;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Interfaces;
 
@@ -47,6 +48,19 @@ namespace NotificationService.Consuming
             {
                 data["ProofFileKey"] = @event.ProofFileKey;
             }
+
+            await _notificationRepository.CreateNotificationAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = @event.CustomerId,
+                Title = title,
+                Body = body,
+                Type = type,
+                ReferenceId = @event.OrderId,
+                ReferenceType = "order",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await SendToCustomer(@event.CustomerId, title, body, data);
         }

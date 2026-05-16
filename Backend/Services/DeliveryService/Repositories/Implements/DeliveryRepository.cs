@@ -82,7 +82,7 @@ namespace DeliveryService.Repositories.Implements
         {
             IQueryable<ShipperAssignment> query = _context.ShipperAssignments
                 .AsNoTracking()
-                .Where(sa => sa.ShipperId == shipperId)
+                .Where(sa => sa.ShipperId == shipperId && sa.Status != AssignmentStatus.Cancelled)
                 .AsQueryable();
 
             return Task.FromResult(query);

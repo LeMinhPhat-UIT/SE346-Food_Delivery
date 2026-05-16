@@ -268,13 +268,13 @@ namespace DeliveryService.Services.Implements
             return (false, "Unsupported delivery status transition");
         }
 
-        public string GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType)
+        public (string FileKey, string UploadUrl) GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType)
         {
             var extension = Path.GetExtension(fileName);
             var newFileName = $"{Guid.NewGuid()}{extension}";
             var filePath = $"deliveries/{orderId}/{shipperId}/{stage.Trim().ToLowerInvariant()}/{newFileName}";
 
-            return _storageHelper.GenerateUploadUrl(filePath, contentType);
+            return (filePath, _storageHelper.GenerateUploadUrl(filePath, contentType));
         }
     }
 }

@@ -30,7 +30,7 @@ namespace UserService.Services.Implements
             shipperRequest.UserId = userId;
             shipperRequest.VerificationStatus = VerificationStatus.Pending;
             shipperRequest.RejectedReason = string.Empty;
-            shipperRequest.ReviewedBy = userId;
+            shipperRequest.ReviewedBy = Guid.Empty;
             shipperRequest.VerifiedAt = null;
             shipperRequest.CreatedAt = DateTime.UtcNow;
 
@@ -55,10 +55,11 @@ namespace UserService.Services.Implements
 
                     return s;
                 });
+            var result = new PagedResult<ShipperRequestResponse>(response, pagedShipperRequests.PaginationRequest, pagedShipperRequests.TotalCount);
 
             return new ApiResponse<PagedResult<ShipperRequestResponse>>(
                 StatusCodes.Status200OK,
-                new PagedResult<ShipperRequestResponse>(response));
+                result);
         }
 
         public async Task<ApiResponse<ShipperResponse>> GetShipperByIdAsync(Guid shipperId)
@@ -82,10 +83,11 @@ namespace UserService.Services.Implements
             var pagedShippers = await shippers.ToPagedResultAsync(paginationRequest);
 
             var response = _mapper.ToShipperResponseList(pagedShippers.Items);
+            var result = new PagedResult<ShipperResponse>(response, pagedShippers.PaginationRequest, pagedShippers.TotalCount);
 
             return new ApiResponse<PagedResult<ShipperResponse>>(
                 StatusCodes.Status200OK,
-                new PagedResult<ShipperResponse>(response));
+                result);
         }
 
         public async Task<ApiResponse<ConfirmationResponse>> UpdateShipperAsync(Guid shipperId, UpdateShipperRequest request)

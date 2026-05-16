@@ -1,12 +1,8 @@
 ﻿using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
-using Microsoft.EntityFrameworkCore;
 using NotificationService.Entities;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Interfaces;
-using Twilio.TwiML.Messaging;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Linq;
 
 namespace NotificationService.Consuming
 {
@@ -41,6 +37,19 @@ namespace NotificationService.Consuming
 
         private async Task SendToNearByShipper(Guid shipperId, string title, string body, Dictionary<string, string> data)
         {
+            await _notificationRepository.CreateNotificationAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = shipperId,
+                Title = title,
+                Body = body,
+                Type = "order_pickup",
+                ReferenceId = null,
+                ReferenceType = "order",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
             var userDevices = await _notificationRepository.GetAllUserDevicesByUserIdAsync(shipperId);
 
             var deviceTokens = new List<string>();

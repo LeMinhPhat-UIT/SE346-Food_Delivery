@@ -14,6 +14,12 @@ namespace NotificationService.Repositories.Implements
             _context = context;
         }
 
+        public async Task CreateNotificationAsync(Notification notification)
+        {
+            await _context.Notifications.AddAsync(notification);
+            await _context.SaveChangesAsync();
+        }
+
         public Task<IQueryable<UserDevice>> GetAllUserDevicesAsync()
         {
             IQueryable<UserDevice> query = _context.UserDevices.Where(ud => ud.DeletedAt == null).AsNoTracking().AsQueryable();

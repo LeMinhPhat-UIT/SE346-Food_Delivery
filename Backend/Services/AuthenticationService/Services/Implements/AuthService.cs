@@ -12,6 +12,7 @@ using Messaging.RabbitMq.Publishing;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Cryptography;
 using System.Security.Claims;
 using System.Text;
 
@@ -62,7 +63,7 @@ namespace AuthenticationService.Services.Implements
 
                 var otp = GenerateOtp();
                 existingUser.Otp = otp;
-                existingUser.OtpExpiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_SECONDS);
+                existingUser.OtpExpiresAt = DateTime.UtcNow.AddSeconds(OTP_EXPIRY_SECONDS);
 
                 await _authRepository.UpdateUserAsync(existingUser);
 
@@ -71,9 +72,7 @@ namespace AuthenticationService.Services.Implements
                     ExpiresAt = existingUser.OtpExpiresAt.Value
                 };
 
-                //await PublishOtpEventAsync(otpEvent);
-
-                await _eventPublisher.PublishAsync(otpEvent);
+                await PublishOtpEventAsync(otpEvent);
 
                 return new ApiResponse<RegisterResponse>(200, new RegisterResponse
                 {
@@ -88,7 +87,7 @@ namespace AuthenticationService.Services.Implements
 
             var otpCode = GenerateOtp();
             user.Otp = otpCode;
-            user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_SECONDS);
+            user.OtpExpiresAt = DateTime.UtcNow.AddSeconds(OTP_EXPIRY_SECONDS);
 
             var result = await _authRepository.RegisterUserAsync(user, request.Password);
 
@@ -174,7 +173,7 @@ namespace AuthenticationService.Services.Implements
 
             var otp = GenerateOtp();
             user.Otp = otp;
-            user.OtpExpiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_SECONDS);
+            user.OtpExpiresAt = DateTime.UtcNow.AddSeconds(OTP_EXPIRY_SECONDS);
 
             await _authRepository.UpdateUserAsync(user);
 
@@ -216,7 +215,7 @@ namespace AuthenticationService.Services.Implements
                         UserId = user.Id,
                         Email = user.Email!,
                         Message = "Your account is locked due to failed access multilple time",
-                        LockoutEndDate = DateTime.UtcNow.AddSeconds(_options.Value.LockoutSettings.DefaultLockoutTimeSpanInMinutes)
+                        LockoutEndDate = DateTime.UtcNow.AddMinutes(_options.Value.LockoutSettings.DefaultLockoutTimeSpanInMinutes)
                     };
 
                     await _eventPublisher.PublishAsync(lockedOutEvent);
@@ -298,8 +297,7 @@ namespace AuthenticationService.Services.Implements
 
         private static string GenerateOtp()
         {
-            var random = new Random();
-            return random.Next(100000, 999999).ToString();
+            return RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         }
 
         private async Task PublishOtpEventAsync(OtpSendRequestedEvent @event)

@@ -70,6 +70,8 @@ namespace UserService.Persistences
                     .WithMany()
                     .HasForeignKey(mr => mr.ReviewedBy);
             });
+
+            Seeding.InitializeData(modelBuilder);
         }
 
         public DbSet<User> Users { get; set; }

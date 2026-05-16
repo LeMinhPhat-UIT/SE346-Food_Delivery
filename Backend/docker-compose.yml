@@ -164,7 +164,7 @@ services:
       POSTGRES_USER: ${USER_DB_USER}
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
     ports:
-      - "${USER_DB_PORT:-5432}:5432"
+      - "${USER_DB_PORT:-5434}:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -185,7 +185,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=${CATALOG_SERVICE_CONTAINER_PORT}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${CATALOG_DATABASE_URL}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - JWT_SECRET=${JWT_KEY}
       - JWT_ISSUER=${JWT_ISSUER}
@@ -226,7 +226,10 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${DELIVERY_SERVICE_CONTAINER_PORT:-8080}
       ConnectionStrings__DeliveryDbConnectionString: Host=delivery-db;Port=5432;Database=${DELIVERY_DB_NAME};Username=${DELIVERY_DB_USER};Password=${DELIVERY_DB_PASSWORD}
-      ConnectionStrings__RedisConnection: delivery-redis:6379,password=${REDIS_PASSWORD}
+      ConnectionStrings__RedisConnection: ${DELIVERY_REDIS_HOST:-delivery-redis}:${DELIVERY_REDIS_PORT:-6379},password=${DELIVERY_REDIS_PASSWORD}
+      DELIVERY_REDIS_HOST: ${DELIVERY_REDIS_HOST:-delivery-redis}
+      DELIVERY_REDIS_PORT: ${DELIVERY_REDIS_PORT:-6379}
+      DELIVERY_REDIS_PASSWORD: ${DELIVERY_REDIS_PASSWORD}
       RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
@@ -267,9 +270,9 @@ services:
     image: redis:7-alpine
     container_name: delivery-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${DELIVERY_REDIS_PASSWORD}
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${DELIVERY_REDIS_PORT:-6379}:6379"
     networks:
       - backend-network
 
@@ -286,11 +289,11 @@ services:
       - PORT=${ORDER_SERVICE_CONTAINER_PORT}
       - DATABASE_URL=postgresql://${ORDER_DB_USER}:${ORDER_DB_PASSWORD}@${ORDER_DB_HOST}:5432/${ORDER_DB_NAME}?schema=public
       - REDIS_HOST=${ORDER_REDIS_HOST}
-      - REDIS_PORT=6379
+      - REDIS_PORT=${ORDER_REDIS_PORT}
       - REDIS_PASSWORD=${ORDER_REDIS_PASSWORD}
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
-      - USER_SERVICE_URL=http://user-service:8080/api/users
-      - CATALOG_SERVICE_URL=http://catalog-service:8080/api/catalog
+      - USER_SERVICE_URL=${USER_SERVER_URL}
+      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL}
       - JWT_SECRET=${JWT_KEY}
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_AUDIENCE=${JWT_AUDIENCE}

@@ -6,6 +6,7 @@ using DeliveryService.Repositories.Interfaces;
 using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
 using Messaging.RabbitMq.Publishing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using System.Linq;
@@ -18,13 +19,15 @@ namespace DeliveryService.Consuming
         private readonly IRedisRepository _redisRepository;
         private readonly IOptions<DeliveryOption> _deliveryOptions;
         private readonly IEventPublisher _publisher;
+        private readonly ILogger<OrderCompletedEventHandler> _logger;
 
-        public OrderCompletedEventHandler(IDeliveryRepository deliveryRepository, IRedisRepository redisRepository, IOptions<DeliveryOption> deliveryOptions, IEventPublisher publisher)
+        public OrderCompletedEventHandler(IDeliveryRepository deliveryRepository, IRedisRepository redisRepository, IOptions<DeliveryOption> deliveryOptions, IEventPublisher publisher, ILogger<OrderCompletedEventHandler> logger)
         {
             _deliveryRepository = deliveryRepository;
             _redisRepository = redisRepository;
             _deliveryOptions = deliveryOptions;
             _publisher = publisher;
+            _logger = logger;
         }
 
         public async Task Handle(OrderCompletedEvent @event)
@@ -61,6 +64,10 @@ namespace DeliveryService.Consuming
                 }).ToList();
 
                 await _deliveryRepository.CreateShipperAssignmentsAsync(assignments);
+            }
+            else
+            {
+                _logger.LogWarning("No available shippers found for order {OrderId}", @event.OrderId);
             }
 
             var shipperFoundEvent = new ShipperFoundEvent()

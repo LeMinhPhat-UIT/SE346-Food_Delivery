@@ -30,7 +30,7 @@ namespace UserService.Services.Implements
             merchantRequest.UserId = userId;
             merchantRequest.VerificationStatus = VerificationStatus.Pending;
             merchantRequest.RejectedReason = string.Empty;
-            merchantRequest.ReviewedBy = userId;
+            merchantRequest.ReviewedBy = Guid.Empty;
             merchantRequest.VerifiedAt = null;
             merchantRequest.CreatedAt = DateTime.UtcNow;
 
@@ -55,10 +55,11 @@ namespace UserService.Services.Implements
 
                     return r;
                 });
+            var result = new PagedResult<MerchantRequestResponse>(response, pagedMerchantRequests.PaginationRequest, pagedMerchantRequests.TotalCount);
 
             return new ApiResponse<PagedResult<MerchantRequestResponse>>(
                 StatusCodes.Status200OK, 
-                new PagedResult<MerchantRequestResponse>(response));
+                result);
         }
 
         public async Task<ApiResponse<ConfirmationResponse>> ReviewMerchantRequestAsync(Guid requestId, Guid reviewerId, ReviewMerchantRequest request)
@@ -148,10 +149,11 @@ namespace UserService.Services.Implements
             var pagedMerchants = await merchants.ToPagedResultAsync(paginationRequest);
 
             var response = _mapper.ToMerchantResponseList(pagedMerchants.Items);
+            var result = new PagedResult<MerchantResponse>(response, pagedMerchants.PaginationRequest, pagedMerchants.TotalCount);
 
             return new ApiResponse<PagedResult<MerchantResponse>>(
                 StatusCodes.Status200OK,
-                new PagedResult<MerchantResponse>(response));
+                result);
         }
 
         public async Task<ApiResponse<MerchantResponse>> GetMerchantByIdAsync(Guid merchantId)
@@ -244,8 +246,9 @@ namespace UserService.Services.Implements
 
             var pagedMerchantLocations = await merchantLocations.ToPagedResultAsync(paginationRequest);
             var result = _mapper.ToMerchantAddressResponseList(pagedMerchantLocations.Items);
+            var pagedResult = new PagedResult<MerchantAddressResponse>(result, pagedMerchantLocations.PaginationRequest, pagedMerchantLocations.TotalCount);
 
-            return new ApiResponse<PagedResult<MerchantAddressResponse>>(StatusCodes.Status200OK, new PagedResult<MerchantAddressResponse>(result));
+            return new ApiResponse<PagedResult<MerchantAddressResponse>>(StatusCodes.Status200OK, pagedResult);
         }
 
         public async Task<ApiResponse<MerchantAddressResponse>> GetMerchantAddressByIdAsync(Guid addressId)

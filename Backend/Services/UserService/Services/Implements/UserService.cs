@@ -28,10 +28,11 @@ namespace UserService.Services.Implements
             var pagedUserList = await userList.ToPagedResultAsync(paginationRequest);
 
             var response = _mapper.ToUserProfileResponseList(pagedUserList.Items);
+            var result = new PagedResult<UserProfileResponse>(response, pagedUserList.PaginationRequest, pagedUserList.TotalCount);
 
             return new ApiResponse<PagedResult<UserProfileResponse>>(
                 StatusCodes.Status200OK, 
-                new PagedResult<UserProfileResponse>(response));
+                result);
         }
 
         public async Task<ApiResponse<UserProfileResponse>> GetUserAsync(Guid id)
@@ -92,8 +93,9 @@ namespace UserService.Services.Implements
             var pagedAddresses = await addresses.ToPagedResultAsync(paginationRequest);
 
             var response = _mapper.ToUserAddressResponseList(pagedAddresses.Items);
+            var result = new PagedResult<UserAddressResponse>(response, pagedAddresses.PaginationRequest, pagedAddresses.TotalCount);
 
-            return new ApiResponse<PagedResult<UserAddressResponse>>(StatusCodes.Status200OK, new PagedResult<UserAddressResponse>(response));
+            return new ApiResponse<PagedResult<UserAddressResponse>>(StatusCodes.Status200OK, result);
         }
 
         public async Task<ApiResponse<ConfirmationResponse>> AddUserAddressAsync(Guid userId, CreateUserAddressRequest request)
@@ -173,8 +175,9 @@ namespace UserService.Services.Implements
             var pagedAddresses = await addresses.ToPagedResultAsync(paginationRequest);
 
             var response = _mapper.ToUserAddressResponseList(pagedAddresses.Items);
+            var result = new PagedResult<UserAddressResponse>(response, pagedAddresses.PaginationRequest, pagedAddresses.TotalCount);
 
-            return new ApiResponse<PagedResult<UserAddressResponse>>(StatusCodes.Status200OK, new PagedResult<UserAddressResponse>(response));
+            return new ApiResponse<PagedResult<UserAddressResponse>>(StatusCodes.Status200OK, result);
         }
 
         public async Task<ApiResponse<UserAddressResponse>> GetUserAddressByIdAsync(Guid addressId)

@@ -15,6 +15,6 @@ namespace DeliveryService.Services.Interfaces
         Task<IQueryable<ShipperAssignment>?> GetAssignmentsByShipperIdAsync(Guid shipperId);
         Task<(bool Success, string Message)> AcceptOrRejectAssignmentAsync(Guid assignmentId, AcceptAssignmentRequest request);
         Task<(bool Success, string Message)> UpdateAssignmentStatusAsync(Guid assignmentId, UpdateDeliveryStatusRequest request);
-        string GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType);
+        (string FileKey, string UploadUrl) GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType);
     }
 }

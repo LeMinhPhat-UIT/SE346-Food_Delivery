@@ -1,7 +1,7 @@
 ﻿using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Common;
 using Messaging.Contracts.Events;
-using Microsoft.EntityFrameworkCore;
+using NotificationService.Entities;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Interfaces;
 
@@ -28,6 +28,19 @@ namespace NotificationService.Consuming
                 { "Type", "order_update" },
                 { "Status", @event.OrderStatus.ToString() }
             };
+
+            await _notificationRepository.CreateNotificationAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = @event.UserId,
+                Title = TITLE,
+                Body = BODY,
+                Type = "order_update",
+                ReferenceId = @event.OrderId,
+                ReferenceType = "order",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await SendToCustomer(@event.UserId, TITLE, BODY, DATA);
         }

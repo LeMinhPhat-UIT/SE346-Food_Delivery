@@ -81,6 +81,7 @@ namespace UserService.Controllers
         }
 
         [HttpGet("merchants")]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantResponse>>>> GetAllMerchants([FromQuery] PaginationRequest paginationRequest)
         {
             try
@@ -99,6 +100,7 @@ namespace UserService.Controllers
         }
 
         [HttpGet("merchants/{merchantId:guid}")]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<MerchantResponse>>> GetMerchantById(Guid merchantId)
         {
             try
@@ -116,7 +118,8 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("merchant/{merchantId:guid}/location")]
+        [HttpGet("merchants/{merchantId:guid}/location")]
+        [Authorize]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantAddressResponse>>>> GetMerchantAddress([FromQuery] PaginationRequest paginationRequest, Guid merchantId)
         {
             var response = await _userService.GetMerchantAddressesByMerchantIdAsync(paginationRequest, merchantId);

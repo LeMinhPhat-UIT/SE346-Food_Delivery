@@ -3,6 +3,7 @@ using DeliveryService.Entities;
 using DeliveryService.Services.Interfaces;
 using Messaging.Contracts.Common;
 using Messaging.Contracts.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,7 @@ namespace DeliveryService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DeliveriesController : ControllerBase
     {
         private readonly IDeliveryService _deliveryService;
@@ -121,7 +123,10 @@ namespace DeliveryService.Controllers
             {
                 if (message.Contains("already accepted"))
                     return Conflict(new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, message));
-                
+
+                if (message.Contains("handled") || message.Contains("required") || message.Contains("ready") || message.Contains("unsupported", StringComparison.OrdinalIgnoreCase))
+                    return BadRequest(new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, message));
+
                 return NotFound(new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, message));
             }
 
@@ -148,13 +153,13 @@ namespace DeliveryService.Controllers
             if (orderId == Guid.Empty || shipperId == Guid.Empty || string.IsNullOrWhiteSpace(stage) || string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(contentType))
                 return BadRequest(new ApiResponse<PresignUrlResponse>(StatusCodes.Status400BadRequest, "Invalid upload url request"));
 
-            var uploadUrl = _deliveryService.GetUploadUrl(orderId, shipperId, stage, fileName, contentType);
+            var (fileKey, uploadUrl) = _deliveryService.GetUploadUrl(orderId, shipperId, stage, fileName, contentType);
 
             return Ok(new ApiResponse<PresignUrlResponse>
             {
                 Data = new PresignUrlResponse
                 {
-                    FileKey = $"deliveries/{orderId}/{shipperId}/{stage.Trim().ToLowerInvariant()}/{Path.GetFileName(fileName)}",
+                    FileKey = fileKey,
                     UploadUrl = uploadUrl,
                     ContentType = contentType
                 }

@@ -4,8 +4,13 @@ using Messaging.RabbitMq.Extensions;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Consuming;
 using NotificationService.HostedService;
+using NotificationService.Mappers;
 using NotificationService.Options;
 using NotificationService.Persistences;
+using NotificationService.Repositories.Implements;
+using NotificationService.Repositories.Interfaces;
+using NotificationService.Services.Implements;
+using NotificationService.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +27,11 @@ builder.Services.AddTransient<IEventHandler<LockedOutEvent>, LockedOutEventHandl
 builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
 builder.Services.AddTransient<IEventHandler<ShipperFoundEvent>, ShipperFoundEventHandler>();
 builder.Services.AddTransient<IEventHandler<DeliveryMilestoneEvent>, DeliveryMilestoneEventHandler>();
+builder.Services.AddTransient<IPushNotificationService, PushNotificationService>();
+builder.Services.AddTransient<UserDeviceMapper>();
+
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService.Services.Implements.NotificationService>();
 
 builder.Services.AddHostedService<EventConsumerHostedService>();
 

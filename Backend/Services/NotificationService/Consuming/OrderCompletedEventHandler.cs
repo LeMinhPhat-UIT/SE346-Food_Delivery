@@ -1,5 +1,4 @@
 ﻿using Messaging.Abstractions.Dispatching;
-using Messaging.Contracts.Common;
 using Messaging.Contracts.Events;
 using NotificationService.Entities;
 using NotificationService.Repositories.Interfaces;

@@ -4,7 +4,6 @@ using DeliveryService.Services.Interfaces;
 using Messaging.Contracts.Common;
 using Messaging.Contracts.Extensions;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeliveryService.Controllers

@@ -1,7 +1,6 @@
 ﻿using Messaging.Contracts.Common;
 using Messaging.Contracts.Extensions;
 using NotificationService.DTOs;
-using NotificationService.Entities;
 using NotificationService.Mappers;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Interfaces;

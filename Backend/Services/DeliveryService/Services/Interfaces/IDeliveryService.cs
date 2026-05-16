@@ -1,6 +1,5 @@
 using DeliveryService.DTOs;
 using DeliveryService.Entities;
-using Messaging.Contracts.Common;
 
 namespace DeliveryService.Services.Interfaces
 {

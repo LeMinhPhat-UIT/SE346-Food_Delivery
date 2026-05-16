@@ -1,7 +1,7 @@
 using Messaging.Abstractions.Dispatching;
 using Messaging.Abstractions.Registry;
-using Messaging.RabbitMq.Consuming;
 using Messaging.RabbitMq.Connection;
+using Messaging.RabbitMq.Consuming;
 using Messaging.RabbitMq.Options;
 using Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.Options;

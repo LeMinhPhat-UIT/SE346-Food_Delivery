@@ -7,7 +7,7 @@ namespace AuthenticationService.DTOs
         [Required]
         [EmailAddress]
         public string Email { get; set; } = null!;
-        
+
         [Required]
         public string Otp { get; set; } = null!;
     }

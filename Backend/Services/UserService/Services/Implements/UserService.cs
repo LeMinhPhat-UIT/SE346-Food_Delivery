@@ -1,7 +1,6 @@
 ﻿using Messaging.Contracts.Common;
 using Messaging.Contracts.Extensions;
 using Messaging.RabbitMq.Publishing;
-using UserService.DTOs.MerchantDTOs;
 using UserService.DTOs.User;
 using UserService.Mappers;
 using UserService.Repositories.Interfaces;
@@ -31,7 +30,7 @@ namespace UserService.Services.Implements
             var result = new PagedResult<UserProfileResponse>(response, pagedUserList.PaginationRequest, pagedUserList.TotalCount);
 
             return new ApiResponse<PagedResult<UserProfileResponse>>(
-                StatusCodes.Status200OK, 
+                StatusCodes.Status200OK,
                 result);
         }
 

@@ -58,7 +58,7 @@ namespace UserService.Services.Implements
             var result = new PagedResult<MerchantRequestResponse>(response, pagedMerchantRequests.PaginationRequest, pagedMerchantRequests.TotalCount);
 
             return new ApiResponse<PagedResult<MerchantRequestResponse>>(
-                StatusCodes.Status200OK, 
+                StatusCodes.Status200OK,
                 result);
         }
 

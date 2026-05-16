@@ -1,8 +1,5 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
-using System;
-using System.IO;
-using System.Net.Http;
 
 namespace UserService.Helpers
 {

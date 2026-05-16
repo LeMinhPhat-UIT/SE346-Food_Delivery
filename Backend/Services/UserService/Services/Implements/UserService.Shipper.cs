@@ -2,7 +2,6 @@
 using Messaging.Contracts.Events;
 using Messaging.Contracts.Extensions;
 using UserService.DTOs.ShipperDTOs;
-using UserService.Entities;
 using UserService.Enums;
 
 namespace UserService.Services.Implements

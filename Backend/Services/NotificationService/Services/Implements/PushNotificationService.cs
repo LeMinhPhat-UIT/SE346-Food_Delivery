@@ -1,5 +1,5 @@
-﻿using NotificationService.Services.Interfaces;
-using FirebaseAdmin.Messaging;
+﻿using FirebaseAdmin.Messaging;
+using NotificationService.Services.Interfaces;
 
 namespace NotificationService.Services.Implements
 {

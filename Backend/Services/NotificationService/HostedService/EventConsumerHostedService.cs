@@ -1,11 +1,9 @@
 ﻿using Messaging.Abstractions.Dispatching;
 using Messaging.Abstractions.Registry;
-using Messaging.RabbitMq.Consuming;
 using Messaging.RabbitMq.Connection;
-using Messaging.RabbitMq.Constants;
+using Messaging.RabbitMq.Consuming;
 using Messaging.RabbitMq.Options;
 using Messaging.RabbitMq.Topology;
-using Messaging.RabbitMq.Helpers;
 using Microsoft.Extensions.Options;
 
 namespace NotificationService.HostedService
@@ -39,7 +37,7 @@ namespace NotificationService.HostedService
 
                 var connection = await connectionManager.GetConnectionAsync();
                 var channel = await connection.CreateChannelAsync();
-                
+
                 await RabbitMqTopology.EnsureTopologyAsync(channel, rabbitOptions);
 
                 var consumerLogger = loggerFactory.CreateLogger<GenericEventConsumer>();

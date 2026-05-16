@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace AuthenticationService.DTOs
 {
     public class RegisterResponse

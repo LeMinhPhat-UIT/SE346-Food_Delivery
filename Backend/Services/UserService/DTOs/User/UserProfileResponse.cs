@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace UserService.DTOs.User
+﻿namespace UserService.DTOs.User
 {
     public class UserProfileResponse
     {

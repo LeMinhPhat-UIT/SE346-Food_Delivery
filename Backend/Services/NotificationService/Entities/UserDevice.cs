@@ -1,5 +1,5 @@
-﻿using NotificationService.Enums;
-using Messaging.Contracts.Common.Models;
+﻿using Messaging.Contracts.Common.Models;
+using NotificationService.Enums;
 
 namespace NotificationService.Entities
 {

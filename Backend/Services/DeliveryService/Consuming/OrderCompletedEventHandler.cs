@@ -1,15 +1,12 @@
-﻿using DeliveryService.Enums;
-using DeliveryService.Entities;
+﻿using DeliveryService.Entities;
+using DeliveryService.Enums;
 using DeliveryService.Options;
-using DeliveryService.Repositories.Implements;
 using DeliveryService.Repositories.Interfaces;
 using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
 using Messaging.RabbitMq.Publishing;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using System.Linq;
 
 namespace DeliveryService.Consuming
 {

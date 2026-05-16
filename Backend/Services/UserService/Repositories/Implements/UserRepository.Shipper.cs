@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UserService.Entities;
 using UserService.Enums;
-using UserService.Repositories.Interfaces;
 
 namespace UserService.Repositories.Implements
 {

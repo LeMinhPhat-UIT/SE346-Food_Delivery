@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using NotificationService.Options;
 using System.Net;
 using System.Net.Mail;
-using Twilio.TwiML.Messaging;
 
 namespace NotificationService.Consuming
 {

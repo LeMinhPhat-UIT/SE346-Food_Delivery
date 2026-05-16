@@ -12,7 +12,6 @@ using UserService.Mappers;
 using UserService.Persistences;
 using UserService.Repositories.Implements;
 using UserService.Repositories.Interfaces;
-using UserService.Services.Implements;
 using UserService.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);

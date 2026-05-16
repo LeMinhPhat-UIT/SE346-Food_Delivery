@@ -1,9 +1,9 @@
 ﻿using Messaging.Contracts.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using UserService.Enums;
-using Microsoft.AspNetCore.Authorization;
 using UserService.DTOs.MerchantDTOs;
+using UserService.Enums;
 
 namespace UserService.Controllers
 {

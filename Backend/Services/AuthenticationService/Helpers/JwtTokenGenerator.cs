@@ -1,7 +1,6 @@
 ﻿using AuthenticationService.Entities;
 using AuthenticationService.Options;
 using AuthenticationService.Repositories.Interfaces;
-using AuthenticationService.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

@@ -12,7 +12,7 @@ namespace UserService.DTOs.ShipperDTOs
         public string LicenseBackUrl { get; set; } = null!;
 
         public string IdFrontUrl { get; set; } = null!;
-        public string IdBackUrl { get; set;} = null!;
+        public string IdBackUrl { get; set; } = null!;
 
         public string SelfieUrl { get; set; } = null!;
 

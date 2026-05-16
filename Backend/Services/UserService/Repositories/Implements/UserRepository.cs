@@ -49,11 +49,11 @@ namespace UserService.Repositories.Implements
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
-        
+
         public async Task<bool> CreateUserAddressAsync(Address address)
         {
             await _context.Addresses.AddAsync(address);
-            return await _context.SaveChangesAsync() != 0; 
+            return await _context.SaveChangesAsync() != 0;
         }
 
         public async Task<Address?> GetUserAddressByIdAsync(Guid addressId)

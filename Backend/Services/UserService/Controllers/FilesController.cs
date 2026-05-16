@@ -34,7 +34,7 @@ namespace UserService.Controllers
             {
                 Data = new PresignUrlResponse
                 {
-                    FileKey = filePath, 
+                    FileKey = filePath,
                     UploadUrl = uploadUrl,
                     ContentType = contentType
                 }

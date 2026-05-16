@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.Json;
 using DeliveryService.Entities;
 using DeliveryService.Repositories.Interfaces;
 using Messaging.Contracts.Events;
@@ -10,6 +8,8 @@ using Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace DeliveryService.HostedService
 {

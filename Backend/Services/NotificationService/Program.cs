@@ -32,6 +32,12 @@ builder.Services.AddDbContext<NotificationDbContext>(options => options.UseNpgsq
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

@@ -35,6 +35,8 @@ namespace DeliveryService.Persistences
             {
                 entity.HasKey(sa => sa.Id);
             });
+
+            SeedData.InitializeData(modelBuilder);
         }
 
         public DbSet<DeliveryTracking> DeliveryTrackings { get; set; }

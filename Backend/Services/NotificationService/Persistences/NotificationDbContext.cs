@@ -18,6 +18,8 @@ namespace NotificationService.Persistences
             {
                 entity.HasKey(n => n.Id);
             });
+
+            SeedData.InitializeData(modelBuilder);
         }
 
         public DbSet<Notification> Notifications { get; set; }

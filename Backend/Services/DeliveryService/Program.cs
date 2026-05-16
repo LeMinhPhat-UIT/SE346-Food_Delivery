@@ -67,6 +67,12 @@ builder.Services.Configure<DeliveryOption>(builder.Configuration.GetSection("Del
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<DeliveryDbContext>();
+    await dbContext.Database.EnsureCreatedAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -130,6 +130,8 @@ services:
     ports:
       - "${NOTIFICATION_SERVICE_HOST_PORT:-8083}:${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:
+      notification-db:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:

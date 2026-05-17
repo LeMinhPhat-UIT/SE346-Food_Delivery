@@ -31,7 +31,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${AUTH_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__AuthenticationDbConnectionString: Host=authentication-db;Port=5432;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD}
+      ConnectionStrings__AuthenticationDbConnectionString: Host=${AUTH_DB_HOST};Port=5432;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD}
       RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
@@ -61,7 +61,7 @@ services:
       POSTGRES_USER: ${AUTH_DB_USER}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
     ports:
-      - "${AUTH_DB_PORT:-5433}:5432"
+      - "${AUTH_DB_PORT}:5432"
     volumes:
       - authentication_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -82,7 +82,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${USER_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__UserDbConnectionString: Host=user-db;Port=5432;Database=${USER_DB_NAME};Username=${USER_DB_USER};Password=${USER_DB_PASSWORD}
+      ConnectionStrings__UserDbConnectionString: Host=${USER_DB_HOST};Port=5432;Database=${USER_DB_NAME};Username=${USER_DB_USER};Password=${USER_DB_PASSWORD}
       RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
@@ -114,7 +114,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__NotificationDbConnectionString: Host=notification-db;Port=5432;Database=${NOTIFICATION_DB_NAME};Username=${NOTIFICATION_DB_USER};Password=${NOTIFICATION_DB_PASSWORD}
+      ConnectionStrings__NotificationDbConnectionString: Host=${NOTIFICATION_DB_HOST};Port=5432;Database=${NOTIFICATION_DB_NAME};Username=${NOTIFICATION_DB_USER};Password=${NOTIFICATION_DB_PASSWORD}
       RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
@@ -130,6 +130,8 @@ services:
     ports:
       - "${NOTIFICATION_SERVICE_HOST_PORT:-8083}:${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:
+      notification-db:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -144,7 +146,7 @@ services:
       POSTGRES_USER: ${NOTIFICATION_DB_USER}
       POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
     ports:
-      - "${NOTIFICATION_DB_PORT:-5433}:5432"
+      - "${NOTIFICATION_DB_PORT}:5432"
     volumes:
       - notification_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -164,7 +166,7 @@ services:
       POSTGRES_USER: ${USER_DB_USER}
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
     ports:
-      - "${USER_DB_PORT:-5434}:5432"
+      - "${USER_DB_PORT}:5432"
     volumes:
       - user_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -225,7 +227,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: ${DELIVERY_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__DeliveryDbConnectionString: Host=delivery-db;Port=5432;Database=${DELIVERY_DB_NAME};Username=${DELIVERY_DB_USER};Password=${DELIVERY_DB_PASSWORD}
+      ConnectionStrings__DeliveryDbConnectionString: Host=${DELIVERY_DB_HOST};Port=5432;Database=${DELIVERY_DB_NAME};Username=${DELIVERY_DB_USER};Password=${DELIVERY_DB_PASSWORD}
       ConnectionStrings__RedisConnection: ${DELIVERY_REDIS_HOST:-delivery-redis}:${DELIVERY_REDIS_PORT:-6379},password=${DELIVERY_REDIS_PASSWORD}
       DELIVERY_REDIS_HOST: ${DELIVERY_REDIS_HOST:-delivery-redis}
       DELIVERY_REDIS_PORT: ${DELIVERY_REDIS_PORT:-6379}
@@ -255,7 +257,7 @@ services:
       POSTGRES_USER: ${DELIVERY_DB_USER}
       POSTGRES_PASSWORD: ${DELIVERY_DB_PASSWORD}
     ports:
-      - "${DELIVERY_DB_PORT:-5435}:5432"
+      - "${DELIVERY_DB_PORT}:5432"
     volumes:
       - delivery_db_data:/var/lib/postgresql/data
     healthcheck:

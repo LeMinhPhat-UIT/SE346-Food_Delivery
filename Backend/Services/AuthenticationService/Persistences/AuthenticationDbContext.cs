@@ -1,6 +1,8 @@
 using AuthenticationService.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Options;
 
 namespace AuthenticationService.Persistences
 {
@@ -26,6 +28,13 @@ namespace AuthenticationService.Persistences
             });
 
             SeedData.InitializeData(builder);
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+
+            optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }

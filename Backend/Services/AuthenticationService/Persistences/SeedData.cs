@@ -11,7 +11,7 @@ namespace AuthenticationService.Persistences
         {
             var adminRoleId = Guid.Parse("44444444-4444-4444-4444-444444444444");
             var adminUserId = Guid.Parse("55555555-5555-5555-5555-555555555555");
-            var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
+            var seededAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             builder.Entity<ApplicationRole>().HasData(
                 new ApplicationRole { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Name = "Customer", NormalizedName = "CUSTOMER" },
@@ -36,7 +36,7 @@ namespace AuthenticationService.Persistences
                 CreatedAt = seededAt
             };
 
-            adminUser.PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(adminUser, "Admin@123");
+            adminUser.PasswordHash = "AQAAAAIAAYagAAAAEHwR9ekhFFazFAUin52gHpisNjCdZFdVS0N+lAgSluDA+/uEYfuONXMTsB3L8jrAdA==";
 
             builder.Entity<ApplicationUser>().HasData(adminUser);
 

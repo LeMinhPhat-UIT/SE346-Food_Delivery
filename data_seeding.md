@@ -12,7 +12,8 @@ Seed setup:
 Seeded records:
 
 - 4 roles (`Customer`, `Merchant`, `Shipper`, `Admin`)
-- 1 admin account (`admin@fooddelivery.local`) assigned to `Admin`
+- 4 accounts (`admin@fooddelivery.local`, `customer@fooddelivery.local`, `merchant@fooddelivery.local`, `shipper@fooddelivery.local`)
+- 4 role assignments matching those accounts
 
 ## UserService
 
@@ -23,10 +24,12 @@ Seed setup:
 
 Seeded records:
 
-- 2 users (`Seeded Customer`, `Seeded Merchant Owner`)
-- 2 user addresses (one default address per user)
+- 3 users (`Seeded Customer`, `Seeded Merchant Owner`, `Seeded Shipper`)
+- 3 user addresses (one default address per user)
 - 1 approved merchant linked to `Seeded Merchant Owner`
 - 1 merchant store address linked to that merchant
+- 1 approved shipper linked to `Seeded Shipper`
+- 1 shipper onboarding request tied to that shipper
 
 ## DeliveryService
 
@@ -38,10 +41,11 @@ Seed setup:
 
 Seeded records:
 
-- 1 delivery tracking
+- 2 delivery tracking records
 - 1 shipper assignment
-- 1 shipper location history record
+- 2 shipper location history records
 - 1 shipper availability record
+- 1 incident record
 
 ## NotificationService
 
@@ -53,12 +57,12 @@ Seed setup:
 
 Seeded records:
 
-- 1 notification
-- 1 user device
+- 3 notifications
+- 3 user devices
 
 ## Notes
 
-- Seeding runs during model creation and is applied when each service initializes its database with `EnsureCreatedAsync`.
+- Seeding runs during model creation and is applied when each service initializes its database with `MigrateAsync`.
 - Seeded IDs are fixed GUIDs so local environments remain deterministic.
 Add database seeding support for every microservice except the Catalog Service and Order Service.
 

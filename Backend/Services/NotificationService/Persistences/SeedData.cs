@@ -8,22 +8,52 @@ namespace NotificationService.Persistences
     {
         public static void InitializeData(ModelBuilder modelBuilder)
         {
-            var userId = Guid.Parse("71111111-1111-1111-1111-111111111111");
+            var customerUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            var shipperUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
             var notificationId = Guid.Parse("72222222-2222-2222-2222-222222222222");
             var userDeviceId = Guid.Parse("73333333-3333-3333-3333-333333333333");
+            var notificationUpdateId = Guid.Parse("74444444-4444-4444-4444-444444444444");
+            var notificationShipperId = Guid.Parse("75555555-5555-5555-5555-555555555555");
+            var merchantDeviceId = Guid.Parse("76666666-6666-6666-6666-666666666666");
+            var shipperDeviceId = Guid.Parse("77777777-7777-7777-7777-777777777777");
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
 
             modelBuilder.Entity<Notification>().HasData(
                 new Notification
                 {
                     Id = notificationId,
-                    UserId = userId,
+                    UserId = customerUserId,
                     Title = "Welcome to Food Delivery",
                     Body = "Your account is ready to receive order updates.",
                     Type = "system",
                     ReferenceType = "user",
                     IsRead = false,
                     CreatedAt = seededAt
+                },
+                new Notification
+                {
+                    Id = notificationUpdateId,
+                    UserId = customerUserId,
+                    Title = "Your order is being prepared",
+                    Body = "The merchant has confirmed the order and it is being prepared for delivery.",
+                    Type = "order_update",
+                    ReferenceId = Guid.Parse("62222222-2222-2222-2222-222222222222"),
+                    ReferenceType = "delivery_tracking",
+                    IsRead = true,
+                    CreatedAt = seededAt.AddMinutes(10)
+                },
+                new Notification
+                {
+                    Id = notificationShipperId,
+                    UserId = shipperUserId,
+                    Title = "New delivery assignment",
+                    Body = "You have a new order waiting for pickup.",
+                    Type = "assignment",
+                    ReferenceId = Guid.Parse("64444444-4444-4444-4444-444444444444"),
+                    ReferenceType = "delivery_assignment",
+                    IsRead = false,
+                    CreatedAt = seededAt.AddMinutes(15)
                 }
             );
 
@@ -31,9 +61,27 @@ namespace NotificationService.Persistences
                 new UserDevice
                 {
                     Id = userDeviceId,
-                    UserId = userId,
+                    UserId = customerUserId,
                     DeviceToken = "seed-device-token",
                     DeviceType = DeviceType.Android,
+                    IsActive = true,
+                    CreatedAt = seededAt
+                },
+                new UserDevice
+                {
+                    Id = merchantDeviceId,
+                    UserId = merchantUserId,
+                    DeviceToken = "seed-merchant-device-token",
+                    DeviceType = DeviceType.Web,
+                    IsActive = true,
+                    CreatedAt = seededAt
+                },
+                new UserDevice
+                {
+                    Id = shipperDeviceId,
+                    UserId = shipperUserId,
+                    DeviceToken = "seed-shipper-device-token",
+                    DeviceType = DeviceType.Ios,
                     IsActive = true,
                     CreatedAt = seededAt
                 }

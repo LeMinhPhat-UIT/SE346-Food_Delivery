@@ -236,6 +236,12 @@ services:
       RabbitMq__Port: ${RABBITMQ_PORT:-5672}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+      JwtSettings__Key: ${JWT_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
+    volumes:
+      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
     ports:
       - "${DELIVERY_SERVICE_HOST_PORT:-8084}:${DELIVERY_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:

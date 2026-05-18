@@ -60,10 +60,20 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(Merchant.DeletedAt))]
         public partial MerchantResponse ToMerchantResponse(Merchant merchant);
 
+        [MapperIgnoreSource(nameof(MerchantAddress.Merchant))]
+        [MapperIgnoreSource(nameof(MerchantAddress.DeletedAt))]
         public partial MerchantAddressResponse ToMerchantAddressResponse(MerchantAddress merchantAddress);
 
+        [MapperIgnoreSource(nameof(MerchantAddress.Merchant))]
+        [MapperIgnoreSource(nameof(MerchantAddress.DeletedAt))]
         public partial IEnumerable<MerchantAddressResponse> ToMerchantAddressResponseList(IEnumerable<MerchantAddress> merchantAddresses);
 
+        [MapperIgnoreTarget(nameof(MerchantAddress.Id))]
+        [MapperIgnoreTarget(nameof(MerchantAddress.MerchantId))]
+        [MapperIgnoreTarget(nameof(MerchantAddress.Merchant))]
+        [MapperIgnoreTarget(nameof(MerchantAddress.CreatedAt))]
+        [MapperIgnoreTarget(nameof(MerchantAddress.UpdatedAt))]
+        [MapperIgnoreTarget(nameof(MerchantAddress.DeletedAt))]
         public partial MerchantAddress ToMerchantAddress(CreateMerchantAddressRequest request);
     }
 }

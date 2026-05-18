@@ -146,7 +146,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant addresses");
                 }
 
@@ -179,7 +179,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant addresses");
                 }
 
@@ -188,7 +188,7 @@ namespace UserService.Controllers
                 if (!response.Success)
                     return StatusCode(response.StatusCode, response);
 
-                if (response.Data.MerchantId != id && !IsCurrentUserAdmin())
+                if (response.Data!.MerchantId != id && !IsCurrentUserAdmin())
                     return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant addresses");
 
                 return Ok(response);
@@ -215,7 +215,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only add addresses to your own merchant profile");
                 }
 
@@ -248,7 +248,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own merchant addresses");
                 }
 
@@ -257,7 +257,7 @@ namespace UserService.Controllers
                 if (!addressResponse.Success)
                     return StatusCode(addressResponse.StatusCode, addressResponse);
 
-                if (addressResponse.Data.MerchantId != id && !IsCurrentUserAdmin())
+                if (addressResponse.Data!.MerchantId != id && !IsCurrentUserAdmin())
                     return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own merchant addresses");
 
                 var response = await _userService.UpdateMerchantAddressAsync(addressId, request);
@@ -289,7 +289,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own merchant addresses");
                 }
 
@@ -298,7 +298,7 @@ namespace UserService.Controllers
                 if (!addressResponse.Success)
                     return StatusCode(addressResponse.StatusCode, addressResponse);
 
-                if (addressResponse.Data.MerchantId != id && !IsCurrentUserAdmin())
+                if (addressResponse.Data!.MerchantId != id && !IsCurrentUserAdmin())
                     return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own merchant addresses");
 
                 var response = await _userService.DeleteMerchantAddressAsync(addressId);
@@ -330,7 +330,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own merchant profile");
                 }
 
@@ -363,7 +363,7 @@ namespace UserService.Controllers
                     if (!merchantResult.Success)
                         return StatusCode(merchantResult.StatusCode, merchantResult);
 
-                    if (merchantResult.Data.UserId != userId.Value)
+                    if (merchantResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own merchant profile");
                 }
 

@@ -12,6 +12,9 @@
     <Project Path="SharedLibs/Messaging/Messaging.Contracts/Messaging.Contracts.csproj" />
     <Project Path="SharedLibs/Messaging/Messaging.RabbitMq/Messaging.RabbitMq.csproj" />
   </Folder>
+  <Folder Name="/SharedLibs/Utils/">
+    <Project Path="SharedLibs/Utils/OpenApiTransformer/OpenApiTransformer.csproj" Id="98cc1afa-c124-4ada-b40c-f335921384e0" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".env" />
   </Folder>

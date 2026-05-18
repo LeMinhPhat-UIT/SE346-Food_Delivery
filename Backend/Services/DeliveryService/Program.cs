@@ -13,6 +13,7 @@ using Messaging.RabbitMq.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using StackExchange.Redis;
 using System.Text;
 
@@ -25,6 +26,18 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<DeliveryDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DeliveryDbConnectionString")));
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+    {
+        policy.RequireRole("Admin", "ADMIN");
+    });
+
+    options.AddPolicy("ShipperOrAdmin", policy =>
+    {
+        policy.RequireRole("Shipper", "SHIPPER", "Admin", "ADMIN");
+    });
+});
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -65,6 +78,11 @@ builder.Services.AddHostedService<EventConsumerHostedService>();
 
 builder.Services.Configure<DeliveryOption>(builder.Configuration.GetSection("DeliveryOptions"));
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -73,10 +91,12 @@ using (var scope = app.Services.CreateScope())
     await dbContext.Database.MigrateAsync();
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options => options
+        .AddPreferredSecuritySchemes("BearerAuth")
+        .AddHttpAuthentication("BearerAuth", auth => { }));
 }
 
 app.UseHttpsRedirection();

@@ -21,6 +21,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.14.14" />
     <PackageReference Include="Twilio" Version="7.14.9" />
   </ItemGroup>
 
@@ -28,6 +29,7 @@
     <ProjectReference Include="..\..\SharedLibs\Messaging\Messaging.Abstractions\Messaging.Abstractions.csproj" />
     <ProjectReference Include="..\..\SharedLibs\Messaging\Messaging.Contracts\Messaging.Contracts.csproj" />
     <ProjectReference Include="..\..\SharedLibs\Messaging\Messaging.RabbitMq\Messaging.RabbitMq.csproj" />
+    <ProjectReference Include="..\..\SharedLibs\Utils\OpenApiTransformer\OpenApiTransformer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

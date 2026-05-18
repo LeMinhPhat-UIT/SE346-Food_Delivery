@@ -6,6 +6,7 @@ using Messaging.Contracts.Events;
 using Messaging.RabbitMq.Publishing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 
 namespace DeliveryService.Hubs.Implements
 {
@@ -39,6 +40,12 @@ namespace DeliveryService.Hubs.Implements
                 return;
             }
 
+            if (!CanSendForShipper(request.ShipperId))
+            {
+                _logger.LogWarning("Rejected unauthorized location update for connection {ConnectionId}", Context.ConnectionId);
+                return;
+            }
+
             await _redisRepository.UpdateShipperLocationAsync(new ShipperAvailability
             {
                 ShipperId = request.ShipperId,
@@ -55,6 +62,36 @@ namespace DeliveryService.Hubs.Implements
                 OrderId = request.OrderId,
                 ShipperId = request.ShipperId,
             });
+        }
+
+        private Guid? GetCurrentShipperId()
+        {
+            var shipperIdClaim = Context.User?.FindFirstValue("shipperId")
+                ?? Context.User?.FindFirstValue("ShipperId")
+                ?? Context.User?.FindFirstValue("shipper_id");
+
+            return Guid.TryParse(shipperIdClaim, out var shipperId) ? shipperId : null;
+        }
+
+        private bool IsCurrentUserInRole(params string[] allowedRoles)
+        {
+            var roles = Context.User?.FindAll(ClaimTypes.Role)
+                .Select(c => c.Value)
+                .Concat(Context.User.FindAll("role").Select(c => c.Value)) ?? Enumerable.Empty<string>();
+
+            return roles.Any(role => allowedRoles.Any(allowed => string.Equals(role, allowed, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private bool CanSendForShipper(Guid shipperId)
+        {
+            if (IsCurrentUserInRole("Admin", "ADMIN"))
+                return true;
+
+            var currentShipperId = GetCurrentShipperId();
+            if (currentShipperId.HasValue)
+                return currentShipperId.Value == shipperId;
+
+            return IsCurrentUserInRole("Shipper", "SHIPPER");
         }
     }
 }

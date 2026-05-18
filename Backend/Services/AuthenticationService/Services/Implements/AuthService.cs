@@ -215,9 +215,9 @@ namespace AuthenticationService.Services.Implements
                     };
 
                     await _eventPublisher.PublishAsync(lockedOutEvent);
-
-                    return new ApiResponse<LoginResponse>(StatusCodes.Status403Forbidden, "User is locked");
                 }
+
+                return new ApiResponse<LoginResponse>(StatusCodes.Status403Forbidden, "User is locked");
             }
 
             if (!result.Succeeded)

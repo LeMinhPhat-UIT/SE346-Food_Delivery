@@ -125,7 +125,7 @@ namespace UserService.Controllers
                 if (!addressResponse.Success)
                     return StatusCode(addressResponse.StatusCode, addressResponse);
 
-                if (!IsCurrentUserAdmin() && addressResponse.Data.UserId != id)
+                if (!IsCurrentUserAdmin() && addressResponse.Data!.UserId != id)
                     return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own addresses");
 
                 return Ok(addressResponse);
@@ -166,7 +166,7 @@ namespace UserService.Controllers
                 if (!addressResponse.Success)
                     return StatusCode(addressResponse.StatusCode, addressResponse);
 
-                if (!IsCurrentUserAdmin() && addressResponse.Data.UserId != id)
+                if (!IsCurrentUserAdmin() && addressResponse.Data!.UserId != id)
                     return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own addresses");
 
                 var response = await _userService.UpdateUserAddressAsync(addressId, request);
@@ -193,7 +193,7 @@ namespace UserService.Controllers
                 if (!addressResponse.Success)
                     return StatusCode(addressResponse.StatusCode, addressResponse);
 
-                if (!IsCurrentUserAdmin() && addressResponse.Data.UserId != id)
+                if (!IsCurrentUserAdmin() && addressResponse.Data!.UserId != id)
                     return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own addresses");
 
                 var response = await _userService.DeleteUserAddressAsync(addressId);

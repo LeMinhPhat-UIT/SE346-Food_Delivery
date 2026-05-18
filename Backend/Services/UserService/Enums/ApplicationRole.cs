@@ -2,9 +2,9 @@
 {
     public static class ApplicationRole
     {
-        public const string Customer = "CUSTOMER";
-        public const string Admin = "ADMIN";
-        public const string Shipper = "SHIPPER";
-        public const string Merchant = "MERCHANT";
+        public const string Customer = "Customer";
+        public const string Admin = "Admin";
+        public const string Shipper = "Shipper";
+        public const string Merchant = "Merchant";
     }
 }

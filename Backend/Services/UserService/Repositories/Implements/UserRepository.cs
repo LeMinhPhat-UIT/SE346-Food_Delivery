@@ -81,7 +81,7 @@ namespace UserService.Repositories.Implements
             return true;
         }
 
-        public async Task<IQueryable<Address>?> GetAllUserAddressesAsync()
+        public async Task<IQueryable<Address>> GetAllUserAddressesAsync()
         {
             return _context.Addresses
                 .Where(a => a.DeletedAt == null)

@@ -11,7 +11,7 @@ namespace UserService.Repositories.Interfaces
         Task UpdateUserAsync(User user);
 
         Task<bool> CreateUserAddressAsync(Address address);
-        Task<IQueryable<Address>?> GetAllUserAddressesAsync();
+        Task<IQueryable<Address>> GetAllUserAddressesAsync();
         Task<IQueryable<Address>?> GetAllUserAddressesByUserIdAsync(Guid userId);
         Task<Address?> GetUserAddressByIdAsync(Guid addressId);
         Task UpdateUserAddressAsync(Address address);

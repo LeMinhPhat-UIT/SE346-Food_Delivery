@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +82,11 @@ builder.Services
 builder.Services.AddRabbitMq(builder.Configuration);
 builder.Services.AddRabbitMqPublisher();
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -92,9 +98,13 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options => options
+        .AddPreferredSecuritySchemes("BearerAuth")
+        .AddHttpAuthentication("BearerAuth", auth => { }));
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

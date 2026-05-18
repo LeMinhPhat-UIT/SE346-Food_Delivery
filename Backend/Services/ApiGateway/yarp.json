@@ -31,6 +31,33 @@
         "Transforms": [
           { "PathPattern": "/api/catalog/{**catch-all}" }
         ]
+      },
+      "delivery-route": {
+        "ClusterId": "delivery-cluster",
+        "Match": {
+          "Path": "/api/deliveries/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/deliveries/{**catch-all}" }
+        ]
+      },
+      "delivery-hub-route": {
+        "ClusterId": "delivery-cluster",
+        "Match": {
+          "Path": "/hubs/tracking/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/hubs/tracking/{**catch-all}" }
+        ]
+      },
+      "notification-route": {
+        "ClusterId": "notification-cluster",
+        "Match": {
+          "Path": "/api/notifications/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/notifications/{**catch-all}" }
+        ]
       }
     },
     "Clusters": {
@@ -52,6 +79,20 @@
         "Destinations": {
           "catalog-service": {
             "Address": "http://catalog-service:8080"
+          }
+        }
+      },
+      "delivery-cluster": {
+        "Destinations": {
+          "delivery-service": {
+            "Address": "http://delivery-service:8080"
+          }
+        }
+      },
+      "notification-cluster": {
+        "Destinations": {
+          "notification-service": {
+            "Address": "http://notification-service:8080"
           }
         }
       }

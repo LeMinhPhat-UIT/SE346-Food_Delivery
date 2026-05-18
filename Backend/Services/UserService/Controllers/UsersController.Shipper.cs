@@ -124,7 +124,7 @@ namespace UserService.Controllers
                     if (!shipperResult.Success)
                         return StatusCode(shipperResult.StatusCode, shipperResult);
 
-                    if (shipperResult.Data.UserId != userId.Value)
+                    if (shipperResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only update your own shipper profile");
                 }
 
@@ -157,7 +157,7 @@ namespace UserService.Controllers
                     if (!shipperResult.Success)
                         return StatusCode(shipperResult.StatusCode, shipperResult);
 
-                    if (shipperResult.Data.UserId != userId.Value)
+                    if (shipperResult.Data!.UserId != userId.Value)
                         return StatusCode(StatusCodes.Status403Forbidden, "You can only delete your own shipper profile");
                 }
 

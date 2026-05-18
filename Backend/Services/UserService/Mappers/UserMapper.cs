@@ -12,6 +12,8 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(User.ShipperId))]
         [MapperIgnoreSource(nameof(User.Shipper))]
         [MapperIgnoreSource(nameof(User.Addresses))]
+        [MapperIgnoreSource(nameof(User.ShipperRequests))]
+        [MapperIgnoreSource(nameof(User.MerchantRequests))]
         [MapperIgnoreSource(nameof(User.CreatedAt))]
         [MapperIgnoreSource(nameof(User.UpdatedAt))]
         [MapperIgnoreSource(nameof(User.DeletedAt))]
@@ -22,6 +24,8 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(User.ShipperId))]
         [MapperIgnoreSource(nameof(User.Shipper))]
         [MapperIgnoreSource(nameof(User.Addresses))]
+        [MapperIgnoreSource(nameof(User.ShipperRequests))]
+        [MapperIgnoreSource(nameof(User.MerchantRequests))]
         [MapperIgnoreSource(nameof(User.CreatedAt))]
         [MapperIgnoreSource(nameof(User.UpdatedAt))]
         [MapperIgnoreSource(nameof(User.DeletedAt))]
@@ -30,16 +34,19 @@ namespace UserService.Mappers
         [MapperIgnoreTarget(nameof(Address.UserId))]
         [MapperIgnoreTarget(nameof(Address.User))]
         [MapperIgnoreTarget(nameof(Address.Id))]
+        [MapperIgnoreTarget(nameof(Address.CreatedAt))]
+        [MapperIgnoreTarget(nameof(Address.UpdatedAt))]
+        [MapperIgnoreTarget(nameof(Address.DeletedAt))]
         public partial Address ToAddress(CreateUserAddressRequest request);
 
-        [MapperIgnoreSource(nameof(Address.UserId))]
         [MapperIgnoreSource(nameof(Address.User))]
-        [MapperIgnoreSource(nameof(Address.Id))]
+        [MapperIgnoreSource(nameof(Address.UpdatedAt))]
+        [MapperIgnoreSource(nameof(Address.DeletedAt))]
         public partial UserAddressResponse ToUserAddressResponse(Address address);
 
-        [MapperIgnoreSource(nameof(Address.UserId))]
         [MapperIgnoreSource(nameof(Address.User))]
-        [MapperIgnoreSource(nameof(Address.Id))]
+        [MapperIgnoreSource(nameof(Address.UpdatedAt))]
+        [MapperIgnoreSource(nameof(Address.DeletedAt))]
         public partial IEnumerable<UserAddressResponse> ToUserAddressResponseList(IEnumerable<Address> addresses);
     }
 }

@@ -2,6 +2,7 @@ using Messaging.RabbitMq.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Security.Claims;
 using System.Text;
 using UserService.Consuming;
@@ -98,6 +99,11 @@ builder.Services.AddScoped<FirebaseStorageHelper>();
 
 builder.Services.AddHostedService<EventConsumerHostedService>();
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -110,6 +116,9 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options => options
+        .AddPreferredSecuritySchemes("BearerAuth")
+        .AddHttpAuthentication("BearerAuth", auth => { }));
 }
 
 app.UseHttpsRedirection();

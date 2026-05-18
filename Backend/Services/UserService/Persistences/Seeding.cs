@@ -10,10 +10,14 @@ namespace UserService.Persistences
         {
             var customerUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
             var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+            var shipperUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
             var merchantId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
             var customerAddressId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
             var merchantAddressId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
             var merchantStoreAddressId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+            var shipperAddressId = Guid.Parse("12121212-1212-1212-1212-121212121212");
+            var shipperRequestId = Guid.Parse("34343434-3434-3434-3434-343434343434");
+            var shipperId = Guid.Parse("56565656-5656-5656-5656-565656565656");
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
 
             builder.Entity<User>().HasData(
@@ -30,6 +34,14 @@ namespace UserService.Persistences
                     Id = merchantUserId,
                     FullName = "Seeded Merchant Owner",
                     AvatarUrl = "https://example.com/avatars/merchant.png",
+                    Status = UserStatus.Active,
+                    CreatedAt = seededAt
+                },
+                new User
+                {
+                    Id = shipperUserId,
+                    FullName = "Seeded Shipper",
+                    AvatarUrl = "https://example.com/avatars/shipper.png",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 }
@@ -65,6 +77,22 @@ namespace UserService.Persistences
                     City = "Ho Chi Minh City",
                     Lat = 10.7722m,
                     Lng = 106.6983m,
+                    IsDefault = true,
+                    CreatedAt = seededAt
+                },
+                new Address
+                {
+                    Id = shipperAddressId,
+                    UserId = shipperUserId,
+                    Label = "Home",
+                    RecipientName = "Seeded Shipper",
+                    Phone = "0900000003",
+                    AddressLine = "3 Nguyen Trai",
+                    Ward = "Pham Ngu Lao",
+                    District = "District 1",
+                    City = "Ho Chi Minh City",
+                    Lat = 10.7691m,
+                    Lng = 106.6824m,
                     IsDefault = true,
                     CreatedAt = seededAt
                 }
@@ -103,6 +131,40 @@ namespace UserService.Persistences
                     Lat = 10.7722m,
                     Lng = 106.6983m,
                     CreatedAt = seededAt
+                }
+            );
+
+            builder.Entity<ShipperRequest>().HasData(
+                new ShipperRequest
+                {
+                    Id = shipperRequestId,
+                    UserId = shipperUserId,
+                    LicenseNumber = "DL-SEED-0001",
+                    LicenseFrontUrl = "https://example.com/shipper/license-front.jpg",
+                    LicenseBackUrl = "https://example.com/shipper/license-back.jpg",
+                    IdCardFrontUrl = "https://example.com/shipper/id-front.jpg",
+                    IdCardBackUrl = "https://example.com/shipper/id-back.jpg",
+                    SelfieUrl = "https://example.com/shipper/selfie.jpg",
+                    IdNumber = "079202600001",
+                    FullName = "Seeded Shipper",
+                    DateOfBirth = new DateTime(1998, 4, 12, 0, 0, 0, DateTimeKind.Utc),
+                    VerificationStatus = VerificationStatus.Approved,
+                    RejectedReason = string.Empty,
+                    VerifiedAt = seededAt.AddDays(1),
+                    CreatedAt = seededAt,
+                    ReviewedBy = merchantUserId
+                }
+            );
+
+            builder.Entity<Shipper>().HasData(
+                new Shipper
+                {
+                    Id = shipperId,
+                    UserId = shipperUserId,
+                    VehiclePlate = "59A-123.45",
+                    Status = ShipperStatus.Approved,
+                    RequestId = shipperRequestId,
+                    CreatedAt = seededAt.AddDays(1)
                 }
             );
         }

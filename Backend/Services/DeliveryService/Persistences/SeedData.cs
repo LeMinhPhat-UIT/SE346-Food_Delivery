@@ -10,11 +10,15 @@ namespace DeliveryService.Persistences
         {
             var trackingId = Guid.Parse("61111111-1111-1111-1111-111111111111");
             var orderId = Guid.Parse("62222222-2222-2222-2222-222222222222");
-            var shipperId = Guid.Parse("63333333-3333-3333-3333-333333333333");
+            var shipperId = Guid.Parse("56565656-5656-5656-5656-565656565656");
             var assignmentId = Guid.Parse("64444444-4444-4444-4444-444444444444");
             var locationId = Guid.Parse("65555555-5555-5555-5555-555555555555");
             var availabilityId = Guid.Parse("66666666-6666-6666-6666-666666666666");
-            var customerId = Guid.Parse("67777777-7777-7777-7777-777777777777");
+            var customerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            var secondTrackingId = Guid.Parse("74444444-4444-4444-4444-444444444444");
+            var secondOrderId = Guid.Parse("75555555-5555-5555-5555-555555555555");
+            var secondLocationId = Guid.Parse("76666666-6666-6666-6666-666666666666");
+            var incidentId = Guid.Parse("77777777-7777-7777-7777-777777777777");
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
 
             modelBuilder.Entity<DeliveryTracking>().HasData(
@@ -31,6 +35,21 @@ namespace DeliveryService.Persistences
                     EstimatedTime = 15,
                     Status = DeliveryStatus.Assigned,
                     CreatedAt = seededAt
+                },
+                new DeliveryTracking
+                {
+                    Id = secondTrackingId,
+                    OrderId = secondOrderId,
+                    ShipperId = shipperId,
+                    PickupLat = 10.7821m,
+                    PickupLng = 106.6925m,
+                    DeliveryLat = 10.7770m,
+                    DeliveryLng = 106.7002m,
+                    DistanceKm = 1.8m,
+                    EstimatedTime = 12,
+                    ActualTime = 14,
+                    Status = DeliveryStatus.Delivered,
+                    CreatedAt = seededAt.AddHours(-1)
                 }
             );
 
@@ -58,6 +77,16 @@ namespace DeliveryService.Persistences
                     Longitude = 106.6975m,
                     RecordedAt = seededAt.AddMinutes(5),
                     CorrelationId = "seed-delivery"
+                },
+                new ShipperLocationHistory
+                {
+                    Id = secondLocationId,
+                    OrderId = secondOrderId,
+                    ShipperId = shipperId,
+                    Latitude = 10.7785m,
+                    Longitude = 106.6990m,
+                    RecordedAt = seededAt.AddMinutes(25),
+                    CorrelationId = "seed-delivery-completed"
                 }
             );
 
@@ -72,6 +101,27 @@ namespace DeliveryService.Persistences
                     CurrentLng = 106.6975m,
                     LastSeenAt = seededAt.AddMinutes(5),
                     CreatedAt = seededAt
+                }
+            );
+
+            modelBuilder.Entity<Incident>().HasData(
+                new Incident
+                {
+                    Id = incidentId,
+                    OrderId = secondOrderId,
+                    ReportedBy = customerId,
+                    Type = IncidentType.MissingItem,
+                    Description = "Customer reported one missing item from the delivered order.",
+                    ProofUrl = new[]
+                    {
+                        "https://example.com/incidents/order-2-photo-1.jpg",
+                        "https://example.com/incidents/order-2-photo-2.jpg"
+                    },
+                    Status = IncidentStatus.Investigating,
+                    Resolution = "Awaiting support review and customer confirmation.",
+                    ResolvedBy = null,
+                    ResolvedAt = null,
+                    CreatedAt = seededAt.AddHours(-1)
                 }
             );
         }

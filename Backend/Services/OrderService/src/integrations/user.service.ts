@@ -23,6 +23,7 @@ export type MerchantProfile = {
   id: string;
   userId: string;
   storeName: string;
+  storeLogoUrl?: string | null;
 };
 
 export type UserAddress = {
@@ -148,5 +149,19 @@ export class UserServiceClient {
     }
 
     return address;
+  }
+
+  async getMerchantById(merchantId: string): Promise<MerchantProfile> {
+    const response = await fetch(`${env.USER_SERVICE_URL}/merchants/${merchantId}`);
+    const payload = await this.parseResponse<MerchantProfile>(
+      response,
+      "Failed to fetch merchant profile from User Service",
+    );
+
+    if (!payload.data) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Merchant profile was not found");
+    }
+
+    return payload.data;
   }
 }

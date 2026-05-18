@@ -1,6 +1,8 @@
+import { Prisma, PaymentMethod } from "@prisma/client";
 import { env } from "../../config/env.config";
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import {
+  MerchantProfile,
   MerchantAddress,
   UserAddress,
   UserServiceClient,
@@ -9,8 +11,23 @@ import { ApiError } from "../../utils/apiError";
 import { CartService } from "../cart/cart.service";
 import { VoucherRepository } from "../voucher/voucher.repository";
 import { VoucherService } from "../voucher/voucher.service";
-import { toCheckoutPreviewResponseDto } from "./order.mapper";
-import { CheckoutPreviewDto, CheckoutPreviewResponseDto } from "./order.dto";
+import {
+  toCheckoutPreviewResponseDto,
+  toCreateOrderResponseDto,
+  toMyOrdersResponseDto,
+  toOrderDetailResponseDto,
+} from "./order.mapper";
+import {
+  CancelOrderDto,
+  CheckoutPreviewDto,
+  CheckoutPreviewResponseDto,
+  CreateOrderDto,
+  CreateOrderResponseDto,
+  MyOrdersQueryDto,
+  MyOrdersResponseDto,
+  OrderDetailResponseDto,
+  UpdateOrderStatusDto,
+} from "./order.dto";
 import { OrderRepository } from "./order.repository";
 
 export class OrderService {
@@ -27,18 +44,223 @@ export class OrderService {
     token: string,
     payload: CheckoutPreviewDto,
   ): Promise<CheckoutPreviewResponseDto> {
+    const context = await this.buildCheckoutContext(userId, token, payload);
+
+    return toCheckoutPreviewResponseDto({
+      userId,
+      cart: context.cart,
+      paymentMethod: payload.paymentMethod,
+      userAddress: context.userAddress,
+      merchantAddress: context.merchantAddress,
+      deliveryFee: context.deliveryFee,
+      distanceKm: context.distanceKm,
+      voucherResult: context.voucherResult,
+    });
+  }
+
+  async createOrder(
+    userId: string,
+    token: string,
+    payload: CreateOrderDto,
+  ): Promise<CreateOrderResponseDto> {
+    const context = await this.buildCheckoutContext(userId, token, payload);
+
+    if (!context.userAddress.recipientName || !context.userAddress.phone) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Selected delivery address must include recipient name and phone",
+      );
+    }
+
+    const order = await this.orderRepository.createOrder({
+      orderNumber: this.generateOrderNumber(),
+      userId,
+      merchantId: payload.merchantId,
+      merchantName: context.merchant.storeName,
+      merchantAvatar: context.merchant.storeLogoUrl ?? null,
+      deliveryAddress: context.userAddress.addressLine,
+      deliveryWard: context.userAddress.ward ?? null,
+      deliveryDistrict: context.userAddress.district ?? null,
+      deliveryCity: context.userAddress.city ?? null,
+      deliveryLat: Number(context.userAddress.lat),
+      deliveryLng: Number(context.userAddress.lng),
+      recipientName: context.userAddress.recipientName,
+      recipientPhone: context.userAddress.phone,
+      subtotal: context.cart.subtotal,
+      deliveryFee: context.voucherResult
+        ? context.voucherResult.finalDeliveryFee
+        : context.deliveryFee,
+      discountAmount: context.voucherResult?.discountAmount ?? 0,
+      totalAmount: context.voucherResult
+        ? context.voucherResult.finalTotal
+        : context.cart.subtotal + context.deliveryFee,
+      paymentMethod: payload.paymentMethod as PaymentMethod,
+      note: payload.note ?? null,
+      voucherId: context.voucherResult?.voucher.id ?? null,
+      items: context.cart.items.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        productImage: item.productImage,
+        unitPrice: item.unitPrice,
+        selectedOptions: item.selectedOptions as Prisma.InputJsonValue,
+        quantity: item.quantity,
+        note: item.note,
+      })),
+      voucherUsage: context.voucherResult
+        ? {
+            voucherId: context.voucherResult.voucher.id,
+            userId,
+            discountAmount: context.voucherResult.discountAmount,
+          }
+        : null,
+    });
+
+    await this.cartService.clearCartByMerchant(userId, payload.merchantId);
+
+    return toCreateOrderResponseDto({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      userId: order.userId,
+      merchantId: order.merchantId,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      status: order.status,
+      subtotal: Number(order.subtotal),
+      deliveryFee: Number(order.deliveryFee),
+      discountAmount: Number(order.discountAmount),
+      totalAmount: Number(order.totalAmount),
+      voucherId: order.voucherId,
+      createdAt: order.createdAt,
+      items: context.cart.items,
+    });
+  }
+
+  async getMyOrders(
+    userId: string,
+    query: MyOrdersQueryDto,
+  ): Promise<MyOrdersResponseDto> {
+    const { items, totalCount } = await this.orderRepository.findMyOrders(
+      userId,
+      query,
+    );
+
+    return toMyOrdersResponseDto(items, {
+      totalCount,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getOrderById(
+    userId: string,
+    orderId: string,
+  ): Promise<OrderDetailResponseDto> {
+    const order = await this.orderRepository.findByIdForUser(orderId, userId);
+
+    if (!order) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Order not found");
+    }
+
+    return toOrderDetailResponseDto(order);
+  }
+
+  async cancelMyOrder(
+    userId: string,
+    orderId: string,
+    payload: CancelOrderDto,
+  ): Promise<OrderDetailResponseDto> {
+    const existingOrder = await this.orderRepository.findByIdForUser(orderId, userId);
+
+    if (!existingOrder) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Order not found");
+    }
+
+    this.assertCustomerCanCancel(existingOrder.status);
+
+    const updatedOrder = await this.orderRepository.updateOrderStatus({
+      orderId,
+      status: "CANCELLED",
+      cancelReason: payload.cancelReason,
+      cancelledBy: "CUSTOMER",
+      createdBy: userId,
+    });
+
+    return toOrderDetailResponseDto(updatedOrder);
+  }
+
+  async getMerchantOrders(
+    merchantId: string,
+    query: MyOrdersQueryDto,
+  ): Promise<MyOrdersResponseDto> {
+    const { items, totalCount } = await this.orderRepository.findMerchantOrders(
+      merchantId,
+      query,
+    );
+
+    return toMyOrdersResponseDto(items, {
+      totalCount,
+      page: query.page,
+      limit: query.limit,
+    });
+  }
+
+  async getMerchantOrderById(
+    merchantId: string,
+    orderId: string,
+  ): Promise<OrderDetailResponseDto> {
+    const order = await this.orderRepository.findByIdForMerchant(orderId, merchantId);
+
+    if (!order) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Order not found");
+    }
+
+    return toOrderDetailResponseDto(order);
+  }
+
+  async updateMerchantOrderStatus(
+    merchantId: string,
+    actorId: string,
+    orderId: string,
+    payload: UpdateOrderStatusDto,
+  ): Promise<OrderDetailResponseDto> {
+    const existingOrder = await this.orderRepository.findByIdForMerchant(orderId, merchantId);
+
+    if (!existingOrder) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Order not found");
+    }
+
+    this.assertMerchantStatusTransition(existingOrder.status, payload.status);
+
+    const updatedOrder = await this.orderRepository.updateOrderStatus({
+      orderId,
+      status: payload.status,
+      note: payload.note ?? null,
+      cancelReason: payload.cancelReason ?? null,
+      cancelledBy: payload.status === "CANCELLED" ? "MERCHANT" : null,
+      createdBy: actorId,
+    });
+
+    return toOrderDetailResponseDto(updatedOrder);
+  }
+
+  private async buildCheckoutContext(
+    userId: string,
+    token: string,
+    payload: CheckoutPreviewDto | CreateOrderDto,
+  ) {
     const cart = await this.cartService.getCartByMerchant(userId, payload.merchantId);
 
     if (cart.items.length === 0) {
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
-        "Cannot preview checkout because the merchant cart is empty",
+        "Cannot continue because the merchant cart is empty",
       );
     }
 
-    const [userAddress, merchantAddress] = await Promise.all([
+    const [userAddress, merchantAddress, merchant] = await Promise.all([
       this.userServiceClient.getUserAddressById(userId, payload.addressId, token),
       this.userServiceClient.getMerchantPrimaryAddress(payload.merchantId),
+      this.userServiceClient.getMerchantById(payload.merchantId),
     ]);
 
     this.assertAddressCoordinates(userAddress, merchantAddress);
@@ -61,20 +283,15 @@ export class OrderService {
         })
       : null;
 
-    if (voucherResult) {
-      await this.orderRepository.isVoucherUsedByOrder(voucherResult.voucher.id, userId);
-    }
-
-    return toCheckoutPreviewResponseDto({
-      userId,
+    return {
       cart,
-      paymentMethod: payload.paymentMethod,
       userAddress,
       merchantAddress,
-      deliveryFee,
+      merchant,
       distanceKm,
+      deliveryFee,
       voucherResult,
-    });
+    };
   }
 
   private assertAddressCoordinates(
@@ -136,5 +353,61 @@ export class OrderService {
       env.DELIVERY_BASE_FEE + extraDistanceKm * env.DELIVERY_FEE_PER_KM;
 
     return Math.round(fee);
+  }
+
+  private generateOrderNumber() {
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
+
+    return `FD${timestamp}${random}`;
+  }
+
+  private assertCustomerCanCancel(currentStatus: string) {
+    const cancellableStatuses = new Set(["PENDING", "CONFIRMED"]);
+
+    if (!cancellableStatuses.has(currentStatus)) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Order can only be cancelled when it is pending or confirmed",
+      );
+    }
+  }
+
+  private assertMerchantStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === "CANCELLED") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Cancelled orders cannot be updated",
+      );
+    }
+
+    if (currentStatus === "DELIVERED") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Delivered orders cannot be updated",
+      );
+    }
+
+    const transitionMap: Record<string, string[]> = {
+      PENDING: ["CONFIRMED", "CANCELLED"],
+      CONFIRMED: ["PREPARING", "CANCELLED"],
+      PREPARING: ["READY", "CANCELLED"],
+      READY: [],
+      PICKED_UP: [],
+      DELIVERING: [],
+      DELIVERED: [],
+      CANCELLED: [],
+    };
+
+    const allowedStatuses = transitionMap[currentStatus] ?? [];
+
+    if (!allowedStatuses.includes(nextStatus)) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        `Cannot update order status from ${currentStatus} to ${nextStatus}`,
+      );
+    }
   }
 }

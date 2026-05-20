@@ -90,14 +90,15 @@ namespace UserService.Repositories.Implements
 
         public async Task<IQueryable<Address>?> GetAllUserAddressesByUserIdAsync(Guid userId)
         {
-            var user = await _context.Users
-                .Include(u => u.Addresses)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            var userExists = await _context.Users
+                .AnyAsync(u => u.Id == userId && u.DeletedAt == null);
 
-            return user?.Addresses
-                .Where(a => a.DeletedAt == null)
-                .OrderByDescending(a => a.CreatedAt)
-                .AsQueryable();
+            if (!userExists)
+                return null;
+
+            return _context.Addresses
+                .Where(a => a.UserId == userId && a.DeletedAt == null)
+                .OrderByDescending(a => a.CreatedAt);
         }
     }
 }

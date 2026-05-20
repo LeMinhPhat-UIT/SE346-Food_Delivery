@@ -2,41 +2,76 @@ using DeliveryService.DTOs;
 using DeliveryService.Entities;
 using DeliveryService.Enums;
 using DeliveryService.Helpers;
+using DeliveryService.Mappers;
+using DeliveryService.Options;
 using DeliveryService.Repositories.Interfaces;
 using DeliveryService.Services.Interfaces;
+using Messaging.Contracts.Common;
 using Messaging.Contracts.Events;
+using Messaging.Contracts.Extensions;
 using Messaging.RabbitMq.Publishing;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace DeliveryService.Services.Implements
 {
     public class DeliveryService : IDeliveryService
     {
+        private const double EarthRadiusKm = 6371.0088d;
         private readonly IDeliveryRepository _deliveryRepository;
         private readonly IEventPublisher _eventPublisher;
         private readonly FirebaseStorageHelper _storageHelper;
+        private readonly IOptions<DeliveryOption> _deliveryOptions;
+        private readonly DeliveryMapper _mapper;
 
         public DeliveryService(
             IDeliveryRepository deliveryRepository,
             IEventPublisher eventPublisher,
-            FirebaseStorageHelper storageHelper)
+            FirebaseStorageHelper storageHelper,
+            IOptions<DeliveryOption> deliveryOptions,
+            DeliveryMapper mapper)
         {
             _deliveryRepository = deliveryRepository;
             _eventPublisher = eventPublisher;
             _storageHelper = storageHelper;
+            _deliveryOptions = deliveryOptions;
+            _mapper = mapper;
         }
 
-        public async Task<IQueryable<ShipperAvailability>?> GetAllShipperAvailabilitiesAsync()
+        public async Task<ApiResponse<PagedResult<ShipperAvailability>>> GetAllShipperAvailabilitiesAsync(PaginationRequest paginationRequest)
         {
-            return await _deliveryRepository.GetAllShipperAvailabilityAsync();
+            var query = await _deliveryRepository.GetAllShipperAvailabilityAsync();
+
+            if (query == null || !query.Any())
+                return new ApiResponse<PagedResult<ShipperAvailability>>(StatusCodes.Status404NotFound, "No shipper availability found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<ShipperAvailability>>(StatusCodes.Status200OK, paged);
         }
 
-        public async Task<ShipperAvailability?> GetShipperAvailabilityAsync(Guid shipperId)
+        public async Task<ApiResponse<ShipperAvailability>> GetShipperAvailabilityAsync(Guid shipperId, ClaimsPrincipal user)
         {
-            return await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
+            if (shipperId == Guid.Empty)
+                return new ApiResponse<ShipperAvailability>(StatusCodes.Status400BadRequest, "Invalid shipper id");
+
+            if (!CanAccessShipper(user, shipperId))
+                return new ApiResponse<ShipperAvailability>(StatusCodes.Status403Forbidden, "You can only access your own shipper availability");
+
+            var availability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
+            if (availability == null)
+                return new ApiResponse<ShipperAvailability>(StatusCodes.Status404NotFound, "No shipper availability found");
+
+            return new ApiResponse<ShipperAvailability>(StatusCodes.Status200OK, availability);
         }
 
-        public async Task<bool> ToggleShipperAvailabilityAsync(Guid shipperId, ToggleAvailabilityRequest request)
+        public async Task<ApiResponse<ConfirmationResponse>> ToggleShipperAvailabilityAsync(Guid shipperId, ToggleAvailabilityRequest request, ClaimsPrincipal user)
         {
+            if (shipperId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid shipper id");
+
+            if (!CanAccessShipper(user, shipperId))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own shipper availability");
+
             var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
             var availability = existingAvailability ?? new ShipperAvailability
             {
@@ -65,11 +100,19 @@ namespace DeliveryService.Services.Implements
             else
                 await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
 
-            return true;
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Update shipper availability successfully"));
         }
 
-        public async Task<bool> UpdateLocationAsync(UpdateLocationRequest request)
+        public async Task<ApiResponse<ConfirmationResponse>> UpdateLocationAsync(UpdateLocationRequest request, ClaimsPrincipal user)
         {
+            if (request.OrderId == Guid.Empty || request.ShipperId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid location payload");
+
+            if (!CanAccessShipper(user, request.ShipperId))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own shipper location");
+
             var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(request.ShipperId);
             var availability = existingAvailability ?? new ShipperAvailability
             {
@@ -87,80 +130,183 @@ namespace DeliveryService.Services.Implements
             else
                 await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
 
-            return true;
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Update location successfully"));
         }
 
-        public async Task<IQueryable<ShipperAssignment>?> GetAllAssignmentsAsync()
+        public async Task<ApiResponse<PagedResult<ShipperAssignment>>> GetAllAssignmentsAsync(PaginationRequest paginationRequest)
         {
-            return await _deliveryRepository.GetAllShipperAssignmentsAsync();
+            var query = await _deliveryRepository.GetAllShipperAssignmentsAsync();
+
+            if (query == null || !query.Any())
+                return new ApiResponse<PagedResult<ShipperAssignment>>(StatusCodes.Status404NotFound, "No shipper assignments found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<ShipperAssignment>>(StatusCodes.Status200OK, paged);
         }
 
-        public async Task<ShipperAssignment?> GetAssignmentByIdAsync(Guid assignmentId)
+        public async Task<ApiResponse<ShipperAssignment>> GetAssignmentByIdAsync(Guid assignmentId, ClaimsPrincipal user)
         {
-            return await _deliveryRepository.GetShipperAssignmentByIdAsync(assignmentId);
-        }
+            if (assignmentId == Guid.Empty)
+                return new ApiResponse<ShipperAssignment>(StatusCodes.Status400BadRequest, "Invalid assignment id");
 
-        public async Task<IQueryable<ShipperAssignment>?> GetAssignmentsByShipperIdAsync(Guid shipperId)
-        {
-            return await _deliveryRepository.GetAllShipperAssignmentsByShipperIdAsync(shipperId);
-        }
-
-        public async Task<(bool Success, string Message)> AcceptOrRejectAssignmentAsync(Guid assignmentId, AcceptAssignmentRequest request)
-        {
             var assignment = await _deliveryRepository.GetShipperAssignmentByIdAsync(assignmentId);
             if (assignment == null)
-                return (false, "No shipper assignment found");
+                return new ApiResponse<ShipperAssignment>(StatusCodes.Status404NotFound, "No shipper assignment found");
+
+            if (!CanAccessAssignment(user, assignment))
+                return new ApiResponse<ShipperAssignment>(StatusCodes.Status403Forbidden, "You can only access your own assignment");
+
+            return new ApiResponse<ShipperAssignment>(StatusCodes.Status200OK, assignment);
+        }
+
+        public async Task<ApiResponse<PagedResult<ShipperAssignment>>> GetAssignmentsByShipperIdAsync(Guid shipperId, PaginationRequest paginationRequest, ClaimsPrincipal user)
+        {
+            if (shipperId == Guid.Empty)
+                return new ApiResponse<PagedResult<ShipperAssignment>>(StatusCodes.Status400BadRequest, "Invalid shipper id");
+
+            if (!CanAccessShipper(user, shipperId))
+                return new ApiResponse<PagedResult<ShipperAssignment>>(StatusCodes.Status403Forbidden, "You can only access your own assignments");
+
+            var query = await _deliveryRepository.GetAllShipperAssignmentsByShipperIdAsync(shipperId);
+            if (query == null || !query.Any())
+                return new ApiResponse<PagedResult<ShipperAssignment>>(StatusCodes.Status404NotFound, "No shipper assignments found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<ShipperAssignment>>(StatusCodes.Status200OK, paged);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> AcceptOrRejectAssignmentAsync(AcceptAssignmentRequest request, ClaimsPrincipal user)
+        {
+            if (request.AssignmentId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
+
+            var assignment = await _deliveryRepository.GetShipperAssignmentByIdAsync(request.AssignmentId);
+            if (assignment == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No shipper assignment found");
+
+            if (!CanAccessShipper(user, assignment.ShipperId))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only respond to your own assignment");
 
             if (assignment.Status != AssignmentStatus.Pending)
-                return (false, "Assignment has already been handled");
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment has already been handled");
 
             if (request.IsAccepted)
+                return await AcceptAssignmentAsync(assignment);
+
+            return await RejectAssignmentAsync(assignment, request);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> UpdateAssignmentStatusAsync(Guid assignmentId, UpdateDeliveryStatusRequest request, ClaimsPrincipal user)
+        {
+            if (assignmentId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
+
+            var assignment = await _deliveryRepository.GetShipperAssignmentByIdAsync(assignmentId);
+            if (assignment == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No shipper assignment found");
+
+            if (!CanAccessShipper(user, assignment.ShipperId))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own assignment");
+
+            if (request.Status == DeliveryStatus.PickedUp)
+                return await ConfirmPickupAsync(assignment, request);
+
+            if (request.Status == DeliveryStatus.Delivered)
+                return await ConfirmDeliveryAsync(assignment, request);
+
+            return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Unsupported delivery status transition");
+        }
+
+        public Task<ApiResponse<EstimateDeliveryFeeResponse>> EstimateDeliveryFeeAsync(EstimateDeliveryFeeRequest? request)
+        {
+            var validationErrors = ValidateEstimateDeliveryFeeRequest(request);
+            if (validationErrors.Any())
             {
-                // Rate condition: Check if another shipper has already accepted this order
-                var acceptedAssignment = await _deliveryRepository.GetAcceptedShipperAssignmentByOrderIdAsync(assignment.OrderId);
-                if (acceptedAssignment != null && acceptedAssignment.Id != assignment.Id)
-                    return (false, "This order has already been accepted by another shipper");
-
-                // Update the accepted assignment
-                assignment.Status = AssignmentStatus.Accepted;
-                assignment.AcceptedAt = DateTime.UtcNow;
-                assignment.RespondedAt = DateTime.UtcNow;
-                assignment.RejectReason = null;
-
-                await _deliveryRepository.UpdateShipperAssignment(assignment);
-
-                // Update shipper availability to PendingAssignment
-                var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(assignment.ShipperId);
-                var availability = existingAvailability ?? new ShipperAvailability
-                {
-                    Id = Guid.NewGuid(),
-                    ShipperId = assignment.ShipperId
-                };
-
-                availability.CurrentOrderId = assignment.OrderId;
-                availability.Status = ShipperWorkStatus.PendingAssignment;
-                availability.LastSeenAt = DateTime.UtcNow;
-
-                if (existingAvailability == null)
-                    await _deliveryRepository.CreateShipperAvailabilityAsync(availability);
-                else
-                    await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
-
-                // Cancel all other pending assignments for the same order
-                var otherAssignments = await _deliveryRepository.GetAllShipperAssignmentsByOrderIdAsync(assignment.OrderId);
-                foreach (var otherAssignment in otherAssignments.Where(item => item != null && item.Id != assignment.Id && item.Status == AssignmentStatus.Pending))
-                {
-                    otherAssignment!.Status = AssignmentStatus.Cancelled;
-                    otherAssignment.RespondedAt = DateTime.UtcNow;
-                    await _deliveryRepository.UpdateShipperAssignment(otherAssignment);
-                }
-
-                return (true, "Accept assignment successfully");
+                return Task.FromResult(new ApiResponse<EstimateDeliveryFeeResponse>(
+                    StatusCodes.Status400BadRequest,
+                    validationErrors));
             }
 
-            // Handle rejection
+            var input = _mapper.ToDeliveryFeeEstimateInput(request!);
+            var options = _deliveryOptions.Value;
+
+            var rawDistanceKm = CalculateDistanceKm(input);
+            var distanceKm = RoundDistance(rawDistanceKm);
+            var baseFee = RoundMoney(Math.Max(options.BaseDeliveryFee, 0m));
+            var feePerKm = Math.Max(options.FeePerKm, 0m);
+            var distanceFee = RoundMoney(rawDistanceKm * feePerKm);
+            var minimumFee = RoundMoney(Math.Max(options.MinimumDeliveryFee, 0m));
+            var deliveryFee = RoundMoney(Math.Max(baseFee + distanceFee, minimumFee));
+            var maxDeliveryDistanceKm = options.DeliveryRadius > 0 ? (decimal)options.DeliveryRadius : 0m;
+
+            var estimate = new DeliveryFeeEstimate
+            {
+                PickupLat = input.PickupLat,
+                PickupLng = input.PickupLng,
+                DeliveryLat = input.DeliveryLat,
+                DeliveryLng = input.DeliveryLng,
+                DistanceKm = distanceKm,
+                EstimatedTimeMinutes = CalculateEstimatedTimeMinutes(rawDistanceKm, options.AverageDeliverySpeedKmPerHour),
+                BaseFee = baseFee,
+                DistanceFee = distanceFee,
+                DeliveryFee = deliveryFee,
+                Currency = string.IsNullOrWhiteSpace(options.Currency) ? "VND" : options.Currency,
+                IsWithinDeliveryRadius = options.DeliveryRadius <= 0 || rawDistanceKm <= maxDeliveryDistanceKm,
+                MaxDeliveryDistanceKm = maxDeliveryDistanceKm
+            };
+
+            var response = _mapper.ToEstimateDeliveryFeeResponse(estimate);
+            return Task.FromResult(new ApiResponse<EstimateDeliveryFeeResponse>(StatusCodes.Status200OK, response));
+        }
+
+        public ApiResponse<PresignUrlResponse> GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType, ClaimsPrincipal user)
+        {
+            if (orderId == Guid.Empty || shipperId == Guid.Empty || string.IsNullOrWhiteSpace(stage) || string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(contentType))
+                return new ApiResponse<PresignUrlResponse>(StatusCodes.Status400BadRequest, "Invalid upload url request");
+
+            if (!CanAccessShipper(user, shipperId))
+                return new ApiResponse<PresignUrlResponse>(StatusCodes.Status403Forbidden, "You can only create upload URLs for your own delivery");
+
+            var extension = Path.GetExtension(fileName);
+            var newFileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = $"deliveries/{orderId}/{shipperId}/{stage.Trim().ToLowerInvariant()}/{newFileName}";
+
+            return new ApiResponse<PresignUrlResponse>(
+                StatusCodes.Status200OK,
+                new PresignUrlResponse
+                {
+                    FileKey = filePath,
+                    UploadUrl = _storageHelper.GenerateUploadUrl(filePath, contentType),
+                    ContentType = contentType
+                });
+        }
+
+        private async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(ShipperAssignment assignment)
+        {
+            var acceptedAssignment = await _deliveryRepository.GetAcceptedShipperAssignmentByOrderIdAsync(assignment.OrderId);
+            if (acceptedAssignment != null && acceptedAssignment.Id != assignment.Id)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "This order has already been accepted by another shipper");
+
+            assignment.Status = AssignmentStatus.Accepted;
+            assignment.AcceptedAt = DateTime.UtcNow;
+            assignment.RespondedAt = DateTime.UtcNow;
+            assignment.RejectReason = null;
+
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.PendingAssignment);
+            await CancelOtherPendingAssignmentsAsync(assignment);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Accept assignment successfully"));
+        }
+
+        private async Task<ApiResponse<ConfirmationResponse>> RejectAssignmentAsync(ShipperAssignment assignment, AcceptAssignmentRequest request)
+        {
             if (string.IsNullOrWhiteSpace(request.RejectReason))
-                return (false, "Reject reason is required when rejecting an assignment");
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Reject reason is required when rejecting an assignment");
 
             assignment.Status = AssignmentStatus.Rejected;
             assignment.RespondedAt = DateTime.UtcNow;
@@ -168,113 +314,234 @@ namespace DeliveryService.Services.Implements
 
             await _deliveryRepository.UpdateShipperAssignment(assignment);
 
-            return (true, "Reject assignment successfully");
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Reject assignment successfully"));
         }
 
-        public async Task<(bool Success, string Message)> UpdateAssignmentStatusAsync(Guid assignmentId, UpdateDeliveryStatusRequest request)
+        private async Task<ApiResponse<ConfirmationResponse>> ConfirmPickupAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
         {
-            var assignment = await _deliveryRepository.GetShipperAssignmentByIdAsync(assignmentId);
-            if (assignment == null)
-                return (false, "No shipper assignment found");
+            if (assignment.Status != AssignmentStatus.Accepted || assignment.PickedUpAt != null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment is not ready for pickup confirmation");
 
-            if (request.Status == DeliveryStatus.PickedUp)
+            assignment.PickedUpAt = DateTime.UtcNow;
+            assignment.PickupProofFileKey = request.ProofFileKey;
+
+            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.Delivering);
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
             {
-                // Validate pickup milestone transition
-                if (assignment.Status != AssignmentStatus.Accepted || assignment.PickedUpAt != null)
-                    return (false, "Assignment is not ready for pickup confirmation");
+                OrderId = assignment.OrderId,
+                OrderNumber = assignment.OrderNumber,
+                CustomerId = assignment.CustomerId,
+                ShipperId = assignment.ShipperId,
+                Milestone = DeliveryMilestoneType.PickedUp,
+                ProofFileKey = request.ProofFileKey,
+                Note = request.Note
+            });
 
-                // Record pickup
-                assignment.PickedUpAt = DateTime.UtcNow;
-                assignment.PickupProofFileKey = request.ProofFileKey;
-
-                // Update shipper availability to Delivering
-                var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(assignment.ShipperId);
-                var availability = existingAvailability ?? new ShipperAvailability
-                {
-                    Id = Guid.NewGuid(),
-                    ShipperId = assignment.ShipperId
-                };
-
-                availability.CurrentOrderId = assignment.OrderId;
-                availability.Status = ShipperWorkStatus.Delivering;
-                availability.LastSeenAt = DateTime.UtcNow;
-
-                if (existingAvailability == null)
-                    await _deliveryRepository.CreateShipperAvailabilityAsync(availability);
-                else
-                    await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
-
-                await _deliveryRepository.UpdateShipperAssignment(assignment);
-
-                // Publish milestone event
-                await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
-                {
-                    OrderId = assignment.OrderId,
-                    OrderNumber = assignment.OrderNumber,
-                    CustomerId = assignment.CustomerId,
-                    ShipperId = assignment.ShipperId,
-                    Milestone = DeliveryMilestoneType.PickedUp,
-                    ProofFileKey = request.ProofFileKey,
-                    Note = request.Note
-                });
-
-                return (true, "Confirm pickup successfully");
-            }
-
-            if (request.Status == DeliveryStatus.Delivered)
-            {
-                // Validate delivery milestone transition
-                if (assignment.PickedUpAt == null || assignment.DeliveredAt != null)
-                    return (false, "Assignment is not ready for delivery confirmation");
-
-                // Record delivery
-                assignment.DeliveredAt = DateTime.UtcNow;
-                assignment.DeliveryProofFileKey = request.ProofFileKey;
-
-                // Update shipper availability back to ActiveIdle
-                var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(assignment.ShipperId);
-                var availability = existingAvailability ?? new ShipperAvailability
-                {
-                    Id = Guid.NewGuid(),
-                    ShipperId = assignment.ShipperId
-                };
-
-                availability.CurrentOrderId = null;
-                availability.Status = ShipperWorkStatus.ActiveIdle;
-                availability.LastSeenAt = DateTime.UtcNow;
-
-                if (existingAvailability == null)
-                    await _deliveryRepository.CreateShipperAvailabilityAsync(availability);
-                else
-                    await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
-
-                await _deliveryRepository.UpdateShipperAssignment(assignment);
-
-                // Publish milestone event
-                await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
-                {
-                    OrderId = assignment.OrderId,
-                    OrderNumber = assignment.OrderNumber,
-                    CustomerId = assignment.CustomerId,
-                    ShipperId = assignment.ShipperId,
-                    Milestone = DeliveryMilestoneType.Delivered,
-                    ProofFileKey = request.ProofFileKey,
-                    Note = request.Note
-                });
-
-                return (true, "Confirm delivery successfully");
-            }
-
-            return (false, "Unsupported delivery status transition");
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Confirm pickup successfully"));
         }
 
-        public (string FileKey, string UploadUrl) GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType)
+        private async Task<ApiResponse<ConfirmationResponse>> ConfirmDeliveryAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
         {
-            var extension = Path.GetExtension(fileName);
-            var newFileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = $"deliveries/{orderId}/{shipperId}/{stage.Trim().ToLowerInvariant()}/{newFileName}";
+            if (assignment.PickedUpAt == null || assignment.DeliveredAt != null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment is not ready for delivery confirmation");
 
-            return (filePath, _storageHelper.GenerateUploadUrl(filePath, contentType));
+            assignment.DeliveredAt = DateTime.UtcNow;
+            assignment.DeliveryProofFileKey = request.ProofFileKey;
+
+            await UpsertAvailabilityAsync(assignment.ShipperId, null, ShipperWorkStatus.ActiveIdle);
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
+            {
+                OrderId = assignment.OrderId,
+                OrderNumber = assignment.OrderNumber,
+                CustomerId = assignment.CustomerId,
+                ShipperId = assignment.ShipperId,
+                Milestone = DeliveryMilestoneType.Delivered,
+                ProofFileKey = request.ProofFileKey,
+                Note = request.Note
+            });
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Confirm delivery successfully"));
+        }
+
+        private async Task UpsertAvailabilityAsync(Guid shipperId, Guid? orderId, ShipperWorkStatus status)
+        {
+            var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
+            var availability = existingAvailability ?? new ShipperAvailability
+            {
+                Id = Guid.NewGuid(),
+                ShipperId = shipperId
+            };
+
+            availability.CurrentOrderId = orderId;
+            availability.Status = status;
+            availability.LastSeenAt = DateTime.UtcNow;
+
+            if (existingAvailability == null)
+                await _deliveryRepository.CreateShipperAvailabilityAsync(availability);
+            else
+                await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
+        }
+
+        private async Task CancelOtherPendingAssignmentsAsync(ShipperAssignment acceptedAssignment)
+        {
+            var otherAssignments = await _deliveryRepository.GetAllShipperAssignmentsByOrderIdAsync(acceptedAssignment.OrderId);
+            foreach (var otherAssignment in otherAssignments.Where(item => item != null && item.Id != acceptedAssignment.Id && item.Status == AssignmentStatus.Pending))
+            {
+                otherAssignment!.Status = AssignmentStatus.Cancelled;
+                otherAssignment.RespondedAt = DateTime.UtcNow;
+                await _deliveryRepository.UpdateShipperAssignment(otherAssignment);
+            }
+        }
+
+        private static bool CanAccessAssignment(ClaimsPrincipal user, ShipperAssignment assignment)
+        {
+            if (IsCurrentUserAdmin(user))
+                return true;
+
+            var currentUserId = GetCurrentUserId(user);
+            if (currentUserId.HasValue && currentUserId.Value == assignment.CustomerId)
+                return true;
+
+            return CanAccessShipper(user, assignment.ShipperId);
+        }
+
+        private static bool CanAccessShipper(ClaimsPrincipal user, Guid shipperId)
+        {
+            if (IsCurrentUserAdmin(user))
+                return true;
+
+            var currentShipperId = GetCurrentShipperId(user);
+            if (currentShipperId.HasValue)
+                return currentShipperId.Value == shipperId;
+
+            return IsCurrentUserInRole(user, "Shipper", "SHIPPER");
+        }
+
+        private static Guid? GetCurrentUserId(ClaimsPrincipal user)
+        {
+            var userIdClaim = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? user.FindFirstValue("sub")
+                ?? user.FindFirstValue("userId");
+
+            return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
+
+        private static Guid? GetCurrentShipperId(ClaimsPrincipal user)
+        {
+            var shipperIdClaim = user.FindFirstValue("shipperId")
+                ?? user.FindFirstValue("ShipperId")
+                ?? user.FindFirstValue("shipper_id");
+
+            return Guid.TryParse(shipperIdClaim, out var shipperId) ? shipperId : null;
+        }
+
+        private static bool IsCurrentUserAdmin(ClaimsPrincipal user)
+        {
+            return IsCurrentUserInRole(user, "Admin", "ADMIN");
+        }
+
+        private static bool IsCurrentUserInRole(ClaimsPrincipal user, params string[] allowedRoles)
+        {
+            var roles = user.FindAll(ClaimTypes.Role)
+                .Select(c => c.Value)
+                .Concat(user.FindAll("role").Select(c => c.Value));
+
+            return roles.Any(role => allowedRoles.Any(allowed => string.Equals(role, allowed, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private static List<string> ValidateEstimateDeliveryFeeRequest(EstimateDeliveryFeeRequest? request)
+        {
+            var errors = new List<string>();
+
+            if (request == null)
+            {
+                errors.Add("Estimate delivery fee request is required");
+                return errors;
+            }
+
+            ValidateLatitude(nameof(request.PickupLat), request.PickupLat, errors);
+            ValidateLongitude(nameof(request.PickupLng), request.PickupLng, errors);
+            ValidateLatitude(nameof(request.DeliveryLat), request.DeliveryLat, errors);
+            ValidateLongitude(nameof(request.DeliveryLng), request.DeliveryLng, errors);
+
+            return errors;
+        }
+
+        private static void ValidateLatitude(string fieldName, decimal? value, List<string> errors)
+        {
+            if (!value.HasValue)
+            {
+                errors.Add($"{fieldName} is required");
+                return;
+            }
+
+            if (value.Value < -90m || value.Value > 90m)
+                errors.Add($"{fieldName} must be between -90 and 90");
+        }
+
+        private static void ValidateLongitude(string fieldName, decimal? value, List<string> errors)
+        {
+            if (!value.HasValue)
+            {
+                errors.Add($"{fieldName} is required");
+                return;
+            }
+
+            if (value.Value < -180m || value.Value > 180m)
+                errors.Add($"{fieldName} must be between -180 and 180");
+        }
+
+        private static decimal CalculateDistanceKm(DeliveryFeeEstimateInput input)
+        {
+            var pickupLat = ToRadians((double)input.PickupLat);
+            var pickupLng = ToRadians((double)input.PickupLng);
+            var deliveryLat = ToRadians((double)input.DeliveryLat);
+            var deliveryLng = ToRadians((double)input.DeliveryLng);
+
+            var latDelta = deliveryLat - pickupLat;
+            var lngDelta = deliveryLng - pickupLng;
+
+            var a = Math.Pow(Math.Sin(latDelta / 2), 2)
+                + Math.Cos(pickupLat) * Math.Cos(deliveryLat) * Math.Pow(Math.Sin(lngDelta / 2), 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+            return (decimal)(EarthRadiusKm * c);
+        }
+
+        private static double ToRadians(double degree)
+        {
+            return degree * Math.PI / 180d;
+        }
+
+        private static int CalculateEstimatedTimeMinutes(decimal distanceKm, double averageSpeedKmPerHour)
+        {
+            if (distanceKm <= 0m)
+                return 0;
+
+            var speed = averageSpeedKmPerHour > 0 ? averageSpeedKmPerHour : 20d;
+            var estimatedMinutes = (double)distanceKm / speed * 60d;
+
+            return Math.Max(1, (int)Math.Ceiling(estimatedMinutes));
+        }
+
+        private static decimal RoundDistance(decimal value)
+        {
+            return Math.Round(value, 2, MidpointRounding.AwayFromZero);
+        }
+
+        private static decimal RoundMoney(decimal value)
+        {
+            return Math.Round(value, 2, MidpointRounding.AwayFromZero);
         }
     }
 }

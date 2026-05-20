@@ -1,0 +1,457 @@
+### Food Delivery API endpoint tests
+### Run the services first. Direct service URLs use launchSettings ports.
+### Seeded login password for all seeded accounts: Admin@123
+### After each login, copy response.data.accessToken into the matching token variable.
+
+@auth = http://localhost:55427
+@users = http://localhost:5213
+@delivery = http://localhost:5248
+@gateway = http://localhost:8080
+
+@adminUserId = 55555555-5555-5555-5555-555555555555
+@customerUserId = aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+@merchantUserId = bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
+@shipperUserId = 99999999-9999-9999-9999-999999999999
+
+@merchantId = cccccccc-cccc-cccc-cccc-cccccccccccc
+@customerAddressId = dddddddd-dddd-dddd-dddd-dddddddddddd
+@merchantAddressId = ffffffff-ffff-ffff-ffff-ffffffffffff
+@shipperId = 56565656-5656-5656-5656-565656565656
+@assignmentId = 64444444-4444-4444-4444-444444444444
+@orderId = 62222222-2222-2222-2222-222222222222
+
+@adminToken = paste-admin-access-token-here
+@customerToken = paste-customer-access-token-here
+@merchantToken = paste-merchant-access-token-here
+@shipperToken = paste-shipper-access-token-here
+
+### ---------------- AuthenticationService ----------------
+
+### Login admin
+# @name loginAdmin
+POST {{auth}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@fooddelivery.local",
+  "password": "Admin@123",
+  "deviceName": "manual-http"
+}
+
+### Login customer
+# @name loginCustomer
+POST {{auth}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@fooddelivery.local",
+  "password": "Admin@123",
+  "deviceName": "manual-http"
+}
+
+### Login merchant
+# @name loginMerchant
+POST {{auth}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "merchant@fooddelivery.local",
+  "password": "Admin@123",
+  "deviceName": "manual-http"
+}
+
+### Login shipper
+# @name loginShipper
+POST {{auth}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "shipper@fooddelivery.local",
+  "password": "Admin@123",
+  "deviceName": "manual-http"
+}
+
+### Register a new customer
+POST {{auth}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "new.customer+{{$timestamp}}@fooddelivery.local",
+  "password": "Admin@123",
+  "fullName": "Manual Test Customer"
+}
+
+### Verify OTP - replace email and otp with values from DB/email/RabbitMQ consumer log
+POST {{auth}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "new.customer@example.local",
+  "otp": "123456"
+}
+
+### Resend OTP
+POST {{auth}}/api/auth/resend-otp
+Content-Type: application/json
+
+{
+  "email": "new.customer@example.local"
+}
+
+### Refresh token - paste response.data.refreshToken from login
+POST {{auth}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "paste-refresh-token-here",
+  "deviceName": "manual-http"
+}
+
+### Logout - paste a valid refresh token
+POST {{auth}}/api/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "paste-refresh-token-here",
+  "deviceName": "manual-http"
+}
+
+### ---------------- UserService: users and files ----------------
+
+### Admin: get all users
+GET {{users}}/api/users?pageIndex=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Customer: get own profile
+GET {{users}}/api/users/{{customerUserId}}
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Customer: update own profile
+PUT {{users}}/api/users/{{customerUserId}}
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Seeded Customer Updated",
+  "avatarUrl": "https://example.com/avatars/customer-updated.png"
+}
+
+### Customer: get own addresses
+GET {{users}}/api/users/{{customerUserId}}/addresses?pageIndex=1&pageSize=10
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Customer: get one own address
+GET {{users}}/api/users/{{customerUserId}}/addresses/{{customerAddressId}}
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Customer: add address
+POST {{users}}/api/users/{{customerUserId}}/addresses
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "addressLine": "10 Test Street",
+  "ward": "Ben Nghe",
+  "district": "District 1",
+  "city": "Ho Chi Minh City",
+  "lat": 10.7769,
+  "lng": 106.7009,
+  "label": "Manual Test",
+  "recipientName": "Seeded Customer",
+  "phone": "0900000099",
+  "isDefault": false
+}
+
+### Customer: update address
+PUT {{users}}/api/users/{{customerUserId}}/addresses/{{customerAddressId}}
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "addressLine": "1 Nguyen Hue Updated",
+  "ward": "Ben Nghe",
+  "district": "District 1",
+  "city": "Ho Chi Minh City",
+  "lat": 10.7769,
+  "lng": 106.7009,
+  "label": "Home",
+  "recipientName": "Seeded Customer",
+  "phone": "0900000001",
+  "isDefault": true
+}
+
+### User file upload URL
+GET {{users}}/api/files/get-upload-url?fileName=avatar.png&contentType=image/png
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Customer: delete own address - destructive; prefer using an address created by the add-address request
+DELETE {{users}}/api/users/{{customerUserId}}/addresses/replace-created-address-id
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Admin/customer: delete user - destructive; do not run against seeded accounts unless you plan to reseed
+DELETE {{users}}/api/users/replace-user-id
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### ---------------- UserService: merchant ----------------
+
+### Customer: request merchant role
+POST {{users}}/api/users/merchant-request
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "storeName": "Manual Test Store",
+  "storeDescription": "A test merchant request.",
+  "businessLicense": "BL-MANUAL-001",
+  "businessLicenseUrl": "https://example.com/licenses/manual.jpg",
+  "taxId": "TAX-MANUAL-001"
+}
+
+### Admin: get merchant requests
+GET {{users}}/api/users/merchant-request?pageIndex=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin: review merchant request - replace request id
+PATCH {{users}}/api/users/merchant-request/replace-request-id/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "verificationStatus": 1,
+  "rejectedReason": null
+}
+
+### Authenticated: get merchants
+GET {{users}}/api/users/merchants?pageIndex=1&pageSize=10
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Authenticated: get merchant by id
+GET {{users}}/api/users/merchants/{{merchantId}}
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Authenticated: get merchant location
+GET {{users}}/api/users/merchants/{{merchantId}}/location?pageIndex=1&pageSize=10
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### Merchant owner: get merchant addresses
+GET {{users}}/api/users/merchants/{{merchantId}}/addresses?pageIndex=1&pageSize=10
+Authorization: Bearer {{merchantToken}}
+Accept: application/json
+
+### Merchant owner: get merchant address by id
+GET {{users}}/api/users/merchants/{{merchantId}}/addresses/{{merchantAddressId}}
+Authorization: Bearer {{merchantToken}}
+Accept: application/json
+
+### Merchant owner: add merchant address
+POST {{users}}/api/users/merchants/{{merchantId}}/addresses
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "addressLine": "20 Manual Store Street",
+  "ward": "Ben Thanh",
+  "district": "District 1",
+  "city": "Ho Chi Minh City",
+  "lat": 10.7722,
+  "lng": 106.6983
+}
+
+### Merchant owner: update merchant address
+PUT {{users}}/api/users/merchants/{{merchantId}}/addresses/{{merchantAddressId}}
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "addressLine": "2 Le Loi Updated",
+  "ward": "Ben Thanh",
+  "district": "District 1",
+  "city": "Ho Chi Minh City",
+  "lat": 10.7722,
+  "lng": 106.6983
+}
+
+### Merchant owner: update merchant
+PUT {{users}}/api/users/merchants/{{merchantId}}
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "storeName": "Seeded Merchant Store Updated",
+  "storeDescription": "Updated from manual HTTP test.",
+  "storeLogoUrl": "https://example.com/stores/logo-updated.png",
+  "storeBannerUrl": "https://example.com/stores/banner-updated.png",
+  "businessLicense": "BL-SEED-0001",
+  "taxId": "TAX-SEED-0001",
+  "isOpen": true,
+  "openingTime": "08:00:00",
+  "closingTime": "22:00:00",
+  "minOrderAmount": 30000,
+  "avgPrepTime": 20,
+  "status": 1
+}
+
+### Merchant owner: delete merchant address - destructive; prefer using an address created by add-merchant-address
+DELETE {{users}}/api/users/merchants/{{merchantId}}/addresses/replace-created-merchant-address-id
+Authorization: Bearer {{merchantToken}}
+Accept: application/json
+
+### Merchant owner/admin: delete merchant - destructive; do not run against seeded merchant unless you plan to reseed
+DELETE {{users}}/api/users/merchants/{{merchantId}}
+Authorization: Bearer {{merchantToken}}
+Accept: application/json
+
+### ---------------- UserService: shipper ----------------
+
+### Customer: request shipper role
+POST {{users}}/api/users/shipper-request
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "licenseNumber": "DL-MANUAL-001",
+  "licenseFrontUrl": "https://example.com/shipper/license-front.jpg",
+  "licenseBackUrl": "https://example.com/shipper/license-back.jpg",
+  "idCardFrontUrl": "https://example.com/shipper/id-front.jpg",
+  "idCardBackUrl": "https://example.com/shipper/id-back.jpg",
+  "selfieUrl": "https://example.com/shipper/selfie.jpg",
+  "idNumber": "079202600099",
+  "fullName": "Manual Test Shipper",
+  "dateOfBirth": "1998-04-12T00:00:00Z"
+}
+
+### Admin: get shipper requests
+GET {{users}}/api/users/shipper-request?pageIndex=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin: review shipper request - replace request id
+PATCH {{users}}/api/users/shipper-request/replace-request-id/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "verificationStatus": 1,
+  "rejectedReason": null
+}
+
+### Public: get shippers
+GET {{users}}/api/users/shippers?pageIndex=1&pageSize=10
+Accept: application/json
+
+### Public: get shipper by id
+GET {{users}}/api/users/shippers/{{shipperId}}
+Accept: application/json
+
+### Shipper owner: update shipper
+PUT {{users}}/api/users/shippers/{{shipperId}}
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "vehiclePlate": "59A-123.45",
+  "status": 1
+}
+
+### Shipper owner/admin: delete shipper - destructive; do not run against seeded shipper unless you plan to reseed
+DELETE {{users}}/api/users/shippers/{{shipperId}}
+Authorization: Bearer {{shipperToken}}
+Accept: application/json
+
+### ---------------- DeliveryService ----------------
+
+### Admin: get all availabilities
+GET {{delivery}}/api/deliveries/availabilities?pageIndex=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Shipper: get own availability
+GET {{delivery}}/api/deliveries/shippers/{{shipperId}}/availability
+Authorization: Bearer {{shipperToken}}
+Accept: application/json
+
+### Shipper: toggle availability
+POST {{delivery}}/api/deliveries/availability/toggle?shipperId={{shipperId}}
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "isGoOnline": true,
+  "lat": 10.7735,
+  "lng": 106.6975
+}
+
+### Shipper: update location
+POST {{delivery}}/api/deliveries/locations
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "shipperId": "{{shipperId}}",
+  "latitude": 10.7735,
+  "longitude": 106.6975
+}
+
+### Admin: get all assignments
+GET {{delivery}}/api/deliveries/assignments?pageIndex=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Customer or shipper: get assignment by id
+GET {{delivery}}/api/deliveries/assignments/{{assignmentId}}
+Authorization: Bearer {{shipperToken}}
+Accept: application/json
+
+### Shipper: get own assignments
+GET {{delivery}}/api/deliveries/shippers/{{shipperId}}/assignments?pageIndex=1&pageSize=10
+Authorization: Bearer {{shipperToken}}
+Accept: application/json
+
+### Shipper: accept/reject assignment
+POST {{delivery}}/api/deliveries/assignments/accept
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "assignmentId": "{{assignmentId}}",
+  "isAccepted": true,
+  "rejectReason": null
+}
+
+### Shipper: update assignment status
+POST {{delivery}}/api/deliveries/assignments/{{assignmentId}}/status
+Authorization: Bearer {{shipperToken}}
+Content-Type: application/json
+
+{
+  "status": "PickedUp",
+  "note": "Picked up from merchant.",
+  "proofFileKey": "deliveries/{{orderId}}/{{shipperId}}/pickup/manual-proof.jpg"
+}
+
+### Shipper: delivery upload URL
+GET {{delivery}}/api/deliveries/files/upload-url?orderId={{orderId}}&shipperId={{shipperId}}&stage=pickup&fileName=proof.jpg&contentType=image/jpeg
+Authorization: Bearer {{shipperToken}}
+Accept: application/json
+
+### ---------------- NotificationService ----------------
+### NotificationService has no HTTP controllers currently.
+### Test it by publishing RabbitMQ events that it consumes:
+### - otp.send-requested
+### - lockedout
+### - order.completed
+### - shipper.found
+### - delivery.milestone
+### Then verify NotificationService logs, emails, and notification database rows.

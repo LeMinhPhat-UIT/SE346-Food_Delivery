@@ -1,6 +1,17 @@
 @DeliveryService_HostAddress = http://localhost:5248
 
-GET {{DeliveryService_HostAddress}}/weatherforecast/
-Accept: application/json
+@accessToken = paste-access-token-here
+
+### Estimate delivery fee
+POST {{DeliveryService_HostAddress}}/api/deliveries/estimate-fee
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "pickupLat": 10.7769,
+  "pickupLng": 106.7009,
+  "deliveryLat": 10.7700,
+  "deliveryLng": 106.6950
+}
 
 ###

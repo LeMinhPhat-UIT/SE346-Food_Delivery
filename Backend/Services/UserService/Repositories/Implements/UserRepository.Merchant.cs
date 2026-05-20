@@ -26,14 +26,15 @@ namespace UserService.Repositories.Implements
 
         public async Task<IQueryable<MerchantAddress>?> GetMerchantAddressesByMerchantIdAsync(Guid merchantId)
         {
-            var merchant = await _context.Merchants
-                .Include(m => m.Addresses)
-                .FirstOrDefaultAsync(m => m.Id == merchantId);
+            var merchantExists = await _context.Merchants
+                .AnyAsync(m => m.Id == merchantId && m.DeletedAt == null);
 
-            return merchant?.Addresses
-                .Where(a => a.DeletedAt == null)
-                .OrderByDescending(a => a.CreatedAt)
-                .AsQueryable();
+            if (!merchantExists)
+                return null;
+
+            return _context.MerchantAddresses
+                .Where(a => a.MerchantId == merchantId && a.DeletedAt == null)
+                .OrderByDescending(a => a.CreatedAt);
         }
 
         public async Task<MerchantAddress?> GetMerchantAddressByIdAsync(Guid addressId)

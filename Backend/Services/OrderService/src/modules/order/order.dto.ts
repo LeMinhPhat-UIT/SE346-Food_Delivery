@@ -76,6 +76,10 @@ export type CheckoutPreviewResponseDto = {
   voucherDiscount: number;
   total: number;
   distanceKm: number;
+  estimatedTimeMinutes: number | null;
+  deliveryFeeCurrency: string;
+  isWithinDeliveryRadius: boolean | null;
+  maxDeliveryDistanceKm: number | null;
   appliedVoucher: AppliedVoucherPreviewDto | null;
   itemCount: number;
 };

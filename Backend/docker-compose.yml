@@ -205,12 +205,13 @@ services:
     build:
       context: ./Services/CatalogService 
       dockerfile: Dockerfile
+    env_file:
+      - ./Services/CatalogService/.env
     ports:
       - "${CATALOG_SERVICE_HOST_PORT}:${CATALOG_SERVICE_CONTAINER_PORT}"
     environment:
       - NODE_ENV=development
       - PORT=${CATALOG_SERVICE_CONTAINER_PORT}
-      - DATABASE_URL=${CATALOG_DATABASE_URL}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - JWT_SECRET=${JWT_KEY}
       - JWT_ISSUER=${JWT_ISSUER}
@@ -313,6 +314,8 @@ services:
       dockerfile: Dockerfile
     container_name: order-service
     restart: unless-stopped
+    env_file:
+      - ./Services/OrderService/.env
     ports:
       - "${ORDER_SERVICE_HOST_PORT}:${ORDER_SERVICE_CONTAINER_PORT}"
     environment:
@@ -320,11 +323,13 @@ services:
       - PORT=${ORDER_SERVICE_CONTAINER_PORT}
       - DATABASE_URL=postgresql://${ORDER_DB_USER}:${ORDER_DB_PASSWORD}@${ORDER_DB_HOST}:5432/${ORDER_DB_NAME}?schema=public
       - REDIS_HOST=${ORDER_REDIS_HOST}
-      - REDIS_PORT=${ORDER_REDIS_PORT}
+      - REDIS_PORT=6379
       - REDIS_PASSWORD=${ORDER_REDIS_PASSWORD}
+      - CART_TTL_SECONDS=${CART_TTL_SECONDS:-604800}
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
-      - USER_SERVICE_URL=${USER_SERVICE_URL}
-      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL}
+      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://user-service:8080/api/users}
+      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL:-http://catalog-service:8080/api/catalog}
+      - DELIVERY_SERVICE_URL=${DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
       - JWT_SECRET=${JWT_KEY}
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_AUDIENCE=${JWT_AUDIENCE}
@@ -332,6 +337,8 @@ services:
       - order-db
       - order-redis
       - rabbitmq
+    networks:
+      - backend-network
 
   order-db:
     image: postgres:15-alpine
@@ -345,6 +352,8 @@ services:
       - "${ORDER_DB_PORT}:5432"
     volumes:
       - order_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
 
   order-redis:
     image: redis:7-alpine
@@ -355,6 +364,8 @@ services:
       - "${ORDER_REDIS_PORT}:6379"
     volumes:
       - order_redis_data:/data
+    networks:
+      - backend-network
 
 
 networks:

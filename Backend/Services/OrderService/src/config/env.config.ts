@@ -13,13 +13,11 @@ const envSchema = z.object({
   JWT_AUDIENCE: z.string().optional(),
   USER_SERVICE_URL: z.string().url("USER_SERVICE_URL must be a valid URL"),
   CATALOG_SERVICE_URL: z.string().url("CATALOG_SERVICE_URL must be a valid URL"),
+  DELIVERY_SERVICE_URL: z.string().url("DELIVERY_SERVICE_URL must be a valid URL"),
   REDIS_HOST: z.string().min(1, "REDIS_HOST is required"),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
   CART_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
-  DELIVERY_BASE_FEE: z.coerce.number().min(0).default(15000),
-  DELIVERY_FEE_PER_KM: z.coerce.number().min(0).default(5000),
-  DELIVERY_FREE_DISTANCE_KM: z.coerce.number().min(0).default(1),
 });
 
 export const env = envSchema.parse(process.env);

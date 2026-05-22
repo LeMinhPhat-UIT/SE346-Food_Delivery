@@ -1,6 +1,8 @@
 import { Prisma, PaymentMethod } from "@prisma/client";
-import { env } from "../../config/env.config";
 import { HTTP_STATUS } from "../../constants/httpStatus";
+import {
+  DeliveryServiceClient,
+} from "../../integrations/delivery.service";
 import {
   MerchantProfile,
   MerchantAddress,
@@ -32,6 +34,7 @@ import { OrderRepository } from "./order.repository";
 
 export class OrderService {
   private readonly voucherService = new VoucherService(new VoucherRepository());
+  private readonly deliveryServiceClient = new DeliveryServiceClient();
 
   constructor(
     private readonly orderRepository: OrderRepository,
@@ -54,6 +57,10 @@ export class OrderService {
       merchantAddress: context.merchantAddress,
       deliveryFee: context.deliveryFee,
       distanceKm: context.distanceKm,
+      estimatedTimeMinutes: context.estimatedTimeMinutes,
+      deliveryFeeCurrency: context.deliveryFeeCurrency,
+      isWithinDeliveryRadius: context.isWithinDeliveryRadius,
+      maxDeliveryDistanceKm: context.maxDeliveryDistanceKm,
       voucherResult: context.voucherResult,
     });
   }
@@ -265,13 +272,17 @@ export class OrderService {
 
     this.assertAddressCoordinates(userAddress, merchantAddress);
 
-    const distanceKm = this.calculateDistanceKm(
-      Number(userAddress.lat),
-      Number(userAddress.lng),
-      Number(merchantAddress.lat),
-      Number(merchantAddress.lng),
+    const estimate = await this.deliveryServiceClient.estimateDeliveryFee(
+      {
+        pickupLat: Number(merchantAddress.lat),
+        pickupLng: Number(merchantAddress.lng),
+        deliveryLat: Number(userAddress.lat),
+        deliveryLng: Number(userAddress.lng),
+      },
+      token,
     );
-    const deliveryFee = this.calculateDeliveryFee(distanceKm);
+    const distanceKm = estimate.distanceKm;
+    const deliveryFee = estimate.deliveryFee;
 
     const voucherResult = payload.voucherCode
       ? await this.voucherService.validateVoucher({
@@ -290,6 +301,10 @@ export class OrderService {
       merchant,
       distanceKm,
       deliveryFee,
+      estimatedTimeMinutes: estimate.estimatedTimeMinutes,
+      deliveryFeeCurrency: estimate.currency,
+      isWithinDeliveryRadius: estimate.isWithinDeliveryRadius,
+      maxDeliveryDistanceKm: estimate.maxDeliveryDistanceKm,
       voucherResult,
     };
   }
@@ -322,37 +337,6 @@ export class OrderService {
         "Merchant address does not contain coordinates",
       );
     }
-  }
-
-  private calculateDistanceKm(
-    startLat: number,
-    startLng: number,
-    endLat: number,
-    endLng: number,
-  ) {
-    const earthRadiusKm = 6371;
-    const toRadians = (value: number) => (value * Math.PI) / 180;
-    const dLat = toRadians(endLat - startLat);
-    const dLng = toRadians(endLng - startLng);
-    const lat1 = toRadians(startLat);
-    const lat2 = toRadians(endLat);
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLng / 2) * Math.sin(dLng / 2) *
-        Math.cos(lat1) *
-        Math.cos(lat2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Number((earthRadiusKm * c).toFixed(2));
-  }
-
-  private calculateDeliveryFee(distanceKm: number) {
-    const extraDistanceKm = Math.max(distanceKm - env.DELIVERY_FREE_DISTANCE_KM, 0);
-    const fee =
-      env.DELIVERY_BASE_FEE + extraDistanceKm * env.DELIVERY_FEE_PER_KM;
-
-    return Math.round(fee);
   }
 
   private generateOrderNumber() {

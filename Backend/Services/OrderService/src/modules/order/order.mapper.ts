@@ -19,6 +19,10 @@ type BuildCheckoutPreviewInput = {
   merchantAddress: MerchantAddress;
   deliveryFee: number;
   distanceKm: number;
+  estimatedTimeMinutes: number | null;
+  deliveryFeeCurrency: string;
+  isWithinDeliveryRadius: boolean | null;
+  maxDeliveryDistanceKm: number | null;
   voucherResult: VoucherValidationResponseDto | null;
 };
 
@@ -30,6 +34,10 @@ export const toCheckoutPreviewResponseDto = ({
   merchantAddress,
   deliveryFee,
   distanceKm,
+  estimatedTimeMinutes,
+  deliveryFeeCurrency,
+  isWithinDeliveryRadius,
+  maxDeliveryDistanceKm,
   voucherResult,
 }: BuildCheckoutPreviewInput): CheckoutPreviewResponseDto => {
   const subtotal = cart.subtotal;
@@ -78,6 +86,10 @@ export const toCheckoutPreviewResponseDto = ({
     voucherDiscount,
     total,
     distanceKm,
+    estimatedTimeMinutes,
+    deliveryFeeCurrency,
+    isWithinDeliveryRadius,
+    maxDeliveryDistanceKm,
     appliedVoucher: voucherResult
       ? {
           id: voucherResult.voucher.id,

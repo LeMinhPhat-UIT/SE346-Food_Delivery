@@ -133,6 +133,27 @@ export class OrderRepository {
       userId: string;
       discountAmount: number;
     } | null;
+    orderCompletedEvent?: {
+      orderNumber: string;
+      merchantId: string;
+      merchantName: string;
+      merchantAddress: {
+        addressLine: string;
+        lat: number;
+        lng: number;
+      };
+      userId: string;
+      customerName: string;
+      customerPhone: string;
+      deliveryAddress: {
+        addressLine: string;
+        lat: number;
+        lng: number;
+      };
+      totalAmount: number;
+      paymentMethod: PaymentMethod;
+      note: string | null;
+    };
   }) {
     return prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
@@ -181,6 +202,39 @@ export class OrderRepository {
         });
       }
 
+      if (payload.orderCompletedEvent) {
+        await tx.outboxMessage.create({
+          data: {
+            aggregateType: "Order",
+            aggregateId: order.id,
+            eventType: "order.completed",
+            payload: {
+              OrderId: order.id,
+              OrderNumber: payload.orderCompletedEvent.orderNumber,
+              OrderStatus: order.status,
+              MerchantId: payload.orderCompletedEvent.merchantId,
+              MerchantStoreName: payload.orderCompletedEvent.merchantName,
+              MerchantAddress: {
+                AddressLine: payload.orderCompletedEvent.merchantAddress.addressLine,
+                Lat: payload.orderCompletedEvent.merchantAddress.lat,
+                Lng: payload.orderCompletedEvent.merchantAddress.lng,
+              },
+              UserId: payload.orderCompletedEvent.userId,
+              CustomerName: payload.orderCompletedEvent.customerName,
+              CustomerPhone: payload.orderCompletedEvent.customerPhone,
+              DeliveryAddress: {
+                AddressLine: payload.orderCompletedEvent.deliveryAddress.addressLine,
+                Lat: payload.orderCompletedEvent.deliveryAddress.lat,
+                Lng: payload.orderCompletedEvent.deliveryAddress.lng,
+              },
+              TotalAmount: payload.orderCompletedEvent.totalAmount,
+              PaymentMethod: payload.orderCompletedEvent.paymentMethod,
+              Note: payload.orderCompletedEvent.note,
+            } satisfies Prisma.InputJsonValue,
+          },
+        });
+      }
+
       return order;
     });
   }
@@ -214,6 +268,15 @@ export class OrderRepository {
       where: {
         id,
         userId,
+      },
+      select: orderDetailSelect,
+    });
+  }
+
+  async findById(id: string) {
+    return prisma.order.findFirst({
+      where: {
+        id,
       },
       select: orderDetailSelect,
     });
@@ -254,7 +317,15 @@ export class OrderRepository {
 
   async updateOrderStatus(payload: {
     orderId: string;
-    status: "CONFIRMED" | "PREPARING" | "READY" | "CANCELLED";
+    status:
+      | "PENDING"
+      | "CONFIRMED"
+      | "PREPARING"
+      | "READY"
+      | "PICKED_UP"
+      | "DELIVERING"
+      | "DELIVERED"
+      | "CANCELLED";
     note?: string | null;
     cancelReason?: string | null;
     cancelledBy?: "CUSTOMER" | "MERCHANT" | "SHIPPER" | "SYSTEM" | null;

@@ -4,13 +4,13 @@ import {
   DeliveryServiceClient,
 } from "../../integrations/delivery.service";
 import {
-  MerchantProfile,
   MerchantAddress,
   UserAddress,
   UserServiceClient,
 } from "../../integrations/user.service";
 import { ApiError } from "../../utils/apiError";
 import { CartService } from "../cart/cart.service";
+import { DeliveryMilestoneEventPayload } from "../events/order.events";
 import { VoucherRepository } from "../voucher/voucher.repository";
 import { VoucherService } from "../voucher/voucher.service";
 import {
@@ -71,6 +71,7 @@ export class OrderService {
     payload: CreateOrderDto,
   ): Promise<CreateOrderResponseDto> {
     const context = await this.buildCheckoutContext(userId, token, payload);
+    const orderNumber = this.generateOrderNumber();
 
     if (!context.userAddress.recipientName || !context.userAddress.phone) {
       throw new ApiError(
@@ -80,7 +81,7 @@ export class OrderService {
     }
 
     const order = await this.orderRepository.createOrder({
-      orderNumber: this.generateOrderNumber(),
+      orderNumber,
       userId,
       merchantId: payload.merchantId,
       merchantName: context.merchant.storeName,
@@ -120,6 +121,29 @@ export class OrderService {
             discountAmount: context.voucherResult.discountAmount,
           }
         : null,
+      orderCompletedEvent: {
+        orderNumber,
+        merchantId: context.merchant.id,
+        merchantName: context.merchant.storeName,
+        merchantAddress: {
+          addressLine: context.merchantAddress.addressLine,
+          lat: Number(context.merchantAddress.lat ?? 0),
+          lng: Number(context.merchantAddress.lng ?? 0),
+        },
+        userId,
+        customerName: context.userAddress.recipientName ?? "",
+        customerPhone: context.userAddress.phone ?? "",
+        deliveryAddress: {
+          addressLine: context.userAddress.addressLine,
+          lat: Number(context.userAddress.lat ?? 0),
+          lng: Number(context.userAddress.lng ?? 0),
+        },
+        totalAmount: context.voucherResult
+          ? context.voucherResult.finalTotal
+          : context.cart.subtotal + context.deliveryFee,
+        paymentMethod: payload.paymentMethod as PaymentMethod,
+        note: payload.note ?? null,
+      },
     });
 
     await this.cartService.clearCartByMerchant(userId, payload.merchantId);
@@ -248,6 +272,60 @@ export class OrderService {
     });
 
     return toOrderDetailResponseDto(updatedOrder);
+  }
+
+  async handleDeliveryMilestone(payload: DeliveryMilestoneEventPayload) {
+    const orderId = payload.OrderId ?? payload.orderId;
+
+    if (!orderId) {
+      return;
+    }
+
+    const milestone = (payload.Milestone ?? payload.milestone ?? "").toLowerCase();
+
+    if (!milestone) {
+      return;
+    }
+
+    const existingOrder = await this.orderRepository.findById(orderId);
+
+    if (!existingOrder || existingOrder.status === "CANCELLED" || existingOrder.status === "DELIVERED") {
+      return;
+    }
+
+    const shipperId = payload.ShipperId ?? payload.shipperId ?? existingOrder.userId;
+    const note = payload.Note ?? payload.note ?? null;
+
+    if (milestone === "pickedup") {
+      if (!["CONFIRMED", "PREPARING", "READY", "PICKED_UP", "DELIVERING"].includes(existingOrder.status)) {
+        return;
+      }
+
+      if (existingOrder.status === "PICKED_UP" || existingOrder.status === "DELIVERING") {
+        return;
+      }
+
+      await this.orderRepository.updateOrderStatus({
+        orderId,
+        status: "PICKED_UP",
+        note: note ?? "Order picked up by shipper",
+        createdBy: shipperId,
+      });
+      return;
+    }
+
+    if (milestone === "delivered") {
+      if (!["PICKED_UP", "DELIVERING", "READY"].includes(existingOrder.status)) {
+        return;
+      }
+
+      await this.orderRepository.updateOrderStatus({
+        orderId,
+        status: "DELIVERED",
+        note: note ?? "Order delivered successfully",
+        createdBy: shipperId,
+      });
+    }
   }
 
   private async buildCheckoutContext(

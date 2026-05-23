@@ -212,7 +212,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=${CATALOG_SERVICE_CONTAINER_PORT}
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
       - JWT_SECRET=${JWT_KEY}
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_AUDIENCE=${JWT_AUDIENCE}

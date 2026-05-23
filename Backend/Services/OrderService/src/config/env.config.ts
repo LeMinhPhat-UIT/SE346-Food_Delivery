@@ -11,6 +11,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_ISSUER: z.string().optional(),
   JWT_AUDIENCE: z.string().optional(),
+  RABBITMQ_URL: z.string().url("RABBITMQ_URL must be a valid URL"),
+  RABBITMQ_EXCHANGE: z.string().min(1).default("notify-exchange"),
   USER_SERVICE_URL: z.string().url("USER_SERVICE_URL must be a valid URL"),
   CATALOG_SERVICE_URL: z.string().url("CATALOG_SERVICE_URL must be a valid URL"),
   DELIVERY_SERVICE_URL: z.string().url("DELIVERY_SERVICE_URL must be a valid URL"),
@@ -18,6 +20,8 @@ const envSchema = z.object({
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
   CART_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
+  OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
+  OUTBOX_BATCH_SIZE: z.coerce.number().int().positive().max(100).default(25),
 });
 
 export const env = envSchema.parse(process.env);

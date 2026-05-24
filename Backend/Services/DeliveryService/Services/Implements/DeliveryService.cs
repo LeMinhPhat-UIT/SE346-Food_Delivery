@@ -1,7 +1,6 @@
 using DeliveryService.DTOs;
 using DeliveryService.Entities;
 using DeliveryService.Enums;
-using DeliveryService.Helpers;
 using DeliveryService.Mappers;
 using DeliveryService.Options;
 using DeliveryService.Repositories.Interfaces;
@@ -20,20 +19,17 @@ namespace DeliveryService.Services.Implements
         private const double EarthRadiusKm = 6371.0088d;
         private readonly IDeliveryRepository _deliveryRepository;
         private readonly IEventPublisher _eventPublisher;
-        private readonly FirebaseStorageHelper _storageHelper;
         private readonly IOptions<DeliveryOption> _deliveryOptions;
         private readonly DeliveryMapper _mapper;
 
         public DeliveryService(
             IDeliveryRepository deliveryRepository,
             IEventPublisher eventPublisher,
-            FirebaseStorageHelper storageHelper,
             IOptions<DeliveryOption> deliveryOptions,
             DeliveryMapper mapper)
         {
             _deliveryRepository = deliveryRepository;
             _eventPublisher = eventPublisher;
-            _storageHelper = storageHelper;
             _deliveryOptions = deliveryOptions;
             _mapper = mapper;
         }
@@ -259,28 +255,6 @@ namespace DeliveryService.Services.Implements
 
             var response = _mapper.ToEstimateDeliveryFeeResponse(estimate);
             return Task.FromResult(new ApiResponse<EstimateDeliveryFeeResponse>(StatusCodes.Status200OK, response));
-        }
-
-        public ApiResponse<PresignUrlResponse> GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType, ClaimsPrincipal user)
-        {
-            if (orderId == Guid.Empty || shipperId == Guid.Empty || string.IsNullOrWhiteSpace(stage) || string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(contentType))
-                return new ApiResponse<PresignUrlResponse>(StatusCodes.Status400BadRequest, "Invalid upload url request");
-
-            if (!CanAccessShipper(user, shipperId))
-                return new ApiResponse<PresignUrlResponse>(StatusCodes.Status403Forbidden, "You can only create upload URLs for your own delivery");
-
-            var extension = Path.GetExtension(fileName);
-            var newFileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = $"deliveries/{orderId}/{shipperId}/{stage.Trim().ToLowerInvariant()}/{newFileName}";
-
-            return new ApiResponse<PresignUrlResponse>(
-                StatusCodes.Status200OK,
-                new PresignUrlResponse
-                {
-                    FileKey = filePath,
-                    UploadUrl = _storageHelper.GenerateUploadUrl(filePath, contentType),
-                    ContentType = contentType
-                });
         }
 
         private async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(ShipperAssignment assignment)

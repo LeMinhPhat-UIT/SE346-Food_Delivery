@@ -28,6 +28,8 @@ builder.Services.AddTransient<IEventHandler<LockedOutEvent>, LockedOutEventHandl
 builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
 builder.Services.AddTransient<IEventHandler<ShipperFoundEvent>, ShipperFoundEventHandler>();
 builder.Services.AddTransient<IEventHandler<DeliveryMilestoneEvent>, DeliveryMilestoneEventHandler>();
+builder.Services.AddTransient<IEventHandler<MerchantRequestReviewedEvent>, MerchantRequestReviewedEventHandler>();
+builder.Services.AddTransient<IEventHandler<ShipperRequestReviewedEvent>, ShipperRequestReviewedEventHandler>();
 builder.Services.AddTransient<IPushNotificationService, PushNotificationService>();
 builder.Services.AddTransient<UserDeviceMapper>();
 

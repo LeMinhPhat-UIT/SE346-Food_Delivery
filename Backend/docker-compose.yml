@@ -16,7 +16,11 @@ services:
         condition: service_started
       user-service:
         condition: service_started
+      file-service:
+        condition: service_started
       notification-service:
+        condition: service_started
+      delivery-service:
         condition: service_started
     networks:
       - backend-network
@@ -91,9 +95,6 @@ services:
       JwtSettings__Key: ${JWT_KEY}
       JwtSettings__Issuer: ${JWT_ISSUER}
       JwtSettings__Audience: ${JWT_AUDIENCE}
-      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
-    volumes:
-      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
     ports:
       - "${USER_SERVICE_HOST_PORT:-8082}:${USER_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:
@@ -101,6 +102,28 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    networks:
+      - backend-network
+
+  file-service:
+    container_name: file-service
+    build:
+      context: .
+      dockerfile: Services/FileService/Dockerfile
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: ${FILE_SERVICE_CONTAINER_PORT:-8080}
+      JwtSettings__Key: ${JWT_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
+      BUCKET_NAME: ${BUCKET_NAME}
+    volumes:
+      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
+    ports:
+      - "${FILE_SERVICE_HOST_PORT:-8087}:${FILE_SERVICE_CONTAINER_PORT:-8080}"
     networks:
       - backend-network
 
@@ -300,7 +323,7 @@ services:
       - REDIS_PORT=${ORDER_REDIS_PORT}
       - REDIS_PASSWORD=${ORDER_REDIS_PASSWORD}
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
-      - USER_SERVICE_URL=${USER_SERVER_URL}
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
       - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL}
       - JWT_SECRET=${JWT_KEY}
       - JWT_ISSUER=${JWT_ISSUER}

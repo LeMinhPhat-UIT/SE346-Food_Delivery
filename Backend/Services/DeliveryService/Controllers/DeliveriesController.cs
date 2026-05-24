@@ -207,23 +207,5 @@ namespace DeliveryService.Controllers
             }
         }
 
-        [HttpGet("files/upload-url")]
-        [Authorize(Policy = "ShipperOrAdmin")]
-        public ActionResult<ApiResponse<PresignUrlResponse>> GetUploadUrl([FromQuery] Guid orderId, [FromQuery] Guid shipperId, [FromQuery] string stage, [FromQuery] string fileName, [FromQuery] string contentType)
-        {
-            try
-            {
-                var response = _deliveryService.GetUploadUrl(orderId, shipperId, stage, fileName, contentType, User);
-
-                if (!response.Success)
-                    return StatusCode(response.StatusCode, response);
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-        }
     }
 }

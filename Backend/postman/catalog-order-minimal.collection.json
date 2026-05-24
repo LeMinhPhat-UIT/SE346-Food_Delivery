@@ -1,0 +1,307 @@
+{
+  "info": {
+    "_postman_id": "f4a8d9b2-6f49-4d78-a2ef-7d7b7d1cb1c1",
+    "name": "Food Delivery - Catalog & Order Minimal",
+    "description": "Minimal end-to-end collection for verifying Catalog Service and Order Service. Fill in the token and id variables before running protected requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "catalogBaseUrl", "value": "http://localhost:8085" },
+    { "key": "orderBaseUrl", "value": "http://localhost:8086" },
+    { "key": "customerToken", "value": "" },
+    { "key": "merchantToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "merchantId", "value": "" },
+    { "key": "addressId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "reviewId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Catalog Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Order Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{orderBaseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog - Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/categories?page=1&limit=20&sortBy=sortOrder&sortOrder=asc"
+          }
+        },
+        {
+          "name": "Get Category Tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/categories/tree"
+          }
+        },
+        {
+          "name": "Get Root Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/categories/root"
+          }
+        },
+        {
+          "name": "Get Category By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/categories/{{categoryId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog - Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/products?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "name": "Get Product By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Get Product Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/products/{{productId}}/detail"
+          }
+        },
+        {
+          "name": "Get My Merchant Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{merchantToken}}", "type": "text" }
+            ],
+            "url": "{{catalogBaseUrl}}/api/catalog/products/merchant/me?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog - Reviews",
+      "item": [
+        {
+          "name": "List Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/reviews?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "name": "Get Product Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/reviews/product/{{productId}}?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "name": "Get Product Review Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/reviews/product/{{productId}}/summary"
+          }
+        },
+        {
+          "name": "Get Merchant Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{catalogBaseUrl}}/api/catalog/reviews/merchant/{{merchantId}}?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order - Cart",
+      "item": [
+        {
+          "name": "Get My Carts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" }
+            ],
+            "url": "{{orderBaseUrl}}/api/orders/cart"
+          }
+        },
+        {
+          "name": "Get Cart By Merchant",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" }
+            ],
+            "url": "{{orderBaseUrl}}/api/orders/cart/merchant/{{merchantId}}"
+          }
+        },
+        {
+          "name": "Add Cart Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1,\n  \"note\": \"Không cay\",\n  \"selectedOptions\": []\n}"
+            },
+            "url": "{{orderBaseUrl}}/api/orders/cart/items"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order - Checkout",
+      "item": [
+        {
+          "name": "Checkout Preview",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"merchantId\": \"{{merchantId}}\",\n  \"addressId\": \"{{addressId}}\",\n  \"voucherCode\": \"\",\n  \"paymentMethod\": \"COD\"\n}"
+            },
+            "url": "{{orderBaseUrl}}/api/orders/checkout/preview"
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"merchantId\": \"{{merchantId}}\",\n  \"addressId\": \"{{addressId}}\",\n  \"voucherCode\": \"\",\n  \"paymentMethod\": \"COD\",\n  \"note\": \"Giao giờ hành chính\"\n}"
+            },
+            "url": "{{orderBaseUrl}}/api/orders"
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" }
+            ],
+            "url": "{{orderBaseUrl}}/api/orders/my?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "name": "Get Order By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" }
+            ],
+            "url": "{{orderBaseUrl}}/api/orders/{{orderId}}"
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customerToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancelReason\": \"Đổi ý\"\n}"
+            },
+            "url": "{{orderBaseUrl}}/api/orders/{{orderId}}/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order - Merchant",
+      "item": [
+        {
+          "name": "Get Merchant Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{merchantToken}}", "type": "text" }
+            ],
+            "url": "{{orderBaseUrl}}/api/orders/merchant/my?page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "name": "Get Merchant Order By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{merchantToken}}", "type": "text" }
+            ],
+            "url": "{{orderBaseUrl}}/api/orders/merchant/my/{{orderId}}"
+          }
+        },
+        {
+          "name": "Update Merchant Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{merchantToken}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"note\": \"Xác nhận đơn\"\n}"
+            },
+            "url": "{{orderBaseUrl}}/api/orders/merchant/my/{{orderId}}/status"
+          }
+        }
+      ]
+    }
+  ]
+}

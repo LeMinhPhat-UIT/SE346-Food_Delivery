@@ -1,5 +1,4 @@
 using DeliveryService.Consuming;
-using DeliveryService.Helpers;
 using DeliveryService.HostedService;
 using DeliveryService.Hubs.Implements;
 using DeliveryService.Mappers;
@@ -65,7 +64,6 @@ builder.Services.AddScoped<IDeliveryRepository, DeliveryRepository>();
 builder.Services.AddScoped<IDeliveryService, DeliveryService.Services.Implements.DeliveryService>();
 builder.Services.AddScoped<IRedisRepository, RedisRepository>();
 builder.Services.AddSingleton<DeliveryMapper>();
-builder.Services.AddScoped<FirebaseStorageHelper>();
 
 builder.Services.AddRabbitMq(builder.Configuration);
 builder.Services.AddRabbitMqPublisher();

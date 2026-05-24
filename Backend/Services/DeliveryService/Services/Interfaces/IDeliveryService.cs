@@ -17,6 +17,5 @@ namespace DeliveryService.Services.Interfaces
         Task<ApiResponse<ConfirmationResponse>> AcceptOrRejectAssignmentAsync(AcceptAssignmentRequest request, ClaimsPrincipal user);
         Task<ApiResponse<ConfirmationResponse>> UpdateAssignmentStatusAsync(Guid assignmentId, UpdateDeliveryStatusRequest request, ClaimsPrincipal user);
         Task<ApiResponse<EstimateDeliveryFeeResponse>> EstimateDeliveryFeeAsync(EstimateDeliveryFeeRequest? request);
-        ApiResponse<PresignUrlResponse> GetUploadUrl(Guid orderId, Guid shipperId, string stage, string fileName, string contentType, ClaimsPrincipal user);
     }
 }

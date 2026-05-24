@@ -1,4 +1,4 @@
-﻿namespace UserService.DTOs
+namespace FileService.DTOs
 {
     public class PresignUrlResponse
     {

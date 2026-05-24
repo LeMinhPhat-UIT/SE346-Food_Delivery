@@ -3,6 +3,7 @@
     <Project Path="Services/ApiGateway/ApiGateway.csproj" />
     <Project Path="Services/AuthenticationService/AuthenticationService.csproj" />
     <Project Path="Services/DeliveryService/DeliveryService.csproj" Id="6de472ec-ab6a-4e4a-8fbb-d75059041dfa" />
+    <Project Path="Services/FileService/FileService.csproj" />
     <Project Path="Services/NotificationService/NotificationService.csproj" Id="7871a4e5-2083-4c64-a74b-c1a5997623a4" />
     <Project Path="Services/UserService/UserService.csproj" Id="747cab97-ea75-4e4d-b4e2-66674d067a04" />
   </Folder>

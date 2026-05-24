@@ -5,6 +5,7 @@
 
 @auth = http://localhost:55427
 @users = http://localhost:5213
+@files = http://localhost:5254
 @delivery = http://localhost:5248
 @gateway = http://localhost:8080
 
@@ -184,8 +185,13 @@ Content-Type: application/json
   "isDefault": true
 }
 
-### User file upload URL
-GET {{users}}/api/files/get-upload-url?fileName=avatar.png&contentType=image/png
+### FileService: user file upload URL
+GET {{files}}/api/files/get-upload-url?fileName=avatar.png&contentType=image/png
+Authorization: Bearer {{customerToken}}
+Accept: application/json
+
+### FileService: user file read URL - replace fileKey with data.fileKey from get-upload-url after uploading
+GET {{files}}/api/files/get-read-url?fileKey=users/{{customerUserId}}/replace-uploaded-file-name.png
 Authorization: Bearer {{customerToken}}
 Accept: application/json
 
@@ -441,8 +447,13 @@ Content-Type: application/json
   "proofFileKey": "deliveries/{{orderId}}/{{shipperId}}/pickup/manual-proof.jpg"
 }
 
-### Shipper: delivery upload URL
-GET {{delivery}}/api/deliveries/files/upload-url?orderId={{orderId}}&shipperId={{shipperId}}&stage=pickup&fileName=proof.jpg&contentType=image/jpeg
+### FileService: delivery upload URL
+GET {{files}}/api/deliveries/files/upload-url?orderId={{orderId}}&shipperId={{shipperId}}&stage=pickup&fileName=proof.jpg&contentType=image/jpeg
+Authorization: Bearer {{shipperToken}}
+Accept: application/json
+
+### FileService: delivery proof read URL - replace fileKey with data.fileKey from delivery upload URL after uploading
+GET {{files}}/api/deliveries/files/read-url?fileKey=deliveries/{{orderId}}/{{shipperId}}/pickup/replace-uploaded-file-name.jpg
 Authorization: Bearer {{shipperToken}}
 Accept: application/json
 

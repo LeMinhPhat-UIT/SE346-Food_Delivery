@@ -6,16 +6,17 @@ namespace Messaging.RabbitMq.Dispatching
 {
     public class EventDispatcher : IEventDispatcher
     {
-        private readonly IServiceProvider _provider;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public EventDispatcher(IServiceProvider provider)
+        public EventDispatcher(IServiceScopeFactory scopeFactory)
         {
-            _provider = provider;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task Dispatch<T>(T @event) where T : EventBase
         {
-            var handlers = _provider.GetServices<IEventHandler<T>>();
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var handlers = scope.ServiceProvider.GetServices<IEventHandler<T>>();
 
             foreach (var handler in handlers)
             {

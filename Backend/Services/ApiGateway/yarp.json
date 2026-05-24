@@ -23,6 +23,28 @@
           }
         ]
       },
+      "files-route": {
+        "ClusterId": "file-cluster",
+        "Match": {
+          "Path": "/api/files/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/files/{**catch-all}"
+          }
+        ]
+      },
+      "delivery-files-route": {
+        "ClusterId": "file-cluster",
+        "Match": {
+          "Path": "/api/deliveries/files/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/deliveries/files/{**catch-all}"
+          }
+        ]
+      },
       "catalog-route": {
         "ClusterId": "catalog-cluster",
         "Match": {
@@ -72,6 +94,13 @@
         "Destinations": {
           "user-service": {
             "Address": "http://user-service:8080"
+          }
+        }
+      },
+      "file-cluster": {
+        "Destinations": {
+          "file-service": {
+            "Address": "http://file-service:8080"
           }
         }
       },

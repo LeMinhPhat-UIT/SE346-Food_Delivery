@@ -7,7 +7,6 @@ using System.Security.Claims;
 using System.Text;
 using UserService.Consuming;
 using UserService.Enums;
-using UserService.Helpers;
 using UserService.HostedService;
 using UserService.Mappers;
 using UserService.Persistences;
@@ -95,8 +94,6 @@ builder.Services.AddScoped<IUserService, UserService.Services.Implements.UserSer
 builder.Services.AddSingleton<UserMapper>();
 builder.Services.AddTransient<Messaging.Abstractions.Dispatching.IEventHandler<Messaging.Contracts.Events.UserCreatedEvent>, UserCreatedEventHandler>();
 builder.Services.AddTransient<Messaging.Abstractions.Dispatching.IEventHandler<Messaging.Contracts.Events.OtpVerifiedEvent>, OtpVerifiedEventHandler>();
-builder.Services.AddScoped<FirebaseStorageHelper>();
-
 builder.Services.AddHostedService<EventConsumerHostedService>();
 
 builder.Services.AddOpenApi(options =>

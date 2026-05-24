@@ -45,7 +45,7 @@ services:
       JwtSettings__Issuer: ${JWT_ISSUER}
       JwtSettings__Audience: ${JWT_AUDIENCE}
       JwtSettings__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-2}
-      JwtSettings__RefreshTokenMinutes: ${JWT_REFRESH_TOKEN_MINUTES:-3}
+      JwtSettings__RefreshTokenMinutes: ${JWT_REFRESH_TOKEN_MINUTES:-10080}
     ports:
       - "${AUTH_SERVICE_HOST_PORT:-8081}:${AUTH_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UserService.Persistences;
@@ -11,9 +12,11 @@ using UserService.Persistences;
 namespace UserService.Migrations
 {
     [DbContext(typeof(UserDbContext))]
-    partial class UserDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260524141118_MakeRequestReviewerOptional")]
+    partial class MakeRequestReviewerOptional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -165,9 +168,8 @@ namespace UserService.Migrations
                     b.Property<TimeSpan?>("OpeningTime")
                         .HasColumnType("interval");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("StoreBannerUrl")
                         .IsRequired()
@@ -213,7 +215,7 @@ namespace UserService.Migrations
                             IsOpen = true,
                             MinOrderAmount = 30000m,
                             OpeningTime = new TimeSpan(0, 8, 0, 0, 0),
-                            Status = "Approved",
+                            Status = 1,
                             StoreBannerUrl = "https://example.com/stores/banner.png",
                             StoreDescription = "Default merchant store for local development.",
                             StoreLogoUrl = "https://example.com/stores/logo.png",
@@ -323,9 +325,8 @@ namespace UserService.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("VerificationStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("VerificationStatus")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone");
@@ -354,9 +355,8 @@ namespace UserService.Migrations
                     b.Property<Guid>("RequestId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -383,7 +383,7 @@ namespace UserService.Migrations
                             Id = new Guid("56565656-5656-5656-5656-565656565656"),
                             CreatedAt = new DateTime(2026, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             RequestId = new Guid("34343434-3434-3434-3434-343434343434"),
-                            Status = "Approved",
+                            Status = 1,
                             UserId = new Guid("99999999-9999-9999-9999-999999999999"),
                             VehiclePlate = "59A-123.45"
                         });
@@ -443,9 +443,8 @@ namespace UserService.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("VerificationStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("VerificationStatus")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone");
@@ -475,7 +474,7 @@ namespace UserService.Migrations
                             ReviewedBy = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             SelfieUrl = "https://example.com/shipper/selfie.jpg",
                             UserId = new Guid("99999999-9999-9999-9999-999999999999"),
-                            VerificationStatus = "Approved",
+                            VerificationStatus = 1,
                             VerifiedAt = new DateTime(2026, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -506,9 +505,8 @@ namespace UserService.Migrations
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -520,19 +518,11 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
-                            AvatarUrl = "https://example.com/avatars/admin.png",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            FullName = "Seeded Admin",
-                            Status = "Active"
-                        },
-                        new
-                        {
                             Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             AvatarUrl = "https://example.com/avatars/customer.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Customer",
-                            Status = "Active"
+                            Status = 0
                         },
                         new
                         {
@@ -540,7 +530,7 @@ namespace UserService.Migrations
                             AvatarUrl = "https://example.com/avatars/merchant.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Merchant Owner",
-                            Status = "Active"
+                            Status = 0
                         },
                         new
                         {
@@ -548,7 +538,7 @@ namespace UserService.Migrations
                             AvatarUrl = "https://example.com/avatars/shipper.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Shipper",
-                            Status = "Active"
+                            Status = 0
                         });
                 });
 

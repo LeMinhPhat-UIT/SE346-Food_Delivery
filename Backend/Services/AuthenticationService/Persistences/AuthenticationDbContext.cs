@@ -20,6 +20,7 @@ namespace AuthenticationService.Persistences
             {
                 entity.Property(u => u.FullName).HasMaxLength(256);
                 entity.Property(u => u.Otp).HasMaxLength(6);
+                entity.Property(u => u.Status).HasConversion<string>();
 
                 entity
                     .HasMany(u => u.RefreshTokens)

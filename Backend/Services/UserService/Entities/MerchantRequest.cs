@@ -21,9 +21,9 @@ namespace UserService.Entities
         public DateTime? VerifiedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public Guid ReviewedBy { get; set; }
+        public Guid? ReviewedBy { get; set; }
 
         public User User { get; set; } = null!;
-        public User ReviewedUser { get; set; } = null!;
+        public User? ReviewedUser { get; set; }
     }
 }

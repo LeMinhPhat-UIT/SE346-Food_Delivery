@@ -1,7 +1,9 @@
 using Messaging.Contracts.Models;
+using System.Text.Json.Serialization;
 
 namespace Messaging.Contracts.Events
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum DeliveryMilestoneType
     {
         PickedUp,

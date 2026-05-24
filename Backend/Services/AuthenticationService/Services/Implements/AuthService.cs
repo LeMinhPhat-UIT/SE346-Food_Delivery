@@ -319,15 +319,20 @@ namespace AuthenticationService.Services.Implements
             return refreshTokenValue;
         }
 
-        private async Task<RefreshToken?> ValidateRefreshTokenAsync(string token, string deviceName)
+        private async Task<RefreshToken?> ValidateRefreshTokenAsync(string? token, string? deviceName)
         {
+            if (string.IsNullOrWhiteSpace(token))
+                return null;
+
+            token = token.Trim();
             var normalizedDeviceName = NormalizeDeviceName(deviceName);
-            var refreshToken = await _authRepository.GetRefreshTokenAsync(token, normalizedDeviceName);
+            var refreshToken = await _authRepository.GetRefreshTokenAsync(token);
 
             if (
                 refreshToken is null ||
                 refreshToken.IsRevoked ||
-                refreshToken.ExpiresAt < DateTime.UtcNow)
+                refreshToken.ExpiresAt < DateTime.UtcNow ||
+                (deviceName is not null && refreshToken.DeviceName != normalizedDeviceName))
             {
                 return null;
             }

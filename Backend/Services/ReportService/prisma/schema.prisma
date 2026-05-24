@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentMethod {
+  COD
+  VNPAY
+}
+
+enum OrderPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  PICKED_UP
+  DELIVERING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentTransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  ASSIGNED
+  PICKED_UP
+  DELIVERING
+  DELIVERED
+  CANCELLED
+}
+
+model ReportEventInbox {
+  id           String   @id @default(uuid()) @db.Uuid
+  messageId    String   @unique @db.VarChar(120)
+  eventType    String   @db.VarChar(100)
+  aggregateType String  @db.VarChar(100)
+  aggregateId  String   @db.Uuid
+  payload      Json
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model ReportOrderFact {
+  id              String   @id @default(uuid()) @db.Uuid
+  orderId         String   @unique @db.Uuid
+  orderNumber     String   @unique @db.VarChar(20)
+  customerId      String   @db.Uuid
+  merchantId      String   @db.Uuid
+  merchantName    String   @db.VarChar(255)
+  shipperId       String?  @db.Uuid
+  paymentMethod   PaymentMethod
+  paymentStatus   OrderPaymentStatus
+  orderStatus     OrderStatus
+  subtotal        Decimal  @db.Decimal(12, 2)
+  deliveryFee     Decimal  @db.Decimal(12, 2)
+  discountAmount  Decimal  @default(0) @db.Decimal(12, 2)
+  totalAmount     Decimal  @db.Decimal(12, 2)
+  voucherId       String?  @db.Uuid
+  voucherCode     String?  @db.VarChar(50)
+  cancelReason    String?  @db.Text
+  cancelledBy     String?  @db.VarChar(50)
+  createdAt       DateTime @default(now())
+  confirmedAt     DateTime?
+  pickedUpAt      DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+
+  items ReportOrderItemFact[]
+
+  @@index([merchantId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([shipperId, createdAt])
+}
+
+model ReportOrderItemFact {
+  id             String   @id @default(uuid()) @db.Uuid
+  orderId        String   @db.Uuid
+  productId      String   @db.Uuid
+  productName    String   @db.VarChar(255)
+  productImage   String?  @db.VarChar(500)
+  unitPrice      Decimal  @db.Decimal(12, 2)
+  quantity       Int
+  selectedOptions Json?
+  note           String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  order ReportOrderFact @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+  @@index([orderId, createdAt])
+}
+
+model ReportPaymentFact {
+  id             String   @id @default(uuid()) @db.Uuid
+  paymentId      String   @unique @db.Uuid
+  orderId        String   @db.Uuid
+  method         PaymentMethod
+  status         PaymentTransactionStatus
+  amount         Decimal  @db.Decimal(12, 2)
+  transactionId  String?  @db.VarChar(100)
+  provider       String?  @db.VarChar(50)
+  paidAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([status, createdAt])
+}
+
+model ReportDeliveryFact {
+  id                    String        @id @default(uuid()) @db.Uuid
+  deliveryId            String        @unique @db.Uuid
+  orderId               String        @db.Uuid
+  shipperId             String?       @db.Uuid
+  merchantId            String        @db.Uuid
+  status                DeliveryStatus
+  estimatedDistanceKm   Decimal?      @db.Decimal(12, 2)
+  actualDistanceKm      Decimal?      @db.Decimal(12, 2)
+  deliveryFee           Decimal?      @db.Decimal(12, 2)
+  assignedAt            DateTime?
+  pickedUpAt            DateTime?
+  deliveredAt           DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime      @default(now())
+
+  @@index([merchantId, createdAt])
+  @@index([shipperId, createdAt])
+  @@index([status, createdAt])
+}
+
+model ReportAdminDailyMetric {
+  id                   String   @id @default(uuid()) @db.Uuid
+  metricDate           DateTime @db.Date
+  grossRevenue         Decimal  @default(0) @db.Decimal(14, 2)
+  netRevenue           Decimal  @default(0) @db.Decimal(14, 2)
+  orderCount           Int      @default(0)
+  paidOrderCount       Int      @default(0)
+  cancelledOrderCount   Int      @default(0)
+  deliveryFeeTotal     Decimal  @default(0) @db.Decimal(14, 2)
+  discountTotal        Decimal  @default(0) @db.Decimal(14, 2)
+  voucherUsageCount    Int      @default(0)
+  codOrderCount        Int      @default(0)
+  vnpayOrderCount      Int      @default(0)
+  uniqueCustomers      Int      @default(0)
+  uniqueMerchants      Int      @default(0)
+  uniqueShippers       Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([metricDate])
+}
+
+model ReportMerchantDailyMetric {
+  id                   String   @id @default(uuid()) @db.Uuid
+  metricDate           DateTime @db.Date
+  merchantId           String   @db.Uuid
+  grossRevenue         Decimal  @default(0) @db.Decimal(14, 2)
+  netRevenue           Decimal  @default(0) @db.Decimal(14, 2)
+  orderCount           Int      @default(0)
+  paidOrderCount       Int      @default(0)
+  cancelledOrderCount   Int      @default(0)
+  subtotalRevenue      Decimal  @default(0) @db.Decimal(14, 2)
+  deliveryFeeRevenue   Decimal  @default(0) @db.Decimal(14, 2)
+  discountTotal        Decimal  @default(0) @db.Decimal(14, 2)
+  voucherUsageCount    Int      @default(0)
+  avgOrderValue        Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([metricDate, merchantId])
+  @@index([merchantId, metricDate])
+}
+
+model ReportShipperDailyMetric {
+  id                      String   @id @default(uuid()) @db.Uuid
+  metricDate              DateTime @db.Date
+  shipperId               String   @db.Uuid
+  assignedOrderCount      Int      @default(0)
+  pickedUpOrderCount      Int      @default(0)
+  deliveredOrderCount     Int      @default(0)
+  cancelledOrderCount     Int      @default(0)
+  completionRate          Decimal  @default(0) @db.Decimal(5, 2)
+  avgDeliveryTimeMinutes  Decimal  @default(0) @db.Decimal(10, 2)
+  totalDistanceKm         Decimal  @default(0) @db.Decimal(12, 2)
+  deliveryFeeHandled      Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([metricDate, shipperId])
+  @@index([shipperId, metricDate])
+}

@@ -119,7 +119,7 @@ export class OrderService {
             voucherId: context.voucherResult.voucher.id,
             userId,
             discountAmount: context.voucherResult.discountAmount,
-          }
+        }
         : null,
       orderCompletedEvent: {
         orderNumber,
@@ -344,8 +344,8 @@ export class OrderService {
 
     const [userAddress, merchantAddress, merchant] = await Promise.all([
       this.userServiceClient.getUserAddressById(userId, payload.addressId, token),
-      this.userServiceClient.getMerchantPrimaryAddress(payload.merchantId),
-      this.userServiceClient.getMerchantById(payload.merchantId),
+      this.userServiceClient.getMerchantPrimaryAddress(payload.merchantId, token),
+      this.userServiceClient.getMerchantById(payload.merchantId, token),
     ]);
 
     this.assertAddressCoordinates(userAddress, merchantAddress);

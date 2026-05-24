@@ -1,5 +1,5 @@
 import { prisma } from "../../prisma/prisma.client";
-import { PaymentMethod, Prisma } from "@prisma/client";
+import { PaymentMethod, PaymentTransactionStatus, Prisma } from "@prisma/client";
 import { MyOrdersQueryDto } from "./order.dto";
 
 const orderListSelect = {
@@ -191,18 +191,22 @@ export class OrderRepository {
         },
       });
 
-      if (payload.voucherUsage) {
-        await tx.voucherUsage.create({
-          data: {
-            voucherId: payload.voucherUsage.voucherId,
-            userId: payload.voucherUsage.userId,
-            orderId: order.id,
-            discountAmount: payload.voucherUsage.discountAmount,
-          },
-        });
-      }
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          idempotencyKey: order.orderNumber,
+          method: payload.paymentMethod,
+          status: PaymentTransactionStatus.PENDING,
+          amount: order.totalAmount,
+          paymentData: {
+            method: payload.paymentMethod,
+            channel: payload.paymentMethod === "COD" ? "COD" : "VNPAY",
+            orderCompletedEvent: payload.orderCompletedEvent ?? null,
+          } as Prisma.InputJsonValue,
+        },
+      });
 
-      if (payload.orderCompletedEvent) {
+      if (payload.paymentMethod === "COD" && payload.orderCompletedEvent) {
         await tx.outboxMessage.create({
           data: {
             aggregateType: "Order",
@@ -231,6 +235,17 @@ export class OrderRepository {
               PaymentMethod: payload.orderCompletedEvent.paymentMethod,
               Note: payload.orderCompletedEvent.note,
             } satisfies Prisma.InputJsonValue,
+          },
+        });
+      }
+
+      if (payload.voucherUsage) {
+        await tx.voucherUsage.create({
+          data: {
+            voucherId: payload.voucherUsage.voucherId,
+            userId: payload.voucherUsage.userId,
+            orderId: order.id,
+            discountAmount: payload.voucherUsage.discountAmount,
           },
         });
       }

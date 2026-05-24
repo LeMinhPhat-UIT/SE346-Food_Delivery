@@ -131,12 +131,21 @@ export class UserServiceClient {
     return payload.data;
   }
 
-  async getMerchantPrimaryAddress(merchantId: string): Promise<MerchantAddress> {
-    const url = new URL(`${env.USER_SERVICE_URL}/merchant/${merchantId}/location`);
+  async getMerchantPrimaryAddress(
+    merchantId: string,
+    token?: string,
+  ): Promise<MerchantAddress> {
+    const url = new URL(`${env.USER_SERVICE_URL}/merchants/${merchantId}/location`);
     url.searchParams.set("pageIndex", "1");
     url.searchParams.set("pageSize", "1");
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : undefined,
+    });
     const payload = await this.parseResponse<PagedResult<MerchantAddress>>(
       response,
       "Failed to fetch merchant address from User Service",
@@ -151,8 +160,17 @@ export class UserServiceClient {
     return address;
   }
 
-  async getMerchantById(merchantId: string): Promise<MerchantProfile> {
-    const response = await fetch(`${env.USER_SERVICE_URL}/merchants/${merchantId}`);
+  async getMerchantById(
+    merchantId: string,
+    token?: string,
+  ): Promise<MerchantProfile> {
+    const response = await fetch(`${env.USER_SERVICE_URL}/merchants/${merchantId}`, {
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : undefined,
+    });
     const payload = await this.parseResponse<MerchantProfile>(
       response,
       "Failed to fetch merchant profile from User Service",

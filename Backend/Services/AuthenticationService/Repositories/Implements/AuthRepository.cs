@@ -76,9 +76,9 @@ namespace AuthenticationService.Repositories.Implements
             return await _userManager.GetRolesAsync(user);
         }
 
-        public async Task<RefreshToken?> GetRefreshTokenAsync(string token, string deviceName)
+        public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
         {
-            return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token && rt.DeviceName == deviceName);
+            return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
         }
 
         public async Task<RefreshToken> CreateRefreshTokenAsync(RefreshToken token)

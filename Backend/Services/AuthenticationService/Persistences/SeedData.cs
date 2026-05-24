@@ -21,10 +21,10 @@ namespace AuthenticationService.Persistences
             var seededAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             builder.Entity<ApplicationRole>().HasData(
-                new ApplicationRole { Id = customerRoleId, Name = "Customer", NormalizedName = "CUSTOMER" },
-                new ApplicationRole { Id = merchantRoleId, Name = "Merchant", NormalizedName = "MERCHANT" },
-                new ApplicationRole { Id = shipperRoleId, Name = "Shipper", NormalizedName = "SHIPPER" },
-                new ApplicationRole { Id = adminRoleId, Name = "Admin", NormalizedName = "ADMIN" }
+                new ApplicationRole { Id = customerRoleId, Name = "Customer", NormalizedName = "CUSTOMER", ConcurrencyStamp = "SEED-CUSTOMER-ROLE-CONCURRENCY-STAMP" },
+                new ApplicationRole { Id = merchantRoleId, Name = "Merchant", NormalizedName = "MERCHANT", ConcurrencyStamp = "SEED-MERCHANT-ROLE-CONCURRENCY-STAMP" },
+                new ApplicationRole { Id = shipperRoleId, Name = "Shipper", NormalizedName = "SHIPPER", ConcurrencyStamp = "SEED-SHIPPER-ROLE-CONCURRENCY-STAMP" },
+                new ApplicationRole { Id = adminRoleId, Name = "Admin", NormalizedName = "ADMIN", ConcurrencyStamp = "SEED-ADMIN-ROLE-CONCURRENCY-STAMP" }
             );
 
             var adminUser = new ApplicationUser

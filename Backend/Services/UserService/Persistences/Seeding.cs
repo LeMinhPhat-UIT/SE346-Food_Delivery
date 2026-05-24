@@ -8,6 +8,7 @@ namespace UserService.Persistences
     {
         public static void InitializeData(ModelBuilder builder)
         {
+            var adminUserId = Guid.Parse("55555555-5555-5555-5555-555555555555");
             var customerUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
             var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
             var shipperUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
@@ -21,6 +22,14 @@ namespace UserService.Persistences
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
 
             builder.Entity<User>().HasData(
+                new User
+                {
+                    Id = adminUserId,
+                    FullName = "Seeded Admin",
+                    AvatarUrl = "https://example.com/avatars/admin.png",
+                    Status = UserStatus.Active,
+                    CreatedAt = seededAt
+                },
                 new User
                 {
                     Id = customerUserId,

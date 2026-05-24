@@ -30,7 +30,7 @@ namespace UserService.Services.Implements
             merchantRequest.UserId = userId;
             merchantRequest.VerificationStatus = VerificationStatus.Pending;
             merchantRequest.RejectedReason = string.Empty;
-            merchantRequest.ReviewedBy = Guid.Empty;
+            merchantRequest.ReviewedBy = null;
             merchantRequest.VerifiedAt = null;
             merchantRequest.CreatedAt = DateTime.UtcNow;
 
@@ -50,9 +50,6 @@ namespace UserService.Services.Implements
             var response = _mapper.ToMerchantRequestResponseList(pagedMerchantRequests.Items)
                 .Select(r =>
                 {
-                    if (r.ReviewedBy == Guid.Empty)
-                        r.ReviewedBy = null;
-
                     return r;
                 });
             var result = new PagedResult<MerchantRequestResponse>(response, pagedMerchantRequests.PaginationRequest, pagedMerchantRequests.TotalCount);

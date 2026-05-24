@@ -12,6 +12,7 @@ namespace NotificationService.Persistences
             modelBuilder.Entity<UserDevice>(entity =>
             {
                 entity.HasKey(ud => ud.Id);
+                entity.Property(ud => ud.DeviceType).HasConversion<string>();
             });
 
             modelBuilder.Entity<Notification>(entity =>

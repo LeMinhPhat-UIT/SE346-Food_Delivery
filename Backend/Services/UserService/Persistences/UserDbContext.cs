@@ -15,6 +15,7 @@ namespace UserService.Persistences
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(u => u.Id);
+                entity.Property(u => u.Status).HasConversion<string>();
                 entity
                     .HasOne(u => u.Shipper)
                     .WithOne(s => s.User)
@@ -32,11 +33,13 @@ namespace UserService.Persistences
             modelBuilder.Entity<Shipper>(entity =>
             {
                 entity.HasKey(s => s.Id);
+                entity.Property(s => s.Status).HasConversion<string>();
             });
 
             modelBuilder.Entity<Merchant>(entity =>
             {
                 entity.HasKey(m => m.Id);
+                entity.Property(m => m.Status).HasConversion<string>();
                 entity
                     .HasMany(m => m.Addresses)
                     .WithOne(a => a.Merchant)
@@ -46,6 +49,7 @@ namespace UserService.Persistences
             modelBuilder.Entity<ShipperRequest>(entity =>
             {
                 entity.HasKey(mr => mr.Id);
+                entity.Property(mr => mr.VerificationStatus).HasConversion<string>();
                 entity
                     .HasOne(mr => mr.User)
                     .WithMany(u => u.ShipperRequests)
@@ -60,6 +64,7 @@ namespace UserService.Persistences
             modelBuilder.Entity<MerchantRequest>(entity =>
             {
                 entity.HasKey(mr => mr.Id);
+                entity.Property(mr => mr.VerificationStatus).HasConversion<string>();
                 entity
                     .HasOne(mr => mr.User)
                     .WithMany(u => u.MerchantRequests)

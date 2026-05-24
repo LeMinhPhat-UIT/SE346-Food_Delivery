@@ -12,16 +12,20 @@ namespace DeliveryService.Persistences
             modelBuilder.Entity<DeliveryTracking>(entity =>
             {
                 entity.HasKey(dt => dt.Id);
+                entity.Property(dt => dt.Status).HasConversion<string>();
             });
 
             modelBuilder.Entity<Incident>(entity =>
             {
                 entity.HasKey(i => i.Id);
+                entity.Property(i => i.Type).HasConversion<string>();
+                entity.Property(i => i.Status).HasConversion<string>();
             });
 
             modelBuilder.Entity<ShipperAssignment>(entity =>
             {
                 entity.HasKey(sa => sa.Id);
+                entity.Property(sa => sa.Status).HasConversion<string>();
             });
 
             modelBuilder.Entity<ShipperLocationHistory>(entity =>
@@ -34,6 +38,7 @@ namespace DeliveryService.Persistences
             modelBuilder.Entity<ShipperAvailability>(entity =>
             {
                 entity.HasKey(sa => sa.Id);
+                entity.Property(sa => sa.Status).HasConversion<string>();
             });
 
             SeedData.InitializeData(modelBuilder);

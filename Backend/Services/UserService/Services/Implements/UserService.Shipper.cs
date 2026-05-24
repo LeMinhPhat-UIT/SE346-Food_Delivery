@@ -29,7 +29,7 @@ namespace UserService.Services.Implements
             shipperRequest.UserId = userId;
             shipperRequest.VerificationStatus = VerificationStatus.Pending;
             shipperRequest.RejectedReason = string.Empty;
-            shipperRequest.ReviewedBy = Guid.Empty;
+            shipperRequest.ReviewedBy = null;
             shipperRequest.VerifiedAt = null;
             shipperRequest.CreatedAt = DateTime.UtcNow;
 
@@ -49,9 +49,6 @@ namespace UserService.Services.Implements
             var response = _mapper.ToShipperRequestResponseList(pagedShipperRequests.Items)
                 .Select(s =>
                 {
-                    if (s.ReviewedBy == Guid.Empty)
-                        s.ReviewedBy = null;
-
                     return s;
                 });
             var result = new PagedResult<ShipperRequestResponse>(response, pagedShipperRequests.PaginationRequest, pagedShipperRequests.TotalCount);

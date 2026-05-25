@@ -70,3 +70,4 @@ obj/
 
 .env
 firebase-auth.json
+Backend/Infrastructure/*.env

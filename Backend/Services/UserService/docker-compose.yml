@@ -1,0 +1,42 @@
+services:
+  user-service:
+    container_name: user-service
+    build:
+      context: ../..
+      dockerfile: Services/UserService/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${USER_SERVICE_HOST_PORT:-8082}:${USER_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  user-db:
+    image: postgres:17-alpine
+    container_name: user-db
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/user-db.env
+    ports:
+      - "${USER_DB_PORT}:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  user_db_data:

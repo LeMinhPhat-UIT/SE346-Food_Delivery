@@ -1,7 +1,10 @@
 using AuthenticationService.DTOs;
 using AuthenticationService.Services.Interfaces;
 using Messaging.Contracts.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace AuthenticationService.Controllers
 {
@@ -136,6 +139,47 @@ namespace AuthenticationService.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    var invalidContextResponse = new ApiResponse<ConfirmationResponse>(
+                        StatusCodes.Status401Unauthorized,
+                        "Invalid user context");
+
+                    return StatusCode(invalidContextResponse.StatusCode, invalidContextResponse);
+                }
+
+                var response = await _authService.ChangePasswordAsync(userId.Value, request);
+
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                ?? User.FindFirstValue("sub")
+                ?? User.FindFirstValue("userId");
+
+            return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
         }
 
         //[HttpPut("update-phone")]

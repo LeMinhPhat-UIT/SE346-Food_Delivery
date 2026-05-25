@@ -1,0 +1,52 @@
+services:
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: order-service
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - "${ORDER_SERVICE_HOST_PORT}:${ORDER_SERVICE_CONTAINER_PORT}"
+    depends_on:
+      - order-db
+      - order-redis
+      - rabbitmq
+    networks:
+      - backend-network
+
+  order-db:
+    image: postgres:15-alpine
+    container_name: order-db
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/order-db.env
+    ports:
+      - "${ORDER_DB_PORT}:5432"
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  order-redis:
+    image: redis:7-alpine
+    container_name: order-redis
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/order-redis.env
+    command: ["sh", "-c", "redis-server --requirepass \"$$ORDER_REDIS_PASSWORD\""]
+    ports:
+      - "${ORDER_REDIS_PORT}:6379"
+    volumes:
+      - order_redis_data:/data
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  order_db_data:
+  order_redis_data:

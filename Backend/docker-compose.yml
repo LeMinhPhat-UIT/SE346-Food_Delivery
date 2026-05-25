@@ -340,6 +340,60 @@ services:
     networks:
       - backend-network
 
+  report-service:
+    build:
+      context: ./Services/ReportService
+      dockerfile: Dockerfile
+    container_name: report-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${REPORT_SERVICE_HOST_PORT}:${REPORT_SERVICE_CONTAINER_PORT}"
+    environment:
+      - NODE_ENV=development
+      - PORT=${REPORT_SERVICE_CONTAINER_PORT}
+      - DATABASE_URL=postgresql://${REPORT_DB_USER}:${REPORT_DB_PASSWORD}@${REPORT_DB_HOST}:5432/${REPORT_DB_NAME}?schema=public
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
+      - JWT_SECRET=${JWT_KEY}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - USER_SERVICE_URL=${REPORT_USER_SERVICE_URL:-http://user-service:8080/api/users}
+      - ORDER_SERVICE_URL=${REPORT_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
+      - DELIVERY_SERVICE_URL=${REPORT_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
+    depends_on:
+      - report-db
+      - rabbitmq
+    networks:
+      - backend-network
+
+  wallet-service:
+    build:
+      context: ./Services/WalletService
+      dockerfile: Dockerfile
+    container_name: wallet-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${WALLET_SERVICE_HOST_PORT}:${WALLET_SERVICE_CONTAINER_PORT}"
+    environment:
+      - NODE_ENV=development
+      - PORT=${WALLET_SERVICE_CONTAINER_PORT}
+      - DATABASE_URL=postgresql://${WALLET_DB_USER}:${WALLET_DB_PASSWORD}@${WALLET_DB_HOST}:5432/${WALLET_DB_NAME}?schema=public
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
+      - JWT_SECRET=${JWT_KEY}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - USER_SERVICE_URL=${WALLET_USER_SERVICE_URL:-http://user-service:8080/api/users}
+      - ORDER_SERVICE_URL=${WALLET_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
+      - DELIVERY_SERVICE_URL=${WALLET_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
+    depends_on:
+      - wallet-db
+      - rabbitmq
+    networks:
+      - backend-network
+
   order-db:
     image: postgres:15-alpine
     container_name: order-db
@@ -352,6 +406,36 @@ services:
       - "${ORDER_DB_PORT}:5432"
     volumes:
       - order_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  report-db:
+    image: postgres:17-alpine
+    container_name: report-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${REPORT_DB_USER}
+      POSTGRES_PASSWORD: ${REPORT_DB_PASSWORD}
+      POSTGRES_DB: ${REPORT_DB_NAME}
+    ports:
+      - "${REPORT_DB_PORT}:5432"
+    volumes:
+      - report_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+
+  wallet-db:
+    image: postgres:17-alpine
+    container_name: wallet-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${WALLET_DB_USER}
+      POSTGRES_PASSWORD: ${WALLET_DB_PASSWORD}
+      POSTGRES_DB: ${WALLET_DB_NAME}
+    ports:
+      - "${WALLET_DB_PORT}:5432"
+    volumes:
+      - wallet_db_data:/var/lib/postgresql/data
     networks:
       - backend-network
 
@@ -379,3 +463,5 @@ volumes:
   order_db_data:
   order_redis_data:
   notification_db_data:
+  report_db_data:
+  wallet_db_data:

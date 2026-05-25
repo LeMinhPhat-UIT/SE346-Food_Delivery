@@ -64,10 +64,52 @@ services:
       file: ./Services/OrderService/docker-compose.yml
       service: order-service
 
+  report-service:
+    build:
+      context: ./Services/ReportService
+      dockerfile: Dockerfile
+    container_name: report-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${REPORT_SERVICE_HOST_PORT}:${REPORT_SERVICE_CONTAINER_PORT}"
+    environment:
+      - NODE_ENV=development
+      - PORT=${REPORT_SERVICE_CONTAINER_PORT}
+      - DATABASE_URL=postgresql://${REPORT_DB_USER}:${REPORT_DB_PASSWORD}@${REPORT_DB_HOST}:5432/${REPORT_DB_NAME}?schema=public
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
+      - JWT_SECRET=${JWT_KEY}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - USER_SERVICE_URL=${REPORT_USER_SERVICE_URL:-http://user-service:8080/api/users}
+      - ORDER_SERVICE_URL=${REPORT_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
+      - DELIVERY_SERVICE_URL=${REPORT_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
+    depends_on:
+      - report-db
+      - rabbitmq
+    networks:
+      - backend-network
+
   order-db:
     extends:
       file: ./Services/OrderService/docker-compose.yml
       service: order-db
+
+  report-db:
+    image: postgres:17-alpine
+    container_name: report-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${REPORT_DB_USER}
+      POSTGRES_PASSWORD: ${REPORT_DB_PASSWORD}
+      POSTGRES_DB: ${REPORT_DB_NAME}
+    ports:
+      - "${REPORT_DB_PORT}:5432"
+    volumes:
+      - report_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
 
   order-redis:
     extends:
@@ -90,3 +132,4 @@ volumes:
   order_db_data:
   order_redis_data:
   notification_db_data:
+  report_db_data:

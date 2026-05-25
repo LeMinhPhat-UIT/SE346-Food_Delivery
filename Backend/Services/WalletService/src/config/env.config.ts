@@ -10,9 +10,12 @@ const envSchema = z.object({
   JWT_ISSUER: z.string().optional(),
   JWT_AUDIENCE: z.string().optional(),
   RABBITMQ_URL: z.string().url("RABBITMQ_URL must be a valid URL"),
+  RABBITMQ_EXCHANGE: z.string().min(1).default("notify-exchange"),
   USER_SERVICE_URL: z.string().url().default("http://user-service:8080/api/users"),
   ORDER_SERVICE_URL: z.string().url().default("http://order-service:8080/api/orders"),
   DELIVERY_SERVICE_URL: z.string().url().default("http://delivery-service:8080/api/deliveries"),
+  WALLET_PLATFORM_OWNER_ID: z.string().uuid().default("00000000-0000-0000-0000-000000000001"),
+  WALLET_MERCHANT_COMMISSION_RATE: z.coerce.number().min(0).max(100).default(22),
 });
 
 export const env = envSchema.parse(process.env);

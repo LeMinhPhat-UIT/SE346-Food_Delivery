@@ -1,11 +1,43 @@
-import { Wallet, WalletTransaction } from "@prisma/client";
+import { WalletOwnerType, WalletTransactionStatus, WalletTransactionType } from "@prisma/client";
 import { WalletResponseDto, WalletTransactionResponseDto } from "./wallet.dto";
 
-export const toWalletResponseDto = (wallet: Wallet): WalletResponseDto => ({
+type WalletLike = {
+  id: string;
+  ownerType: WalletOwnerType;
+  ownerId: string;
+  balance: { toNumber: () => number } | number;
+  currency: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type WalletTransactionLike = {
+  id: string;
+  walletId: string;
+  type: WalletTransactionType;
+  amount: { toNumber: () => number } | number;
+  balanceBefore: { toNumber: () => number } | number;
+  balanceAfter: { toNumber: () => number } | number;
+  referenceId: string | null;
+  referenceType: string | null;
+  referenceCode: string | null;
+  description: string | null;
+  status: WalletTransactionStatus;
+  idempotencyKey: string | null;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const toAmount = (value: { toNumber: () => number } | number) =>
+  typeof value === "number" ? value : value.toNumber();
+
+export const toWalletResponseDto = (wallet: WalletLike): WalletResponseDto => ({
   id: wallet.id,
   ownerType: wallet.ownerType,
   ownerId: wallet.ownerId,
-  balance: Number(wallet.balance),
+  balance: toAmount(wallet.balance),
   currency: wallet.currency,
   isActive: wallet.isActive,
   createdAt: wallet.createdAt.toISOString(),
@@ -13,14 +45,14 @@ export const toWalletResponseDto = (wallet: Wallet): WalletResponseDto => ({
 });
 
 export const toWalletTransactionResponseDto = (
-  tx: WalletTransaction,
+  tx: WalletTransactionLike,
 ): WalletTransactionResponseDto => ({
   id: tx.id,
   walletId: tx.walletId,
   type: tx.type,
-  amount: Number(tx.amount),
-  balanceBefore: Number(tx.balanceBefore),
-  balanceAfter: Number(tx.balanceAfter),
+  amount: toAmount(tx.amount),
+  balanceBefore: toAmount(tx.balanceBefore),
+  balanceAfter: toAmount(tx.balanceAfter),
   referenceId: tx.referenceId,
   referenceType: tx.referenceType,
   referenceCode: tx.referenceCode,

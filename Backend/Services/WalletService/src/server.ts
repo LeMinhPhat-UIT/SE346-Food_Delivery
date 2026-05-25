@@ -2,10 +2,13 @@ import app from "./app";
 import { connectDatabase, disconnectDatabase } from "./config/db.config";
 import { env } from "./config/env.config";
 import { logger } from "./utils/logger";
+import { OrderCompletedConsumer } from "./modules/events/order-completed.consumer";
 
 const startServer = async () => {
   try {
     await connectDatabase();
+    const orderCompletedConsumer = new OrderCompletedConsumer();
+    await orderCompletedConsumer.start();
 
     const server = app.listen(env.PORT, () => {
       logger.info(`Wallet Service is running on port ${env.PORT}`);
@@ -15,6 +18,7 @@ const startServer = async () => {
       logger.warn(`Received ${signal}. Shutting down Wallet Service...`);
 
       server.close(async () => {
+        await orderCompletedConsumer.stop();
         await disconnectDatabase();
         process.exit(0);
       });

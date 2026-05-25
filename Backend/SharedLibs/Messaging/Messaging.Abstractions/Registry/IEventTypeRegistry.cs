@@ -7,5 +7,6 @@ namespace Messaging.Abstractions.Registry
     public interface IEventTypeRegistry
     {
         Type? Get(string eventType);
+        Type? GetByRoutingKey(string routingKey);
     }
 }

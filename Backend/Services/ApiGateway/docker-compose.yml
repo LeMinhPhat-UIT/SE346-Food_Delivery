@@ -1,0 +1,27 @@
+services:
+  apigateway:
+    container_name: api-gateway
+    build:
+      context: ../..
+      dockerfile: Services/ApiGateway/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${API_GATEWAY_HTTP_PORT:-8080}:${API_GATEWAY_HTTP_PORT:-8080}"
+    depends_on:
+      authentication-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      file-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      delivery-service:
+        condition: service_started
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge

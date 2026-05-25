@@ -291,6 +291,31 @@ namespace AuthenticationService.Services.Implements
             });
         }
 
+        public async Task<ApiResponse<ConfirmationResponse>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            if (request.NewPassword != request.ConfirmPassword)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "New password and confirmation password do not match");
+
+            if (request.CurrentPassword == request.NewPassword)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "New password must be different from current password");
+
+            var user = await _authRepository.FindByIdAsync(userId);
+            if (user is null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "User not found");
+
+            var result = await _authRepository.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                return new ApiResponse<ConfirmationResponse>(
+                    StatusCodes.Status400BadRequest,
+                    result.Errors.Select(error => error.Description).ToList());
+            }
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Change password successfully"));
+        }
+
         private static string GenerateOtp()
         {
             return RandomNumberGenerator.GetInt32(100000, 1000000).ToString();

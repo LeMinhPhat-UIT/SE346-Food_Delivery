@@ -40,6 +40,12 @@ namespace AuthenticationService.Repositories.Implements
             return await _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure);
         }
 
+        public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
+        {
+            user.UpdatedAt = DateTime.UtcNow;
+            return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        }
+
         public async Task<IdentityResult> AccessFailedAsync(ApplicationUser user)
         {
             return await _userManager.AccessFailedAsync(user);

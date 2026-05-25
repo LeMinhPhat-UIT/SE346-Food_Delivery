@@ -40,4 +40,22 @@ namespace AuthenticationService.Validations
                 .EmailAddress().WithMessage("Invalid email address");
         }
     }
+
+    public class ChangePasswordRequestValidation : AbstractValidator<ChangePasswordRequest>
+    {
+        public ChangePasswordRequestValidation()
+        {
+            RuleFor(request => request.CurrentPassword)
+                .NotEmpty().WithMessage("Current password is required");
+
+            RuleFor(request => request.NewPassword)
+                .NotEmpty().WithMessage("New password is required")
+                .MinimumLength(6).WithMessage("New password must be at least 6 characters")
+                .NotEqual(request => request.CurrentPassword).WithMessage("New password must be different from current password");
+
+            RuleFor(request => request.ConfirmPassword)
+                .NotEmpty().WithMessage("Confirm password is required")
+                .Equal(request => request.NewPassword).WithMessage("Confirm password must match new password");
+        }
+    }
 }

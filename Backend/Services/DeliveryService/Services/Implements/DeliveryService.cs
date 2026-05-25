@@ -327,6 +327,7 @@ namespace DeliveryService.Services.Implements
 
             assignment.DeliveredAt = DateTime.UtcNow;
             assignment.DeliveryProofFileKey = request.ProofFileKey;
+            var deliveredAt = assignment.DeliveredAt.Value;
 
             await UpsertAvailabilityAsync(assignment.ShipperId, null, ShipperWorkStatus.ActiveIdle);
             await _deliveryRepository.UpdateShipperAssignment(assignment);
@@ -338,6 +339,21 @@ namespace DeliveryService.Services.Implements
                 CustomerId = assignment.CustomerId,
                 ShipperId = assignment.ShipperId,
                 Milestone = DeliveryMilestoneType.Delivered,
+                ProofFileKey = request.ProofFileKey,
+                Note = request.Note
+            });
+
+            await _eventPublisher.PublishAsync(new DeliveryDeliveredEvent
+            {
+                OrderId = assignment.OrderId,
+                OrderNumber = assignment.OrderNumber,
+                CustomerId = assignment.CustomerId,
+                ShipperId = assignment.ShipperId,
+                MerchantId = assignment.MerchantId,
+                DeliveryFee = assignment.DeliveryFee,
+                DistanceKm = assignment.DistanceKm,
+                DeliveryAt = deliveredAt,
+                Status = DeliveryStatus.Delivered.ToString(),
                 ProofFileKey = request.ProofFileKey,
                 Note = request.Note
             });

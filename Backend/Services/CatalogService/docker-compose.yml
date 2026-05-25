@@ -1,0 +1,18 @@
+services:
+  catalog-service:
+    container_name: catalog-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${CATALOG_SERVICE_HOST_PORT}:${CATALOG_SERVICE_CONTAINER_PORT}"
+    depends_on:
+      - rabbitmq
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge

@@ -188,8 +188,17 @@ namespace DeliveryService.Migrations
                     b.Property<DateTime?>("DeliveredAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal>("DeliveryFee")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("DeliveryProofFileKey")
                         .HasColumnType("text");
+
+                    b.Property<decimal>("DistanceKm")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("MerchantId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
@@ -228,6 +237,9 @@ namespace DeliveryService.Migrations
                             AcceptedAt = new DateTime(2026, 1, 1, 0, 1, 0, 0, DateTimeKind.Utc),
                             AssignedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CustomerId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            DeliveryFee = 21000m,
+                            DistanceKm = 2.2m,
+                            MerchantId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             OrderId = new Guid("62222222-2222-2222-2222-222222222222"),
                             OrderNumber = "ORD-SEED-0001",
                             ShipperId = new Guid("56565656-5656-5656-5656-565656565656"),

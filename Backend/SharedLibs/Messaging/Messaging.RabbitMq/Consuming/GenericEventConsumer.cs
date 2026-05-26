@@ -41,36 +41,27 @@ namespace Messaging.RabbitMq.Consuming
                 {
                     var body = Encoding.UTF8.GetString(ea.Body.ToArray());
 
-                    var envelope = JsonSerializer.Deserialize<EventEnvelope<JsonElement>>(body);
-
-                    if (envelope == null)
-                    {
-                        _logger.LogError("Failed to deserialize envelope");
-                        await _channel.BasicNackAsync(ea.DeliveryTag, false, false, cancellationToken);
-                        return;
-                    }
-
-                    var eventType = _eventTypeRegistry.Get(envelope.EventType);
+                    var (eventType, eventData, envelopeCorrelationId) = ResolveEvent(body, routingKey);
 
                     if (eventType == null)
                     {
-                        _logger.LogWarning("Unknown event type: {EventType}", envelope.EventType);
+                        _logger.LogWarning("Unknown event type for routing key: {RoutingKey}", routingKey);
                         await _channel.BasicNackAsync(ea.DeliveryTag, false, false, cancellationToken);
                         return;
                     }
 
-                    var @event = envelope.Data.Deserialize(eventType) as EventBase;
+                    var @event = eventData.Deserialize(eventType) as EventBase;
 
                     if (@event == null)
                     {
-                        _logger.LogError("Failed to deserialize event data to {EventType}", envelope.EventType);
+                        _logger.LogError("Failed to deserialize event data to {EventType}", eventType.Name);
                         await _channel.BasicNackAsync(ea.DeliveryTag, false, false, cancellationToken);
                         return;
                     }
 
                     if (string.IsNullOrEmpty(@event.CorrelationId))
                     {
-                        @event.CorrelationId = envelope.CorrelationId ?? correlationId;
+                        @event.CorrelationId = envelopeCorrelationId ?? correlationId;
                     }
 
                     await DispatchEventAsync(@event, eventType);
@@ -98,6 +89,30 @@ namespace Messaging.RabbitMq.Consuming
             _logger.LogInformation(
                 "Generic event consumer started on queue: {Queue}",
                 queueName);
+        }
+
+        private (Type? EventType, JsonElement EventData, string? CorrelationId) ResolveEvent(string body, string routingKey)
+        {
+            EventEnvelope<JsonElement>? envelope = null;
+
+            try
+            {
+                envelope = JsonSerializer.Deserialize<EventEnvelope<JsonElement>>(body);
+            }
+            catch (JsonException)
+            {
+                // Some non-.NET services publish the event body directly.
+            }
+
+            if (envelope != null &&
+                !string.IsNullOrWhiteSpace(envelope.EventType) &&
+                envelope.Data.ValueKind != JsonValueKind.Undefined)
+            {
+                return (_eventTypeRegistry.Get(envelope.EventType), envelope.Data, envelope.CorrelationId);
+            }
+
+            var rawEvent = JsonSerializer.Deserialize<JsonElement>(body);
+            return (_eventTypeRegistry.GetByRoutingKey(routingKey), rawEvent, null);
         }
 
         private async Task DispatchEventAsync(EventBase @event, Type eventType)

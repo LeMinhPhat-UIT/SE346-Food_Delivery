@@ -28,6 +28,12 @@ namespace AuthenticationService.Persistences
                     .HasForeignKey(rt => rt.UserId);
             });
 
+            builder.Entity<RefreshToken>(entity =>
+            {
+                entity.Property(rt => rt.DeviceId).IsRequired();
+                entity.HasIndex(rt => new { rt.UserId, rt.DeviceId });
+            });
+
             SeedData.InitializeData(builder);
         }
 

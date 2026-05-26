@@ -1,0 +1,58 @@
+services:
+  delivery-service:
+    container_name: delivery-service
+    build:
+      context: ../..
+      dockerfile: Services/DeliveryService/Dockerfile
+    env_file:
+      - ./.env
+    volumes:
+      - ../../firebase-auth.json:/app/secrets/firebase-auth.json:ro
+    ports:
+      - "${DELIVERY_SERVICE_HOST_PORT:-8084}:${DELIVERY_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      delivery-db:
+        condition: service_healthy
+      delivery-redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  delivery-db:
+    image: postgres:17-alpine
+    container_name: delivery-db
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/delivery-db.env
+    ports:
+      - "${DELIVERY_DB_PORT}:5432"
+    volumes:
+      - delivery_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+  delivery-redis:
+    image: redis:7-alpine
+    container_name: delivery-redis
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/delivery-redis.env
+    command: ["sh", "-c", "redis-server --requirepass \"$$DELIVERY_REDIS_PASSWORD\""]
+    ports:
+      - "${DELIVERY_REDIS_PORT:-6379}:6379"
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  delivery_db_data:

@@ -15,6 +15,7 @@ namespace DeliveryService.Persistences
             var locationId = Guid.Parse("65555555-5555-5555-5555-555555555555");
             var availabilityId = Guid.Parse("66666666-6666-6666-6666-666666666666");
             var customerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            var merchantId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
             var secondTrackingId = Guid.Parse("74444444-4444-4444-4444-444444444444");
             var secondOrderId = Guid.Parse("75555555-5555-5555-5555-555555555555");
             var secondLocationId = Guid.Parse("76666666-6666-6666-6666-666666666666");
@@ -59,8 +60,11 @@ namespace DeliveryService.Persistences
                     Id = assignmentId,
                     OrderId = orderId,
                     CustomerId = customerId,
+                    MerchantId = merchantId,
                     OrderNumber = "ORD-SEED-0001",
                     ShipperId = shipperId,
+                    DeliveryFee = 21000m,
+                    DistanceKm = 2.2m,
                     Status = AssignmentStatus.Accepted,
                     AssignedAt = seededAt,
                     AcceptedAt = seededAt.AddMinutes(1)

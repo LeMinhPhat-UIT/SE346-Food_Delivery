@@ -1,0 +1,18 @@
+services:
+  file-service:
+    container_name: file-service
+    build:
+      context: ../..
+      dockerfile: Services/FileService/Dockerfile
+    env_file:
+      - ./.env
+    volumes:
+      - ../../firebase-auth.json:/app/secrets/firebase-auth.json:ro
+    ports:
+      - "${FILE_SERVICE_HOST_PORT:-8087}:${FILE_SERVICE_CONTAINER_PORT:-8080}"
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge

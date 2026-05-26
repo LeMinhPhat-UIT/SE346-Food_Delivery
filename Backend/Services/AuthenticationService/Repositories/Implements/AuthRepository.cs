@@ -40,6 +40,12 @@ namespace AuthenticationService.Repositories.Implements
             return await _signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure);
         }
 
+        public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
+        {
+            user.UpdatedAt = DateTime.UtcNow;
+            return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        }
+
         public async Task<IdentityResult> AccessFailedAsync(ApplicationUser user)
         {
             return await _userManager.AccessFailedAsync(user);
@@ -76,9 +82,9 @@ namespace AuthenticationService.Repositories.Implements
             return await _userManager.GetRolesAsync(user);
         }
 
-        public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
+        public async Task<RefreshToken?> GetRefreshTokenAsync(string token, string deviceId)
         {
-            return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
+            return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token && rt.DeviceId == deviceId);
         }
 
         public async Task<RefreshToken> CreateRefreshTokenAsync(RefreshToken token)

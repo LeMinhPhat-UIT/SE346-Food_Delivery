@@ -1,0 +1,42 @@
+services:
+  notification-service:
+    container_name: notification-service
+    build:
+      context: ../..
+      dockerfile: Services/NotificationService/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${NOTIFICATION_SERVICE_HOST_PORT:-8083}:${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  notification-db:
+    image: postgres:17-alpine
+    container_name: notification-db
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/notification-db.env
+    ports:
+      - "${NOTIFICATION_DB_PORT}:5432"
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  notification_db_data:

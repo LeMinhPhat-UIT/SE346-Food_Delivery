@@ -1,30 +1,18 @@
 services:
   catalog-service:
+    container_name: catalog-service
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: catalog-service
-    restart: unless-stopped
     env_file:
-      - .env
+      - ./.env
     ports:
-      - "${CATALOG_SERVICE_HOST_PORT:-8085}:${CATALOG_SERVICE_CONTAINER_PORT:-8080}"
-    environment:
-      NODE_ENV: development
-      PORT: ${CATALOG_SERVICE_CONTAINER_PORT:-8080}
-      DATABASE_URL: ${DATABASE_URL}
-      DIRECT_URL: ${DIRECT_URL}
-      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-appuser}:${RABBITMQ_DEFAULT_PASS:-app_password}@${RABBITMQ_HOST:-rabbitmq}:5672
-      JWT_SECRET: ${JWT_KEY:-replace_with_strong_jwt_key}
-      JWT_ISSUER: ${JWT_ISSUER:-https://auth.myapp.dev}
-      JWT_AUDIENCE: ${JWT_AUDIENCE:-https://api.myapp.dev}
-      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:8080/api/users}
-      SUPABASE_PROJECT_URL: ${SUPABASE_PROJECT_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET}
+      - "${CATALOG_SERVICE_HOST_PORT}:${CATALOG_SERVICE_CONTAINER_PORT}"
     depends_on:
       - rabbitmq
     networks:
       - backend-network
 
+networks:
+  backend-network:
+    driver: bridge

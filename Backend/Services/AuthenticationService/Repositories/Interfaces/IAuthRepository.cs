@@ -12,12 +12,13 @@ namespace AuthenticationService.Repositories.Interfaces
         Task<IdentityResult> UpdateUserAsync(ApplicationUser user);
         Task<IdentityResult> AddToRoleAsync(ApplicationUser user, string role);
         Task<SignInResult> CheckPasswordSignInAsync(ApplicationUser user, string password, bool lockoutOnFailure);
+        Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword);
         Task<IdentityResult> AccessFailedAsync(ApplicationUser user);
         Task<bool> IsLockedOutAsync(ApplicationUser user);
         Task<IdentityResult> ResetAccessFailedCountAsync(ApplicationUser user);
         Task<IList<Claim>> GetClaimsAsync(ApplicationUser user);
         Task<IList<string>> GetRolesAsync(ApplicationUser user);
-        Task<RefreshToken?> GetRefreshTokenAsync(string token);
+        Task<RefreshToken?> GetRefreshTokenAsync(string token, string deviceId);
         Task<RefreshToken> CreateRefreshTokenAsync(RefreshToken token);
         Task UpdateRefreshTokenAsync(RefreshToken token);
     }

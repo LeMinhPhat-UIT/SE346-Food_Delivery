@@ -20,6 +20,8 @@ namespace Messaging.Contracts.Events
         public UserAddressBaseDto DeliveryAddress { get; set; } = new UserAddressBaseDto();
 
         public decimal TotalAmount { get; set; }
+        public decimal DeliveryFee { get; set; }
+        public decimal DistanceKm { get; set; }
         public string PaymentMethod { get; set; } = string.Empty; 
         public string? Note { get; set; }
     }

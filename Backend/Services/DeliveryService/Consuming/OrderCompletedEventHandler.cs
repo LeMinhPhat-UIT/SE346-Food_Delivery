@@ -2,6 +2,7 @@
 using DeliveryService.Enums;
 using DeliveryService.Options;
 using DeliveryService.Repositories.Interfaces;
+using DeliveryService.Services.Interfaces;
 using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
 using Messaging.RabbitMq.Publishing;
@@ -15,22 +16,59 @@ namespace DeliveryService.Consuming
         private readonly IDeliveryRepository _deliveryRepository;
         private readonly IRedisRepository _redisRepository;
         private readonly IOptions<DeliveryOption> _deliveryOptions;
+        private readonly IDeliveryEstimator _deliveryEstimator;
         private readonly IEventPublisher _publisher;
         private readonly ILogger<OrderCompletedEventHandler> _logger;
 
-        public OrderCompletedEventHandler(IDeliveryRepository deliveryRepository, IRedisRepository redisRepository, IOptions<DeliveryOption> deliveryOptions, IEventPublisher publisher, ILogger<OrderCompletedEventHandler> logger)
+        public OrderCompletedEventHandler(
+            IDeliveryRepository deliveryRepository,
+            IRedisRepository redisRepository,
+            IOptions<DeliveryOption> deliveryOptions,
+            IDeliveryEstimator deliveryEstimator,
+            IEventPublisher publisher,
+            ILogger<OrderCompletedEventHandler> logger)
         {
             _deliveryRepository = deliveryRepository;
             _redisRepository = redisRepository;
             _deliveryOptions = deliveryOptions;
+            _deliveryEstimator = deliveryEstimator;
             _publisher = publisher;
             _logger = logger;
         }
 
         public async Task Handle(OrderCompletedEvent @event)
         {
-            var merchantLng = (double)(@event.MerchantAddress?.Lng ?? 0m);
-            var merchantLat = (double)(@event.MerchantAddress?.Lat ?? 0m);
+            var merchantLngDecimal = @event.MerchantAddress?.Lng ?? 0m;
+            var merchantLatDecimal = @event.MerchantAddress?.Lat ?? 0m;
+            var customerLngDecimal = @event.DeliveryAddress?.Lng ?? 0m;
+            var customerLatDecimal = @event.DeliveryAddress?.Lat ?? 0m;
+            var merchantLng = (double)merchantLngDecimal;
+            var merchantLat = (double)merchantLatDecimal;
+            var customerLng = (double)customerLngDecimal;
+            var customerLat = (double)customerLatDecimal;
+
+            var distanceKm = @event.DistanceKm;
+            var deliveryFee = @event.DeliveryFee;
+
+            if (distanceKm <= 0m)
+            {
+                var estimate = await _deliveryEstimator.EstimateAsync(new DeliveryFeeEstimateInput
+                {
+                    PickupLat = merchantLatDecimal,
+                    PickupLng = merchantLngDecimal,
+                    DeliveryLat = customerLatDecimal,
+                    DeliveryLng = customerLngDecimal
+                });
+
+                distanceKm = estimate.DistanceKm;
+
+                if (deliveryFee <= 0m)
+                    deliveryFee = estimate.DeliveryFee;
+            }
+            else if (deliveryFee <= 0m)
+            {
+                deliveryFee = _deliveryEstimator.EstimateDeliveryFee(distanceKm);
+            }
 
             var shippers = await _redisRepository.GetShipperLocationInRadiusAsync(
                 merchantLng,
@@ -54,8 +92,11 @@ namespace DeliveryService.Consuming
                     Id = Guid.NewGuid(),
                     OrderId = @event.OrderId,
                     CustomerId = @event.UserId,
+                    MerchantId = @event.MerchantId,
                     OrderNumber = @event.OrderNumber,
                     ShipperId = shipperId,
+                    DeliveryFee = deliveryFee,
+                    DistanceKm = distanceKm,
                     Status = AssignmentStatus.Pending,
                     AssignedAt = DateTime.UtcNow
                 }).ToList();
@@ -77,8 +118,8 @@ namespace DeliveryService.Consuming
                 MerchantLng = merchantLng,
                 MerchantLat = merchantLat,
 
-                CustomerLng = (double)(@event.DeliveryAddress?.Lng ?? 0m),
-                CustomerLat = (double)(@event.DeliveryAddress?.Lat ?? 0m)
+                CustomerLng = customerLng,
+                CustomerLat = customerLat
             };
 
             if (availableShipper.Any())
@@ -86,5 +127,6 @@ namespace DeliveryService.Consuming
                 await _publisher.PublishAsync(shipperFoundEvent);
             }
         }
+
     }
 }

@@ -1,37 +1,38 @@
 using DeliveryService.DTOs;
 using DeliveryService.Entities;
 using DeliveryService.Enums;
+using DeliveryService.Exceptions;
 using DeliveryService.Mappers;
-using DeliveryService.Options;
 using DeliveryService.Repositories.Interfaces;
 using DeliveryService.Services.Interfaces;
 using Messaging.Contracts.Common;
 using Messaging.Contracts.Events;
 using Messaging.Contracts.Extensions;
 using Messaging.RabbitMq.Publishing;
-using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace DeliveryService.Services.Implements
 {
     public class DeliveryService : IDeliveryService
     {
-        private const double EarthRadiusKm = 6371.0088d;
         private readonly IDeliveryRepository _deliveryRepository;
         private readonly IEventPublisher _eventPublisher;
-        private readonly IOptions<DeliveryOption> _deliveryOptions;
+        private readonly IDeliveryEstimator _deliveryEstimator;
         private readonly DeliveryMapper _mapper;
+        private readonly ILogger<DeliveryService> _logger;
 
         public DeliveryService(
             IDeliveryRepository deliveryRepository,
             IEventPublisher eventPublisher,
-            IOptions<DeliveryOption> deliveryOptions,
-            DeliveryMapper mapper)
+            IDeliveryEstimator deliveryEstimator,
+            DeliveryMapper mapper,
+            ILogger<DeliveryService> logger)
         {
             _deliveryRepository = deliveryRepository;
             _eventPublisher = eventPublisher;
-            _deliveryOptions = deliveryOptions;
+            _deliveryEstimator = deliveryEstimator;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<ApiResponse<PagedResult<ShipperAvailability>>> GetAllShipperAvailabilitiesAsync(PaginationRequest paginationRequest)
@@ -215,46 +216,31 @@ namespace DeliveryService.Services.Implements
             return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Unsupported delivery status transition");
         }
 
-        public Task<ApiResponse<EstimateDeliveryFeeResponse>> EstimateDeliveryFeeAsync(EstimateDeliveryFeeRequest? request)
+        public async Task<ApiResponse<EstimateDeliveryFeeResponse>> EstimateDeliveryFeeAsync(EstimateDeliveryFeeRequest? request)
         {
             var validationErrors = ValidateEstimateDeliveryFeeRequest(request);
             if (validationErrors.Any())
             {
-                return Task.FromResult(new ApiResponse<EstimateDeliveryFeeResponse>(
+                return new ApiResponse<EstimateDeliveryFeeResponse>(
                     StatusCodes.Status400BadRequest,
-                    validationErrors));
+                    validationErrors);
             }
 
             var input = _mapper.ToDeliveryFeeEstimateInput(request!);
-            var options = _deliveryOptions.Value;
 
-            var rawDistanceKm = CalculateDistanceKm(input);
-            var distanceKm = RoundDistance(rawDistanceKm);
-            var baseFee = RoundMoney(Math.Max(options.BaseDeliveryFee, 0m));
-            var feePerKm = Math.Max(options.FeePerKm, 0m);
-            var distanceFee = RoundMoney(rawDistanceKm * feePerKm);
-            var minimumFee = RoundMoney(Math.Max(options.MinimumDeliveryFee, 0m));
-            var deliveryFee = RoundMoney(Math.Max(baseFee + distanceFee, minimumFee));
-            var maxDeliveryDistanceKm = options.DeliveryRadius > 0 ? (decimal)options.DeliveryRadius : 0m;
-
-            var estimate = new DeliveryFeeEstimate
+            try
             {
-                PickupLat = input.PickupLat,
-                PickupLng = input.PickupLng,
-                DeliveryLat = input.DeliveryLat,
-                DeliveryLng = input.DeliveryLng,
-                DistanceKm = distanceKm,
-                EstimatedTimeMinutes = CalculateEstimatedTimeMinutes(rawDistanceKm, options.AverageDeliverySpeedKmPerHour),
-                BaseFee = baseFee,
-                DistanceFee = distanceFee,
-                DeliveryFee = deliveryFee,
-                Currency = string.IsNullOrWhiteSpace(options.Currency) ? "VND" : options.Currency,
-                IsWithinDeliveryRadius = options.DeliveryRadius <= 0 || rawDistanceKm <= maxDeliveryDistanceKm,
-                MaxDeliveryDistanceKm = maxDeliveryDistanceKm
-            };
-
-            var response = _mapper.ToEstimateDeliveryFeeResponse(estimate);
-            return Task.FromResult(new ApiResponse<EstimateDeliveryFeeResponse>(StatusCodes.Status200OK, response));
+                var estimate = await _deliveryEstimator.EstimateAsync(input);
+                var response = _mapper.ToEstimateDeliveryFeeResponse(estimate);
+                return new ApiResponse<EstimateDeliveryFeeResponse>(StatusCodes.Status200OK, response);
+            }
+            catch (OpenRouteServiceException ex)
+            {
+                _logger.LogWarning(ex, "Unable to estimate delivery fee from OpenRouteService");
+                return new ApiResponse<EstimateDeliveryFeeResponse>(
+                    StatusCodes.Status502BadGateway,
+                    "Unable to estimate delivery route at the moment");
+            }
         }
 
         private async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(ShipperAssignment assignment)
@@ -327,6 +313,7 @@ namespace DeliveryService.Services.Implements
 
             assignment.DeliveredAt = DateTime.UtcNow;
             assignment.DeliveryProofFileKey = request.ProofFileKey;
+            var deliveredAt = assignment.DeliveredAt.Value;
 
             await UpsertAvailabilityAsync(assignment.ShipperId, null, ShipperWorkStatus.ActiveIdle);
             await _deliveryRepository.UpdateShipperAssignment(assignment);
@@ -338,6 +325,21 @@ namespace DeliveryService.Services.Implements
                 CustomerId = assignment.CustomerId,
                 ShipperId = assignment.ShipperId,
                 Milestone = DeliveryMilestoneType.Delivered,
+                ProofFileKey = request.ProofFileKey,
+                Note = request.Note
+            });
+
+            await _eventPublisher.PublishAsync(new DeliveryDeliveredEvent
+            {
+                OrderId = assignment.OrderId,
+                OrderNumber = assignment.OrderNumber,
+                CustomerId = assignment.CustomerId,
+                ShipperId = assignment.ShipperId,
+                MerchantId = assignment.MerchantId,
+                DeliveryFee = assignment.DeliveryFee,
+                DistanceKm = assignment.DistanceKm,
+                DeliveryAt = deliveredAt,
+                Status = DeliveryStatus.Delivered.ToString(),
                 ProofFileKey = request.ProofFileKey,
                 Note = request.Note
             });
@@ -475,47 +477,5 @@ namespace DeliveryService.Services.Implements
                 errors.Add($"{fieldName} must be between -180 and 180");
         }
 
-        private static decimal CalculateDistanceKm(DeliveryFeeEstimateInput input)
-        {
-            var pickupLat = ToRadians((double)input.PickupLat);
-            var pickupLng = ToRadians((double)input.PickupLng);
-            var deliveryLat = ToRadians((double)input.DeliveryLat);
-            var deliveryLng = ToRadians((double)input.DeliveryLng);
-
-            var latDelta = deliveryLat - pickupLat;
-            var lngDelta = deliveryLng - pickupLng;
-
-            var a = Math.Pow(Math.Sin(latDelta / 2), 2)
-                + Math.Cos(pickupLat) * Math.Cos(deliveryLat) * Math.Pow(Math.Sin(lngDelta / 2), 2);
-            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-
-            return (decimal)(EarthRadiusKm * c);
-        }
-
-        private static double ToRadians(double degree)
-        {
-            return degree * Math.PI / 180d;
-        }
-
-        private static int CalculateEstimatedTimeMinutes(decimal distanceKm, double averageSpeedKmPerHour)
-        {
-            if (distanceKm <= 0m)
-                return 0;
-
-            var speed = averageSpeedKmPerHour > 0 ? averageSpeedKmPerHour : 20d;
-            var estimatedMinutes = (double)distanceKm / speed * 60d;
-
-            return Math.Max(1, (int)Math.Ceiling(estimatedMinutes));
-        }
-
-        private static decimal RoundDistance(decimal value)
-        {
-            return Math.Round(value, 2, MidpointRounding.AwayFromZero);
-        }
-
-        private static decimal RoundMoney(decimal value)
-        {
-            return Math.Round(value, 2, MidpointRounding.AwayFromZero);
-        }
     }
 }

@@ -260,6 +260,10 @@ namespace AuthenticationService.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("DeviceName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -282,7 +286,7 @@ namespace AuthenticationService.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "DeviceId");
 
                     b.ToTable("RefreshTokens");
                 });

@@ -1,456 +1,93 @@
 services:
   apigateway:
-    container_name: api-gateway
-    build:
-      context: .
-      dockerfile: Services/ApiGateway/Dockerfile
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_HTTP_PORTS: ${API_GATEWAY_HTTP_PORT:-8080}
-    ports:
-      - "${API_GATEWAY_HTTP_PORT:-8080}:${API_GATEWAY_HTTP_PORT:-8080}"
-    depends_on:
-      authentication-service:
-        condition: service_started
-      user-service:
-        condition: service_started
-      file-service:
-        condition: service_started
-      notification-service:
-        condition: service_started
-      delivery-service:
-        condition: service_started
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/ApiGateway/docker-compose.yml
+      service: apigateway
 
   authentication-service:
-    container_name: authentication-service
-    build:
-      context: .
-      dockerfile: Services/AuthenticationService/Dockerfile
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_HTTP_PORTS: ${AUTH_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__AuthenticationDbConnectionString: Host=${AUTH_DB_HOST};Port=5432;Database=${AUTH_DB_NAME};Username=${AUTH_DB_USER};Password=${AUTH_DB_PASSWORD}
-      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
-      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
-      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
-      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
-      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
-      JwtSettings__Key: ${JWT_KEY}
-      JwtSettings__Issuer: ${JWT_ISSUER}
-      JwtSettings__Audience: ${JWT_AUDIENCE}
-      JwtSettings__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-2}
-      JwtSettings__RefreshTokenMinutes: ${JWT_REFRESH_TOKEN_MINUTES:-10080}
-    ports:
-      - "${AUTH_SERVICE_HOST_PORT:-8081}:${AUTH_SERVICE_CONTAINER_PORT:-8080}"
-    depends_on:
-      authentication-db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/AuthenticationService/docker-compose.yml
+      service: authentication-service
 
   authentication-db:
-    image: postgres:17-alpine
-    container_name: authentication-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${AUTH_DB_NAME}
-      POSTGRES_USER: ${AUTH_DB_USER}
-      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
-    ports:
-      - "${AUTH_DB_PORT}:5432"
-    volumes:
-      - authentication_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/AuthenticationService/docker-compose.yml
+      service: authentication-db
 
   user-service:
-    container_name: user-service
-    build:
-      context: .
-      dockerfile: Services/UserService/Dockerfile
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_HTTP_PORTS: ${USER_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__UserDbConnectionString: Host=${USER_DB_HOST};Port=5432;Database=${USER_DB_NAME};Username=${USER_DB_USER};Password=${USER_DB_PASSWORD}
-      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
-      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
-      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
-      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
-      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
-      JwtSettings__Key: ${JWT_KEY}
-      JwtSettings__Issuer: ${JWT_ISSUER}
-      JwtSettings__Audience: ${JWT_AUDIENCE}
-    ports:
-      - "${USER_SERVICE_HOST_PORT:-8082}:${USER_SERVICE_CONTAINER_PORT:-8080}"
-    depends_on:
-      user-db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - backend-network
-
-  file-service:
-    container_name: file-service
-    build:
-      context: .
-      dockerfile: Services/FileService/Dockerfile
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_HTTP_PORTS: ${FILE_SERVICE_CONTAINER_PORT:-8080}
-      JwtSettings__Key: ${JWT_KEY}
-      JwtSettings__Issuer: ${JWT_ISSUER}
-      JwtSettings__Audience: ${JWT_AUDIENCE}
-      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
-      BUCKET_NAME: ${BUCKET_NAME}
-    volumes:
-      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
-    ports:
-      - "${FILE_SERVICE_HOST_PORT:-8087}:${FILE_SERVICE_CONTAINER_PORT:-8080}"
-    networks:
-      - backend-network
-
-  notification-service:
-    container_name: notification-service
-    build:
-      context: .
-      dockerfile: Services/NotificationService/Dockerfile
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_HTTP_PORTS: ${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__NotificationDbConnectionString: Host=${NOTIFICATION_DB_HOST};Port=5432;Database=${NOTIFICATION_DB_NAME};Username=${NOTIFICATION_DB_USER};Password=${NOTIFICATION_DB_PASSWORD}
-      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
-      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
-      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
-      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
-      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
-      SmtpSettings__Host: ${SMTP_HOST}
-      SmtpSettings__Port: ${SMTP_PORT}
-      SmtpSettings__EnableSsl: ${SMTP_ENABLE_SSL}
-      SmtpSettings__UserName: ${SMTP_USERNAME}
-      SmtpSettings__Password: ${SMTP_PASSWORD}
-      SmtpSettings__FromEmail: ${SMTP_FROM_EMAIL}
-      SmtpSettings__FromName: ${SMTP_FROM_NAME}
-    ports:
-      - "${NOTIFICATION_SERVICE_HOST_PORT:-8083}:${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}"
-    depends_on:
-      notification-db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - backend-network
-
-  notification-db:
-    image: postgres:17-alpine
-    container_name: notification-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${NOTIFICATION_DB_NAME}
-      POSTGRES_USER: ${NOTIFICATION_DB_USER}
-      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
-    ports:
-      - "${NOTIFICATION_DB_PORT}:5432"
-    volumes:
-      - notification_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/UserService/docker-compose.yml
+      service: user-service
 
   user-db:
-    image: postgres:17-alpine
-    container_name: user-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${USER_DB_NAME}
-      POSTGRES_USER: ${USER_DB_USER}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
-    ports:
-      - "${USER_DB_PORT}:5432"
-    volumes:
-      - user_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/UserService/docker-compose.yml
+      service: user-db
 
-  catalog-service:
-    container_name: catalog-service
-    build:
-      context: ./Services/CatalogService 
-      dockerfile: Dockerfile
-    env_file:
-      - ./Services/CatalogService/.env
-    ports:
-      - "${CATALOG_SERVICE_HOST_PORT}:${CATALOG_SERVICE_CONTAINER_PORT}"
-    environment:
-      - NODE_ENV=development
-      - PORT=${CATALOG_SERVICE_CONTAINER_PORT}
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672
-      - JWT_SECRET=${JWT_KEY}
-      - JWT_ISSUER=${JWT_ISSUER}
-      - JWT_AUDIENCE=${JWT_AUDIENCE}
-      - USER_SERVICE_URL=http://user-service:8080/api/users
-    depends_on:
-      - rabbitmq
-    networks:
-      - backend-network  
+  file-service:
+    extends:
+      file: ./Services/FileService/docker-compose.yml
+      service: file-service
 
-  rabbitmq:
-    image: rabbitmq:4.1-management
-    container_name: rabbitmq
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
-      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - backend-network
+  notification-service:
+    extends:
+      file: ./Services/NotificationService/docker-compose.yml
+      service: notification-service
+
+  notification-db:
+    extends:
+      file: ./Services/NotificationService/docker-compose.yml
+      service: notification-db
 
   delivery-service:
-    container_name: delivery-service
-    build:
-      context: .
-      dockerfile: Services/DeliveryService/Dockerfile
-    env_file:
-      - .env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_HTTP_PORTS: ${DELIVERY_SERVICE_CONTAINER_PORT:-8080}
-      ConnectionStrings__DeliveryDbConnectionString: Host=${DELIVERY_DB_HOST};Port=5432;Database=${DELIVERY_DB_NAME};Username=${DELIVERY_DB_USER};Password=${DELIVERY_DB_PASSWORD}
-      ConnectionStrings__RedisConnection: ${DELIVERY_REDIS_HOST:-delivery-redis}:${DELIVERY_REDIS_PORT:-6379},password=${DELIVERY_REDIS_PASSWORD}
-      DELIVERY_REDIS_HOST: ${DELIVERY_REDIS_HOST:-delivery-redis}
-      DELIVERY_REDIS_PORT: ${DELIVERY_REDIS_PORT:-6379}
-      DELIVERY_REDIS_PASSWORD: ${DELIVERY_REDIS_PASSWORD}
-      RabbitMq__HostName: ${RABBITMQ_HOST:-rabbitmq}
-      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
-      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER:-guest}
-      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
-      JwtSettings__Key: ${JWT_KEY}
-      JwtSettings__Issuer: ${JWT_ISSUER}
-      JwtSettings__Audience: ${JWT_AUDIENCE}
-      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS}
-    volumes:
-      - ./firebase-auth.json:/app/secrets/firebase-auth.json:ro
-    ports:
-      - "${DELIVERY_SERVICE_HOST_PORT:-8084}:${DELIVERY_SERVICE_CONTAINER_PORT:-8080}"
-    depends_on:
-      delivery-db:
-        condition: service_healthy
-      delivery-redis:
-        condition: service_started
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/DeliveryService/docker-compose.yml
+      service: delivery-service
 
   delivery-db:
-    image: postgres:17-alpine
-    container_name: delivery-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DELIVERY_DB_NAME}
-      POSTGRES_USER: ${DELIVERY_DB_USER}
-      POSTGRES_PASSWORD: ${DELIVERY_DB_PASSWORD}
-    ports:
-      - "${DELIVERY_DB_PORT}:5432"
-    volumes:
-      - delivery_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DELIVERY_DB_USER} -d ${DELIVERY_DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/DeliveryService/docker-compose.yml
+      service: delivery-db
 
   delivery-redis:
-    image: redis:7-alpine
-    container_name: delivery-redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${DELIVERY_REDIS_PASSWORD}
-    ports:
-      - "${DELIVERY_REDIS_PORT:-6379}:6379"
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/DeliveryService/docker-compose.yml
+      service: delivery-redis
+
+  catalog-service:
+    extends:
+      file: ./Services/CatalogService/docker-compose.yml
+      service: catalog-service
 
   order-service:
-    build:
-      context: ./Services/OrderService
-      dockerfile: Dockerfile
-    container_name: order-service
-    restart: unless-stopped
-    env_file:
-      - ./Services/OrderService/.env
-    ports:
-      - "${ORDER_SERVICE_HOST_PORT}:${ORDER_SERVICE_CONTAINER_PORT}"
-    environment:
-      - NODE_ENV=development
-      - PORT=${ORDER_SERVICE_CONTAINER_PORT}
-      - DATABASE_URL=postgresql://${ORDER_DB_USER}:${ORDER_DB_PASSWORD}@${ORDER_DB_HOST}:5432/${ORDER_DB_NAME}?schema=public
-      - REDIS_HOST=${ORDER_REDIS_HOST}
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${ORDER_REDIS_PASSWORD}
-      - CART_TTL_SECONDS=${CART_TTL_SECONDS:-604800}
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
-      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://user-service:8080/api/users}
-      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL:-http://catalog-service:8080/api/catalog}
-      - DELIVERY_SERVICE_URL=${DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
-      - JWT_SECRET=${JWT_KEY}
-      - JWT_ISSUER=${JWT_ISSUER}
-      - JWT_AUDIENCE=${JWT_AUDIENCE}
-    depends_on:
-      - order-db
-      - order-redis
-      - rabbitmq
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/OrderService/docker-compose.yml
+      service: order-service
 
   report-service:
-    build:
-      context: ./Services/ReportService
-      dockerfile: Dockerfile
-    container_name: report-service
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "${REPORT_SERVICE_HOST_PORT}:${REPORT_SERVICE_CONTAINER_PORT}"
-    environment:
-      - NODE_ENV=development
-      - PORT=${REPORT_SERVICE_CONTAINER_PORT}
-      - DATABASE_URL=postgresql://${REPORT_DB_USER}:${REPORT_DB_PASSWORD}@${REPORT_DB_HOST}:5432/${REPORT_DB_NAME}?schema=public
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
-      - JWT_SECRET=${JWT_KEY}
-      - JWT_ISSUER=${JWT_ISSUER}
-      - JWT_AUDIENCE=${JWT_AUDIENCE}
-      - USER_SERVICE_URL=${REPORT_USER_SERVICE_URL:-http://user-service:8080/api/users}
-      - ORDER_SERVICE_URL=${REPORT_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
-      - DELIVERY_SERVICE_URL=${REPORT_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
-    depends_on:
-      - report-db
-      - rabbitmq
-    networks:
-      - backend-network
-
-  wallet-service:
-    build:
-      context: ./Services/WalletService
-      dockerfile: Dockerfile
-    container_name: wallet-service
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "${WALLET_SERVICE_HOST_PORT}:${WALLET_SERVICE_CONTAINER_PORT}"
-    environment:
-      - NODE_ENV=development
-      - PORT=${WALLET_SERVICE_CONTAINER_PORT}
-      - DATABASE_URL=postgresql://${WALLET_DB_USER}:${WALLET_DB_PASSWORD}@${WALLET_DB_HOST}:5432/${WALLET_DB_NAME}?schema=public
-      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@${RABBITMQ_HOST}:5672
-      - JWT_SECRET=${JWT_KEY}
-      - JWT_ISSUER=${JWT_ISSUER}
-      - JWT_AUDIENCE=${JWT_AUDIENCE}
-      - USER_SERVICE_URL=${WALLET_USER_SERVICE_URL:-http://user-service:8080/api/users}
-      - ORDER_SERVICE_URL=${WALLET_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
-      - DELIVERY_SERVICE_URL=${WALLET_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
-    depends_on:
-      - wallet-db
-      - rabbitmq
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/ReportService/docker-compose.yml
+      service: report-service
 
   order-db:
-    image: postgres:15-alpine
-    container_name: order-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${ORDER_DB_USER}
-      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
-      POSTGRES_DB: ${ORDER_DB_NAME}
-    ports:
-      - "${ORDER_DB_PORT}:5432"
-    volumes:
-      - order_db_data:/var/lib/postgresql/data
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/OrderService/docker-compose.yml
+      service: order-db
 
   report-db:
-    image: postgres:17-alpine
-    container_name: report-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${REPORT_DB_USER}
-      POSTGRES_PASSWORD: ${REPORT_DB_PASSWORD}
-      POSTGRES_DB: ${REPORT_DB_NAME}
-    ports:
-      - "${REPORT_DB_PORT}:5432"
-    volumes:
-      - report_db_data:/var/lib/postgresql/data
-    networks:
-      - backend-network
-
-  wallet-db:
-    image: postgres:17-alpine
-    container_name: wallet-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${WALLET_DB_USER}
-      POSTGRES_PASSWORD: ${WALLET_DB_PASSWORD}
-      POSTGRES_DB: ${WALLET_DB_NAME}
-    ports:
-      - "${WALLET_DB_PORT}:5432"
-    volumes:
-      - wallet_db_data:/var/lib/postgresql/data
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/ReportService/docker-compose.yml
+      service: report-db
 
   order-redis:
-    image: redis:7-alpine
-    container_name: order-redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${ORDER_REDIS_PASSWORD}
-    ports:
-      - "${ORDER_REDIS_PORT}:6379"
-    volumes:
-      - order_redis_data:/data
-    networks:
-      - backend-network
+    extends:
+      file: ./Services/OrderService/docker-compose.yml
+      service: order-redis
 
+  rabbitmq:
+    extends:
+      file: ./Infrastructure/docker-compose.yml
+      service: rabbitmq
 
 networks:
   backend-network:
@@ -464,4 +101,3 @@ volumes:
   order_redis_data:
   notification_db_data:
   report_db_data:
-  wallet_db_data:

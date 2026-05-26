@@ -16,6 +16,9 @@ namespace AuthenticationService.Services.Implements
 {
     public class AuthService : IAuthService
     {
+        private const string DeviceIdHeaderName = "X-Device-Id";
+        private const string DeviceNameHeaderName = "X-Device-Name";
+
         private readonly IAuthRepository _authRepository;
         private readonly CustomerRegisterRequestMapper _customerRegisterRequestMapper;
         private readonly IEventPublisher _eventPublisher;
@@ -190,6 +193,14 @@ namespace AuthenticationService.Services.Implements
 
         public async Task<ApiResponse<LoginResponse>> Login(LoginRequest request)
         {
+            var deviceId = NormalizeRequiredHeaderValue(request.DeviceId);
+            if (deviceId is null)
+                return new ApiResponse<LoginResponse>(StatusCodes.Status400BadRequest, $"{DeviceIdHeaderName} header is required");
+
+            var deviceName = NormalizeRequiredHeaderValue(request.DeviceName);
+            if (deviceName is null)
+                return new ApiResponse<LoginResponse>(StatusCodes.Status400BadRequest, $"{DeviceNameHeaderName} header is required");
+
             var user = await _authRepository.FindByEmailAsync(request.Email);
             if (user is null || !user.IsOtpVerified)
                 return new ApiResponse<LoginResponse>(StatusCodes.Status404NotFound, "Invalid credentials");
@@ -225,10 +236,9 @@ namespace AuthenticationService.Services.Implements
 
             await _authRepository.ResetAccessFailedCountAsync(user);
 
-            var deviceName = NormalizeDeviceName(request.DeviceName);
             var tokenGenerator = new JwtTokenGenerator(_jwtOptions, _authRepository);
             var accessToken = await tokenGenerator.AccessTokenGenerate(user);
-            var refreshToken = await IssueRefreshTokenAsync(user.Id, deviceName);
+            var refreshToken = await IssueRefreshTokenAsync(user.Id, deviceId, deviceName);
 
             return new ApiResponse<LoginResponse>(StatusCodes.Status200OK, new LoginResponse
             {
@@ -241,7 +251,11 @@ namespace AuthenticationService.Services.Implements
 
         public async Task<ApiResponse<LogoutResponse>> Logout(LogoutRequest request)
         {
-            var refreshToken = await ValidateRefreshTokenAsync(request.RefreshToken, request.DeviceName);
+            var deviceId = NormalizeRequiredHeaderValue(request.DeviceId);
+            if (deviceId is null)
+                return new ApiResponse<LogoutResponse>(StatusCodes.Status400BadRequest, $"{DeviceIdHeaderName} header is required");
+
+            var refreshToken = await ValidateRefreshTokenAsync(request.RefreshToken, deviceId);
             if (refreshToken is null)
             {
                 return new ApiResponse<LogoutResponse>(StatusCodes.Status400BadRequest, "Invalid refresh token");
@@ -260,7 +274,11 @@ namespace AuthenticationService.Services.Implements
 
         public async Task<ApiResponse<LoginResponse>> RefreshToken(RefreshTokenRequest request)
         {
-            var refreshToken = await ValidateRefreshTokenAsync(request.RefreshToken, request.DeviceName);
+            var deviceId = NormalizeRequiredHeaderValue(request.DeviceId);
+            if (deviceId is null)
+                return new ApiResponse<LoginResponse>(StatusCodes.Status400BadRequest, $"{DeviceIdHeaderName} header is required");
+
+            var refreshToken = await ValidateRefreshTokenAsync(request.RefreshToken, deviceId);
 
             if (refreshToken is null)
             {
@@ -280,7 +298,7 @@ namespace AuthenticationService.Services.Implements
 
             var tokenGenerator = new JwtTokenGenerator(_jwtOptions, _authRepository);
             var accessToken = await tokenGenerator.AccessTokenGenerate(user);
-            var newRefreshToken = await IssueRefreshTokenAsync(user.Id, refreshToken.DeviceName);
+            var newRefreshToken = await IssueRefreshTokenAsync(user.Id, refreshToken.DeviceId, refreshToken.DeviceName);
 
             return new ApiResponse<LoginResponse>(StatusCodes.Status200OK, new LoginResponse()
             {
@@ -327,13 +345,14 @@ namespace AuthenticationService.Services.Implements
             _logger.LogInformation("OTP event published for user {UserId}", @event.UserId);
         }
 
-        private async Task<string> IssueRefreshTokenAsync(Guid userId, string deviceName)
+        private async Task<string> IssueRefreshTokenAsync(Guid userId, string deviceId, string deviceName)
         {
             var refreshTokenValue = Guid.NewGuid().ToString("N");
             var refreshToken = new RefreshToken
             {
                 UserId = userId,
                 Token = refreshTokenValue,
+                DeviceId = deviceId,
                 DeviceName = deviceName,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.Value.RefreshTokenMinutes),
@@ -344,20 +363,22 @@ namespace AuthenticationService.Services.Implements
             return refreshTokenValue;
         }
 
-        private async Task<RefreshToken?> ValidateRefreshTokenAsync(string? token, string? deviceName)
+        private async Task<RefreshToken?> ValidateRefreshTokenAsync(string? token, string? deviceId)
         {
             if (string.IsNullOrWhiteSpace(token))
                 return null;
 
             token = token.Trim();
-            var normalizedDeviceName = NormalizeDeviceName(deviceName);
-            var refreshToken = await _authRepository.GetRefreshTokenAsync(token);
+            var normalizedDeviceId = NormalizeRequiredHeaderValue(deviceId);
+            if (normalizedDeviceId is null)
+                return null;
+
+            var refreshToken = await _authRepository.GetRefreshTokenAsync(token, normalizedDeviceId);
 
             if (
                 refreshToken is null ||
                 refreshToken.IsRevoked ||
-                refreshToken.ExpiresAt < DateTime.UtcNow ||
-                (deviceName is not null && refreshToken.DeviceName != normalizedDeviceName))
+                refreshToken.ExpiresAt < DateTime.UtcNow)
             {
                 return null;
             }
@@ -365,9 +386,9 @@ namespace AuthenticationService.Services.Implements
             return refreshToken;
         }
 
-        private static string NormalizeDeviceName(string? deviceName)
+        private static string? NormalizeRequiredHeaderValue(string? value)
         {
-            return string.IsNullOrWhiteSpace(deviceName) ? "default" : deviceName.Trim();
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 }

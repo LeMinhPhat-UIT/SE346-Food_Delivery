@@ -10,6 +10,7 @@ namespace AuthenticationService.Mappers
         {
             return new RevokeTokenRequest()
             {
+                DeviceId = request.DeviceId,
                 DeviceName = request.DeviceName,
                 RefreshToken = request.RefreshToken,
             };

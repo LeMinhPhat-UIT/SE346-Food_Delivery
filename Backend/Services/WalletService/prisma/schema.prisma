@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WalletOwnerType {
+  MERCHANT
+  SHIPPER
+  ADMIN
+}
+
+enum WalletTransactionType {
+  TOPUP
+  PAYMENT
+  REFUND
+  WITHDRAWAL
+  COMMISSION
+  ADJUSTMENT
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum WalletTopupStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+model WalletEventInbox {
+  id            String   @id @default(uuid()) @db.Uuid
+  messageId     String   @unique @db.VarChar(120)
+  eventType     String   @db.VarChar(100)
+  aggregateType String   @db.VarChar(100)
+  aggregateId   String   @db.Uuid
+  payload       Json
+  processedAt   DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model Wallet {
+  id        String         @id @default(uuid()) @db.Uuid
+  ownerType WalletOwnerType
+  ownerId   String         @db.VarChar(100)
+  balance   Decimal        @default(0) @db.Decimal(12, 2)
+  negativeSince DateTime?
+  currency  String         @default("VND") @db.VarChar(3)
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  transactions WalletTransaction[]
+  topups WalletTopupRequest[]
+
+  @@unique([ownerType, ownerId])
+  @@index([ownerType, ownerId])
+}
+
+model WalletTopupRequest {
+  id            String           @id @default(uuid()) @db.Uuid
+  walletId      String           @db.Uuid
+  ownerType     WalletOwnerType
+  ownerId       String           @db.VarChar(100)
+  requestCode   String           @unique @db.VarChar(100)
+  amount        Decimal          @db.Decimal(12, 2)
+  provider      String           @db.VarChar(50)
+  bankCode      String?          @db.VarChar(20)
+  status        WalletTopupStatus @default(PENDING)
+  transactionId String?          @db.VarChar(100)
+  paymentData   Json?
+  expiresAt     DateTime
+  paidAt        DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([ownerType, ownerId, createdAt])
+  @@index([walletId, createdAt])
+}
+
+model WalletTransaction {
+  id             String                 @id @default(uuid()) @db.Uuid
+  walletId       String                 @db.Uuid
+  type           WalletTransactionType
+  amount         Decimal                @db.Decimal(12, 2)
+  balanceBefore  Decimal                @db.Decimal(12, 2)
+  balanceAfter   Decimal                @db.Decimal(12, 2)
+  referenceId    String?                @db.Uuid
+  referenceType  String?                @db.VarChar(50)
+  referenceCode  String?                @db.VarChar(100)
+  description    String?                @db.Text
+  status         WalletTransactionStatus @default(PENDING)
+  idempotencyKey String?                @unique @db.VarChar(100)
+  metadata       Json?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, createdAt])
+  @@index([referenceType, referenceId])
+}

@@ -79,7 +79,10 @@ builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompleted
 builder.Services.AddHostedService<DeliveryTrackingHostedService>();
 builder.Services.AddHostedService<EventConsumerHostedService>();
 
-builder.Services.Configure<DeliveryOption>(builder.Configuration.GetSection("DeliveryOptions"));
+builder.Services.AddOptions<DeliveryOption>()
+    .Bind(builder.Configuration.GetSection("DeliveryOptions"))
+    .Validate(options => options.TryGetRedisGeoUnit(out _), DeliveryGeoUnitParser.SupportedValuesMessage)
+    .ValidateOnStart();
 builder.Services.Configure<OpenRouteServiceOptions>(options =>
 {
     builder.Configuration.GetSection(OpenRouteServiceOptions.SectionName).Bind(options);

@@ -9,7 +9,7 @@ namespace UserService.Controllers
 {
     public partial class UsersController : ControllerBase
     {
-        [HttpPost("merchant-request")]
+        [HttpPost("~/api/merchants/requests")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> RequestMerchantRole([FromBody] CreateMerchantRequest request)
         {
@@ -32,7 +32,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("merchant-request")]
+        [HttpGet("~/api/merchants/requests")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantRequestResponse>>>> GetAllMerchantRequests([FromQuery] PaginationRequest paginationRequest)
         {
@@ -54,7 +54,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpPatch("merchant-request/{requestId:guid}/review")]
+        [HttpPatch("~/api/merchants/requests/{requestId:guid}/review")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> ReviewMerchantRequest(Guid requestId, [FromBody] ReviewMerchantRequest request)
         {
@@ -80,7 +80,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("merchants")]
+        [HttpGet("~/api/merchants")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantResponse>>>> GetAllMerchants([FromQuery] PaginationRequest paginationRequest)
         {
@@ -99,7 +99,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("merchants/{merchantId:guid}")]
+        [HttpGet("~/api/merchants/{merchantId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<MerchantResponse>>> GetMerchantById(Guid merchantId)
         {
@@ -118,7 +118,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("merchants/{merchantId:guid}/location")]
+        [HttpGet("~/api/merchants/{merchantId:guid}/location")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantAddressResponse>>>> GetMerchantAddress([FromQuery] PaginationRequest paginationRequest, Guid merchantId)
         {
@@ -130,7 +130,7 @@ namespace UserService.Controllers
             return Ok(response);
         }
 
-        [HttpGet("merchants/{id:guid}/addresses")]
+        [HttpGet("~/api/merchants/{id:guid}/addresses")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantAddressResponse>>>> GetMerchantAddresses(Guid id, [FromQuery] PaginationRequest paginationRequest)
         {
@@ -163,7 +163,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("merchants/{id:guid}/addresses/{addressId:guid}")]
+        [HttpGet("~/api/merchants/{id:guid}/addresses/{addressId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<MerchantAddressResponse>>> GetMerchantAddressById(Guid id, Guid addressId)
         {
@@ -199,7 +199,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpPost("merchants/{id:guid}/addresses")]
+        [HttpPost("~/api/merchants/{id:guid}/addresses")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> AddMerchantAddress(Guid id, [FromBody] CreateMerchantAddressRequest request)
         {
@@ -232,7 +232,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpPut("merchants/{id:guid}/addresses/{addressId:guid}")]
+        [HttpPut("~/api/merchants/{id:guid}/addresses/{addressId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateMerchantAddress(Guid id, Guid addressId, [FromBody] UpdateMerchantAddressRequest request)
         {
@@ -273,7 +273,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpDelete("merchants/{id:guid}/addresses/{addressId:guid}")]
+        [HttpDelete("~/api/merchants/{id:guid}/addresses/{addressId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> DeleteMerchantAddress(Guid id, Guid addressId)
         {
@@ -314,7 +314,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpPut("merchants/{merchantId:guid}")]
+        [HttpPut("~/api/merchants/{merchantId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateMerchant(Guid merchantId, [FromBody] UpdateMerchantRequest request)
         {
@@ -347,7 +347,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpDelete("merchants/{merchantId:guid}")]
+        [HttpDelete("~/api/merchants/{merchantId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> DeleteMerchant(Guid merchantId)
         {

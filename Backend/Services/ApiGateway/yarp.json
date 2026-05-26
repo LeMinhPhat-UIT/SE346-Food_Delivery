@@ -23,6 +23,28 @@
           }
         ]
       },
+      "merchant-route": {
+        "ClusterId": "user-cluster",
+        "Match": {
+          "Path": "/api/merchants/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/merchants/{**catch-all}"
+          }
+        ]
+      },
+      "shipper-route": {
+        "ClusterId": "user-cluster",
+        "Match": {
+          "Path": "/api/shippers/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/shippers/{**catch-all}"
+          }
+        ]
+      },
       "files-route": {
         "ClusterId": "file-cluster",
         "Match": {

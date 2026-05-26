@@ -7,7 +7,7 @@ namespace UserService.Controllers
 {
     public partial class UsersController : ControllerBase
     {
-        [HttpPost("shipper-request")]
+        [HttpPost("~/api/shippers/requests")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> RequestShipperRole([FromBody] CreateShipperRequest request)
         {
@@ -30,7 +30,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("shipper-request")]
+        [HttpGet("~/api/shippers/requests")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<PagedResult<ShipperRequestResponse>>>> GetAllShipperRequests([FromQuery] PaginationRequest paginationRequest)
         {
@@ -49,7 +49,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpPatch("shipper-request/{requestId:guid}/review")]
+        [HttpPatch("~/api/shippers/requests/{requestId:guid}/review")]
         [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> ReviewShipperRequest(Guid requestId, [FromBody] ReviewShipperRequest request)
         {
@@ -72,7 +72,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("shippers")]
+        [HttpGet("~/api/shippers")]
         public async Task<ActionResult<ApiResponse<PagedResult<ShipperResponse>>>> GetAllShippers([FromQuery] PaginationRequest paginationRequest)
         {
             try
@@ -90,7 +90,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpGet("shippers/{shipperId:guid}")]
+        [HttpGet("~/api/shippers/{shipperId:guid}")]
         public async Task<ActionResult<ApiResponse<ShipperResponse>>> GetShipperById(Guid shipperId)
         {
             try
@@ -108,7 +108,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpPut("shippers/{shipperId:guid}")]
+        [HttpPut("~/api/shippers/{shipperId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateShipper(Guid shipperId, [FromBody] UpdateShipperRequest request)
         {
@@ -141,7 +141,7 @@ namespace UserService.Controllers
             }
         }
 
-        [HttpDelete("shippers/{shipperId:guid}")]
+        [HttpDelete("~/api/shippers/{shipperId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> DeleteShipper(Guid shipperId)
         {

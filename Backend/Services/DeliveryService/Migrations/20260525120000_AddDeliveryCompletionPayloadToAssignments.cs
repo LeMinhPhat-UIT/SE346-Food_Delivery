@@ -36,12 +36,13 @@ namespace DeliveryService.Migrations
                 nullable: false,
                 defaultValue: Guid.Empty);
 
-            migrationBuilder.UpdateData(
-                table: "ShipperAssignments",
-                keyColumn: "Id",
-                keyValue: new Guid("64444444-4444-4444-4444-444444444444"),
-                columns: new[] { "DeliveryFee", "DistanceKm", "MerchantId" },
-                values: new object[] { 21000m, 2.2m, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb") });
+            migrationBuilder.Sql("""
+                UPDATE "ShipperAssignments"
+                SET "DeliveryFee" = 21000,
+                    "DistanceKm" = 2.2,
+                    "MerchantId" = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+                WHERE "Id" = '64444444-4444-4444-4444-444444444444';
+                """);
         }
 
         /// <inheritdoc />

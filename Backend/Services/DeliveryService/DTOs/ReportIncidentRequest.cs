@@ -7,6 +7,6 @@ namespace DeliveryService.DTOs
         public Guid OrderId { get; set; }
         public IncidentType Type { get; set; }
         public string Description { get; set; } = null!;
-        public List<string> ProofUrls { get; set; } = null!;
+        public List<string> ProofUrls { get; set; } = new();
     }
 }

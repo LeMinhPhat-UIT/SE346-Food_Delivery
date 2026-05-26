@@ -9,6 +9,8 @@ namespace DeliveryService.Repositories.Interfaces
         Task UpdateShipperAvailabilityAsync(ShipperAvailability shipperAvailability);
         Task<ShipperAvailability?> GetShipperAvailabilityByShipperIdAsync(Guid shipperId);
         Task AddShipperLocationHistoriesAsync(IEnumerable<ShipperLocationHistory> histories, CancellationToken cancellationToken = default);
+        Task<IQueryable<ShipperLocationHistory>> GetAllShipperLocationHistoriesByOrderIdAsync(Guid orderId);
+        Task<IQueryable<ShipperLocationHistory>> GetAllShipperLocationHistoriesByShipperIdAsync(Guid shipperId);
 
         Task<IQueryable<ShipperAssignment>> GetAllShipperAssignmentsAsync();
         Task<ShipperAssignment?> GetShipperAssignmentByIdAsync(Guid assignmentId);
@@ -20,9 +22,10 @@ namespace DeliveryService.Repositories.Interfaces
         Task CreateShipperAssignmentsAsync(IEnumerable<ShipperAssignment> shipperAssignments);
 
         Task CreateIncidentAsync(Incident incident);
-        Task<IQueryable<Incident?>> GetAllIncidentsAsync();
-        Task<IQueryable<Incident?>> GetAllIncidentByReporterId(Guid reporterId);
-        Task<Incident?> GetIncidentByReporterIdAsync(Guid incidentId);
+        Task<IQueryable<Incident>> GetAllIncidentsAsync();
+        Task<IQueryable<Incident>> GetAllIncidentByReporterId(Guid reporterId);
+        Task<Incident?> GetIncidentByIdAsync(Guid incidentId);
+        Task UpdateIncidentAsync(Incident incident);
 
     }
 }

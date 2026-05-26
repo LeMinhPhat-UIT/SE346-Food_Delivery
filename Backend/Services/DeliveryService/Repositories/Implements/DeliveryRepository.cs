@@ -105,35 +105,65 @@ namespace DeliveryService.Repositories.Implements
             await _context.SaveChangesAsync(cancellationToken);
         }
 
+        public Task<IQueryable<ShipperLocationHistory>> GetAllShipperLocationHistoriesByOrderIdAsync(Guid orderId)
+        {
+            IQueryable<ShipperLocationHistory> query = _context.ShipperLocationHistories
+                .AsNoTracking()
+                .Where(history => history.OrderId == orderId && history.DeletedAt == null)
+                .OrderByDescending(history => history.RecordedAt)
+                .AsQueryable();
+
+            return Task.FromResult(query);
+        }
+
+        public Task<IQueryable<ShipperLocationHistory>> GetAllShipperLocationHistoriesByShipperIdAsync(Guid shipperId)
+        {
+            IQueryable<ShipperLocationHistory> query = _context.ShipperLocationHistories
+                .AsNoTracking()
+                .Where(history => history.ShipperId == shipperId && history.DeletedAt == null)
+                .OrderByDescending(history => history.RecordedAt)
+                .AsQueryable();
+
+            return Task.FromResult(query);
+        }
+
         public async Task CreateIncidentAsync(Incident incident)
         {
             await _context.Incidents.AddAsync(incident);
             await _context.SaveChangesAsync();
         }
 
-        public Task<IQueryable<Incident?>> GetAllIncidentsAsync()
+        public Task<IQueryable<Incident>> GetAllIncidentsAsync()
         {
-            IQueryable<Incident?> query = _context.Incidents
+            IQueryable<Incident> query = _context.Incidents
                 .AsNoTracking()
                 .Where(i => i.DeletedAt == null)
+                .OrderByDescending(i => i.CreatedAt)
                 .AsQueryable();
 
             return Task.FromResult(query);
         }
 
-        public Task<IQueryable<Incident?>> GetAllIncidentByReporterId(Guid reporterId)
+        public Task<IQueryable<Incident>> GetAllIncidentByReporterId(Guid reporterId)
         {
-            IQueryable<Incident?> query = _context.Incidents
+            IQueryable<Incident> query = _context.Incidents
                 .AsNoTracking()
                 .Where(i => i.ReportedBy == reporterId && i.DeletedAt == null)
+                .OrderByDescending(i => i.CreatedAt)
                 .AsQueryable();
 
             return Task.FromResult(query);
         }
 
-        public async Task<Incident?> GetIncidentByReporterIdAsync(Guid incidentId)
+        public async Task<Incident?> GetIncidentByIdAsync(Guid incidentId)
         {
             return await _context.Incidents.FirstOrDefaultAsync(i => i.Id == incidentId && i.DeletedAt == null);
+        }
+
+        public async Task UpdateIncidentAsync(Incident incident)
+        {
+            _context.Incidents.Update(incident);
+            await _context.SaveChangesAsync();
         }
     }
 }

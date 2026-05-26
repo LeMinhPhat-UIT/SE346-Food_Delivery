@@ -16,6 +16,7 @@ namespace DeliveryService.Services.Implements
     public class DeliveryService : IDeliveryService
     {
         private readonly IDeliveryRepository _deliveryRepository;
+        private readonly IRedisRepository _redisRepository;
         private readonly IEventPublisher _eventPublisher;
         private readonly IDeliveryEstimator _deliveryEstimator;
         private readonly DeliveryMapper _mapper;
@@ -23,12 +24,14 @@ namespace DeliveryService.Services.Implements
 
         public DeliveryService(
             IDeliveryRepository deliveryRepository,
+            IRedisRepository redisRepository,
             IEventPublisher eventPublisher,
             IDeliveryEstimator deliveryEstimator,
             DeliveryMapper mapper,
             ILogger<DeliveryService> logger)
         {
             _deliveryRepository = deliveryRepository;
+            _redisRepository = redisRepository;
             _eventPublisher = eventPublisher;
             _deliveryEstimator = deliveryEstimator;
             _mapper = mapper;
@@ -69,6 +72,15 @@ namespace DeliveryService.Services.Implements
             if (!CanAccessShipper(user, shipperId))
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own shipper availability");
 
+            if (request.Lat.HasValue != request.Lng.HasValue)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Both latitude and longitude are required when updating location");
+
+            if (request.Lat.HasValue && !IsValidLatitude(request.Lat.Value))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Lat must be between -90 and 90");
+
+            if (request.Lng.HasValue && !IsValidLongitude(request.Lng.Value))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Lng must be between -180 and 180");
+
             var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
             var availability = existingAvailability ?? new ShipperAvailability
             {
@@ -97,6 +109,12 @@ namespace DeliveryService.Services.Implements
             else
                 await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
 
+            if (request.IsGoOnline && request.Lat.HasValue && request.Lng.HasValue)
+                await _redisRepository.UpdateShipperLocationAsync(availability);
+
+            if (!request.IsGoOnline)
+                await _redisRepository.DeleteShipperLocationAsync(shipperId);
+
             return new ApiResponse<ConfirmationResponse>(
                 StatusCodes.Status200OK,
                 new ConfirmationResponse("Update shipper availability successfully"));
@@ -109,6 +127,10 @@ namespace DeliveryService.Services.Implements
 
             if (!CanAccessShipper(user, request.ShipperId))
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own shipper location");
+
+            var validationErrors = ValidateCoordinates(request.Latitude, request.Longitude);
+            if (validationErrors.Any())
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, validationErrors);
 
             var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(request.ShipperId);
             var availability = existingAvailability ?? new ShipperAvailability
@@ -127,9 +149,65 @@ namespace DeliveryService.Services.Implements
             else
                 await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
 
+            await _redisRepository.UpdateShipperLocationAsync(availability);
+            await AddLocationHistoryAsync(request.OrderId, request.ShipperId, request.Latitude, request.Longitude);
+
             return new ApiResponse<ConfirmationResponse>(
                 StatusCodes.Status200OK,
                 new ConfirmationResponse("Update location successfully"));
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> UpdateShipperLocationAsync(Guid shipperId, UpdateShipperLocationRequest request, ClaimsPrincipal user)
+        {
+            if (shipperId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid shipper id");
+
+            if (!CanAccessShipper(user, shipperId))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own shipper location");
+
+            var validationErrors = ValidateCoordinates(request.Latitude, request.Longitude);
+            if (validationErrors.Any())
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, validationErrors);
+
+            var normalizedOrderId = request.OrderId.GetValueOrDefault();
+            var hasOrder = normalizedOrderId != Guid.Empty;
+            var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
+
+            if (existingAvailability != null && existingAvailability.Status == ShipperWorkStatus.Offline)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Shipper must be online before updating location");
+
+            if (!hasOrder &&
+                existingAvailability != null &&
+                (existingAvailability.Status == ShipperWorkStatus.PendingAssignment || existingAvailability.Status == ShipperWorkStatus.Delivering))
+            {
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Order id is required while shipper has an active assignment");
+            }
+
+            var availability = existingAvailability ?? new ShipperAvailability
+            {
+                Id = Guid.NewGuid(),
+                ShipperId = shipperId,
+                Status = ShipperWorkStatus.ActiveIdle
+            };
+
+            availability.CurrentOrderId = hasOrder ? normalizedOrderId : null;
+            availability.CurrentLat = request.Latitude;
+            availability.CurrentLng = request.Longitude;
+            availability.LastSeenAt = DateTime.UtcNow;
+
+            if (existingAvailability == null)
+                await _deliveryRepository.CreateShipperAvailabilityAsync(availability);
+            else
+                await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
+
+            await _redisRepository.UpdateShipperLocationAsync(availability);
+
+            if (hasOrder)
+                await AddLocationHistoryAsync(normalizedOrderId, shipperId, request.Latitude, request.Longitude);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Update shipper location successfully"));
         }
 
         public async Task<ApiResponse<PagedResult<ShipperAssignment>>> GetAllAssignmentsAsync(PaginationRequest paginationRequest)
@@ -241,6 +319,153 @@ namespace DeliveryService.Services.Implements
                     StatusCodes.Status502BadGateway,
                     "Unable to estimate delivery route at the moment");
             }
+        }
+
+        public async Task<ApiResponse<PagedResult<ShipperLocationHistory>>> GetLocationHistoryByOrderIdAsync(Guid orderId, PaginationRequest paginationRequest, ClaimsPrincipal user)
+        {
+            if (orderId == Guid.Empty)
+                return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status400BadRequest, "Invalid order id");
+
+            if (!IsCurrentUserAdmin(user))
+            {
+                var assignments = await _deliveryRepository.GetAllShipperAssignmentsByOrderIdAsync(orderId);
+                if (!assignments.Any(assignment => CanAccessAssignment(user, assignment)))
+                    return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status403Forbidden, "You can only access location history for your own orders or assignments");
+            }
+
+            var query = await _deliveryRepository.GetAllShipperLocationHistoriesByOrderIdAsync(orderId);
+            if (!query.Any())
+                return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status404NotFound, "No shipper location history found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status200OK, paged);
+        }
+
+        public async Task<ApiResponse<PagedResult<ShipperLocationHistory>>> GetLocationHistoryByShipperIdAsync(Guid shipperId, PaginationRequest paginationRequest, ClaimsPrincipal user)
+        {
+            if (shipperId == Guid.Empty)
+                return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status400BadRequest, "Invalid shipper id");
+
+            if (!CanAccessShipper(user, shipperId))
+                return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status403Forbidden, "You can only access your own shipper location history");
+
+            var query = await _deliveryRepository.GetAllShipperLocationHistoriesByShipperIdAsync(shipperId);
+            if (!query.Any())
+                return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status404NotFound, "No shipper location history found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status200OK, paged);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> ReportIncidentAsync(ReportIncidentRequest request, ClaimsPrincipal user)
+        {
+            var reporterId = GetCurrentUserId(user);
+            if (!reporterId.HasValue)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+            if (request.OrderId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid order id");
+
+            if (string.IsNullOrWhiteSpace(request.Description))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Description is required");
+
+            var incident = new Incident
+            {
+                Id = Guid.NewGuid(),
+                OrderId = request.OrderId,
+                ReportedBy = reporterId.Value,
+                Type = request.Type,
+                Description = request.Description.Trim(),
+                ProofUrl = request.ProofUrls
+                    .Where(url => !string.IsNullOrWhiteSpace(url))
+                    .Select(url => url.Trim())
+                    .ToArray(),
+                Status = IncidentStatus.Pending,
+                Resolution = string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _deliveryRepository.CreateIncidentAsync(incident);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Report incident successfully"));
+        }
+
+        public async Task<ApiResponse<PagedResult<Incident>>> GetAllIncidentsAsync(PaginationRequest paginationRequest)
+        {
+            var query = await _deliveryRepository.GetAllIncidentsAsync();
+            if (!query.Any())
+                return new ApiResponse<PagedResult<Incident>>(StatusCodes.Status404NotFound, "No incidents found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<Incident>>(StatusCodes.Status200OK, paged);
+        }
+
+        public async Task<ApiResponse<PagedResult<Incident>>> GetIncidentsByReporterIdAsync(Guid reporterId, PaginationRequest paginationRequest, ClaimsPrincipal user)
+        {
+            if (reporterId == Guid.Empty)
+                return new ApiResponse<PagedResult<Incident>>(StatusCodes.Status400BadRequest, "Invalid reporter id");
+
+            if (!CanAccessUser(user, reporterId))
+                return new ApiResponse<PagedResult<Incident>>(StatusCodes.Status403Forbidden, "You can only access your own incidents");
+
+            var query = await _deliveryRepository.GetAllIncidentByReporterId(reporterId);
+            if (!query.Any())
+                return new ApiResponse<PagedResult<Incident>>(StatusCodes.Status404NotFound, "No incidents found");
+
+            var paged = await query.ToPagedResultAsync(paginationRequest);
+            return new ApiResponse<PagedResult<Incident>>(StatusCodes.Status200OK, paged);
+        }
+
+        public async Task<ApiResponse<Incident>> GetIncidentByIdAsync(Guid incidentId, ClaimsPrincipal user)
+        {
+            if (incidentId == Guid.Empty)
+                return new ApiResponse<Incident>(StatusCodes.Status400BadRequest, "Invalid incident id");
+
+            var incident = await _deliveryRepository.GetIncidentByIdAsync(incidentId);
+            if (incident == null)
+                return new ApiResponse<Incident>(StatusCodes.Status404NotFound, "No incident found");
+
+            if (!CanAccessUser(user, incident.ReportedBy))
+                return new ApiResponse<Incident>(StatusCodes.Status403Forbidden, "You can only access your own incidents");
+
+            return new ApiResponse<Incident>(StatusCodes.Status200OK, incident);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> ResolveIncidentAsync(Guid incidentId, ResolveIncidentRequest request, ClaimsPrincipal user)
+        {
+            if (!IsCurrentUserAdmin(user))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "Only admin can resolve incidents");
+
+            var resolvedBy = GetCurrentUserId(user);
+            if (!resolvedBy.HasValue)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+            if (incidentId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid incident id");
+
+            if (request.Status == IncidentStatus.Pending)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Resolved incident status can not be pending");
+
+            if (string.IsNullOrWhiteSpace(request.Resolution))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Resolution is required");
+
+            var incident = await _deliveryRepository.GetIncidentByIdAsync(incidentId);
+            if (incident == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No incident found");
+
+            incident.Status = request.Status;
+            incident.Resolution = request.Resolution.Trim();
+            incident.ResolvedBy = resolvedBy.Value;
+            incident.ResolvedAt = DateTime.UtcNow;
+            incident.UpdatedAt = DateTime.UtcNow;
+
+            await _deliveryRepository.UpdateIncidentAsync(incident);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Resolve incident successfully"));
         }
 
         private async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(ShipperAssignment assignment)
@@ -368,6 +593,22 @@ namespace DeliveryService.Services.Implements
                 await _deliveryRepository.UpdateShipperAvailabilityAsync(availability);
         }
 
+        private async Task AddLocationHistoryAsync(Guid orderId, Guid shipperId, decimal latitude, decimal longitude)
+        {
+            await _deliveryRepository.AddShipperLocationHistoriesAsync(new[]
+            {
+                new ShipperLocationHistory
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = orderId,
+                    ShipperId = shipperId,
+                    Latitude = latitude,
+                    Longitude = longitude,
+                    RecordedAt = DateTime.UtcNow
+                }
+            });
+        }
+
         private async Task CancelOtherPendingAssignmentsAsync(ShipperAssignment acceptedAssignment)
         {
             var otherAssignments = await _deliveryRepository.GetAllShipperAssignmentsByOrderIdAsync(acceptedAssignment.OrderId);
@@ -389,6 +630,15 @@ namespace DeliveryService.Services.Implements
                 return true;
 
             return CanAccessShipper(user, assignment.ShipperId);
+        }
+
+        private static bool CanAccessUser(ClaimsPrincipal user, Guid userId)
+        {
+            if (IsCurrentUserAdmin(user))
+                return true;
+
+            var currentUserId = GetCurrentUserId(user);
+            return currentUserId.HasValue && currentUserId.Value == userId;
         }
 
         private static bool CanAccessShipper(ClaimsPrincipal user, Guid shipperId)
@@ -433,6 +683,29 @@ namespace DeliveryService.Services.Implements
                 .Concat(user.FindAll("role").Select(c => c.Value));
 
             return roles.Any(role => allowedRoles.Any(allowed => string.Equals(role, allowed, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private static List<string> ValidateCoordinates(decimal latitude, decimal longitude)
+        {
+            var errors = new List<string>();
+
+            if (!IsValidLatitude(latitude))
+                errors.Add("Latitude must be between -90 and 90");
+
+            if (!IsValidLongitude(longitude))
+                errors.Add("Longitude must be between -180 and 180");
+
+            return errors;
+        }
+
+        private static bool IsValidLatitude(decimal value)
+        {
+            return value >= -90m && value <= 90m;
+        }
+
+        private static bool IsValidLongitude(decimal value)
+        {
+            return value >= -180m && value <= 180m;
         }
 
         private static List<string> ValidateEstimateDeliveryFeeRequest(EstimateDeliveryFeeRequest? request)

@@ -108,6 +108,36 @@ namespace UserService.Controllers
             }
         }
 
+        [HttpGet("~/api/shippers/by-user/{userId:guid}")]
+        [HttpGet("~/api/users/{userId:guid}/shipper")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<ShipperResponse>>> GetShipperByUserId(Guid userId)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var currentUserId = GetCurrentUserId();
+                    if (!currentUserId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    if (currentUserId.Value != userId)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own shipper profile");
+                }
+
+                var response = await _userService.GetShipperByUserIdAsync(userId);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpPut("~/api/shippers/{shipperId:guid}")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateShipper(Guid shipperId, [FromBody] UpdateShipperRequest request)

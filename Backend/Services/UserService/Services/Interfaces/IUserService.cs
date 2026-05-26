@@ -24,6 +24,7 @@ namespace UserService.Services.Interfaces
         Task<ApiResponse<ConfirmationResponse>> ReviewMerchantRequestAsync(Guid requestId, Guid reviewerId, ReviewMerchantRequest request);
         Task<ApiResponse<PagedResult<MerchantResponse>>> GetAllMerchantsAsync(PaginationRequest pagedOption);
         Task<ApiResponse<MerchantResponse>> GetMerchantByIdAsync(Guid merchantId);
+        Task<ApiResponse<MerchantResponse>> GetMerchantByUserIdAsync(Guid userId);
         Task<ApiResponse<PagedResult<MerchantAddressResponse>>> GetMerchantAddressesByMerchantIdAsync(PaginationRequest paginationRequest, Guid merchantId);
         Task<ApiResponse<MerchantAddressResponse>> GetMerchantAddressByIdAsync(Guid addressId);
         Task<ApiResponse<ConfirmationResponse>> AddMerchantAddressAsync(Guid merchantId, CreateMerchantAddressRequest request);
@@ -35,6 +36,7 @@ namespace UserService.Services.Interfaces
         Task<ApiResponse<ConfirmationResponse>> RequestForShipperRole(Guid userId, CreateShipperRequest request);
         Task<ApiResponse<PagedResult<ShipperRequestResponse>>> GetAllShipperRequestsAsync(PaginationRequest pagedOption);
         Task<ApiResponse<ShipperResponse>> GetShipperByIdAsync(Guid shipperId);
+        Task<ApiResponse<ShipperResponse>> GetShipperByUserIdAsync(Guid userId);
         Task<ApiResponse<ConfirmationResponse>> ReviewShipperRequestAsync(Guid requestId, Guid reviewerId, ReviewShipperRequest request);
         Task<ApiResponse<PagedResult<ShipperResponse>>> GetAllShippersAsync(PaginationRequest pagedOption);
         Task<ApiResponse<ConfirmationResponse>> UpdateShipperAsync(Guid shipperId, UpdateShipperRequest request);

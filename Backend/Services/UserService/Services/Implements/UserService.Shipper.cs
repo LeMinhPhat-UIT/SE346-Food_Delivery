@@ -73,6 +73,21 @@ namespace UserService.Services.Implements
             return new ApiResponse<ShipperResponse>(StatusCodes.Status200OK, response);
         }
 
+        public async Task<ApiResponse<ShipperResponse>> GetShipperByUserIdAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return new ApiResponse<ShipperResponse>(StatusCodes.Status400BadRequest, "Invalid user id");
+
+            var shipper = await _userRepository.GetShipperByUserIdAsync(userId);
+
+            if (shipper == null)
+                return new ApiResponse<ShipperResponse>(StatusCodes.Status404NotFound, "No shipper found");
+
+            var response = _mapper.ToShipperResponse(shipper);
+
+            return new ApiResponse<ShipperResponse>(StatusCodes.Status200OK, response);
+        }
+
         public async Task<ApiResponse<PagedResult<ShipperResponse>>> GetAllShippersAsync(PaginationRequest paginationRequest)
         {
             var shippers = await _userRepository.GetAllShippersAsync();

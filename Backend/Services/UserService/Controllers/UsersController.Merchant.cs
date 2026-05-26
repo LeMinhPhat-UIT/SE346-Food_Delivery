@@ -118,6 +118,36 @@ namespace UserService.Controllers
             }
         }
 
+        [HttpGet("~/api/merchants/by-user/{userId:guid}")]
+        [HttpGet("~/api/users/{userId:guid}/merchant")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<MerchantResponse>>> GetMerchantByUserId(Guid userId)
+        {
+            try
+            {
+                if (!IsCurrentUserAdmin())
+                {
+                    var currentUserId = GetCurrentUserId();
+                    if (!currentUserId.HasValue)
+                        return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                    if (currentUserId.Value != userId)
+                        return StatusCode(StatusCodes.Status403Forbidden, "You can only view your own merchant profile");
+                }
+
+                var response = await _userService.GetMerchantByUserIdAsync(userId);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpGet("~/api/merchants/{merchantId:guid}/location")]
         [Authorize]
         public async Task<ActionResult<ApiResponse<PagedResult<MerchantAddressResponse>>>> GetMerchantAddress([FromQuery] PaginationRequest paginationRequest, Guid merchantId)

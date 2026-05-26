@@ -12,6 +12,9 @@ namespace AuthenticationService.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private const string DeviceIdHeaderName = "X-Device-Id";
+        private const string DeviceNameHeaderName = "X-Device-Name";
+
         private readonly IAuthService _authService;
 
         public AuthController(IAuthService authService)
@@ -82,10 +85,28 @@ namespace AuthenticationService.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<ApiResponse<LoginResponse>>> Login([FromBody] LoginRequest request)
+        public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(
+            [FromBody] LoginRequest request,
+            [FromHeader(Name = DeviceIdHeaderName)] string? deviceId,
+            [FromHeader(Name = DeviceNameHeaderName)] string? deviceName)
         {
             try
             {
+                var normalizedDeviceId = NormalizeHeaderValue(deviceId);
+                if (normalizedDeviceId is null)
+                {
+                    return RequiredHeaderMissing<LoginResponse>(DeviceIdHeaderName);
+                }
+
+                var normalizedDeviceName = NormalizeHeaderValue(deviceName);
+                if (normalizedDeviceName is null)
+                {
+                    return RequiredHeaderMissing<LoginResponse>(DeviceNameHeaderName);
+                }
+
+                request.DeviceId = normalizedDeviceId;
+                request.DeviceName = normalizedDeviceName;
+
                 var response = await _authService.Login(request);
 
                 if (!response.Success)
@@ -102,10 +123,20 @@ namespace AuthenticationService.Controllers
         }
 
         [HttpPost("refresh-token")]
-        public async Task<ActionResult<ApiResponse<LoginResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
+        public async Task<ActionResult<ApiResponse<LoginResponse>>> RefreshToken(
+            [FromBody] RefreshTokenRequest request,
+            [FromHeader(Name = DeviceIdHeaderName)] string? deviceId)
         {
             try
             {
+                var normalizedDeviceId = NormalizeHeaderValue(deviceId);
+                if (normalizedDeviceId is null)
+                {
+                    return RequiredHeaderMissing<LoginResponse>(DeviceIdHeaderName);
+                }
+
+                request.DeviceId = normalizedDeviceId;
+
                 var response = await _authService.RefreshToken(request);
 
                 if (!response.Success)
@@ -122,10 +153,20 @@ namespace AuthenticationService.Controllers
         }
 
         [HttpPost("logout")]
-        public async Task<ActionResult<ApiResponse<LogoutResponse>>> Logout([FromBody] LogoutRequest request)
+        public async Task<ActionResult<ApiResponse<LogoutResponse>>> Logout(
+            [FromBody] LogoutRequest request,
+            [FromHeader(Name = DeviceIdHeaderName)] string? deviceId)
         {
             try
             {
+                var normalizedDeviceId = NormalizeHeaderValue(deviceId);
+                if (normalizedDeviceId is null)
+                {
+                    return RequiredHeaderMissing<LogoutResponse>(DeviceIdHeaderName);
+                }
+
+                request.DeviceId = normalizedDeviceId;
+
                 var response = await _authService.Logout(request);
 
                 if (!response.Success)
@@ -180,6 +221,20 @@ namespace AuthenticationService.Controllers
                 ?? User.FindFirstValue("userId");
 
             return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
+
+        private static string? NormalizeHeaderValue(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private ActionResult<ApiResponse<T>> RequiredHeaderMissing<T>(string headerName)
+        {
+            var response = new ApiResponse<T>(
+                StatusCodes.Status400BadRequest,
+                $"{headerName} header is required");
+
+            return StatusCode(response.StatusCode, response);
         }
 
         //[HttpPut("update-phone")]

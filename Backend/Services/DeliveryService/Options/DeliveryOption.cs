@@ -10,7 +10,6 @@ namespace DeliveryService.Options
         public decimal BaseDeliveryFee { get; set; } = 10000m;
         public decimal FeePerKm { get; set; } = 5000m;
         public decimal MinimumDeliveryFee { get; set; } = 10000m;
-        public double AverageDeliverySpeedKmPerHour { get; set; } = 20d;
         public string Currency { get; set; } = "VND";
     }
 }

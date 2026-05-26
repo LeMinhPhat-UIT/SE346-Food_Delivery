@@ -1,6 +1,7 @@
 ﻿using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
 using NotificationService.Entities;
+using NotificationService.Integrations;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Interfaces;
 
@@ -10,11 +11,16 @@ namespace NotificationService.Consuming
     {
         private readonly IPushNotificationService _pushNotifcationService;
         private readonly INotificationRepository _notificationRepository;
+        private readonly IUserServiceClient _userServiceClient;
 
-        public ShipperFoundEventHandler(IPushNotificationService pushNotifcationService, INotificationRepository notificationRepository)
+        public ShipperFoundEventHandler(
+            IPushNotificationService pushNotifcationService,
+            INotificationRepository notificationRepository,
+            IUserServiceClient userServiceClient)
         {
             _pushNotifcationService = pushNotifcationService;
             _notificationRepository = notificationRepository;
+            _userServiceClient = userServiceClient;
         }
 
         public async Task Handle(ShipperFoundEvent @event)
@@ -27,7 +33,9 @@ namespace NotificationService.Consuming
                 { "Type", "order_pickup" }
             };
 
-            var tasks = @event.ShipperIds.Select(item => SendToNearByShipper(item, TITLE, BODY, DATA)).ToArray();
+            var tasks = @event.ShipperIds
+                .Select(item => SendToNearByShipper(item, TITLE, BODY, new Dictionary<string, string>(DATA)))
+                .ToArray();
 
             if (tasks.Any())
             {
@@ -37,10 +45,13 @@ namespace NotificationService.Consuming
 
         private async Task SendToNearByShipper(Guid shipperId, string title, string body, Dictionary<string, string> data)
         {
+            var userId = await _userServiceClient.GetUserIdByShipperIdAsync(shipperId) ?? shipperId;
+            data["ShipperId"] = shipperId.ToString();
+
             await _notificationRepository.CreateNotificationAsync(new Notification
             {
                 Id = Guid.NewGuid(),
-                UserId = shipperId,
+                UserId = userId,
                 Title = title,
                 Body = body,
                 Type = "order_pickup",
@@ -50,7 +61,7 @@ namespace NotificationService.Consuming
                 CreatedAt = DateTime.UtcNow
             });
 
-            var userDevices = await _notificationRepository.GetAllUserDevicesByUserIdAsync(shipperId);
+            var userDevices = await _notificationRepository.GetAllUserDevicesByUserIdAsync(userId);
 
             var deviceTokens = new List<string>();
             if (userDevices != null)

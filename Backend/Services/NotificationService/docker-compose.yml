@@ -6,6 +6,8 @@ services:
       dockerfile: Services/NotificationService/Dockerfile
     env_file:
       - ./.env
+    volumes:
+      - ../../firebase-auth.json:/app/secrets/firebase-auth.json:ro
     ports:
       - "${NOTIFICATION_SERVICE_HOST_PORT:-8083}:${NOTIFICATION_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:

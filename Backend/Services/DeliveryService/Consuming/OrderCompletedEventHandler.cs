@@ -74,7 +74,7 @@ namespace DeliveryService.Consuming
                 merchantLng,
                 merchantLat,
                 _deliveryOptions.Value.FindingShipperRadius,
-                _deliveryOptions.Value.GeoUnit);
+                _deliveryOptions.Value.RedisGeoUnit);
 
             var allShippers = await _deliveryRepository.GetAllShipperAvailabilityAsync();
 

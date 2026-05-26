@@ -33,7 +33,6 @@
     <ProjectReference Include="..\..\SharedLibs\Messaging\Messaging.Contracts\Messaging.Contracts.csproj" />
     <ProjectReference Include="..\..\SharedLibs\Messaging\Messaging.RabbitMq\Messaging.RabbitMq.csproj" />
     <ProjectReference Include="..\..\SharedLibs\Utils\OpenApiTransformer\OpenApiTransformer.csproj" />
-    <ProjectReference Include="..\NotificationService\NotificationService.csproj" />
   </ItemGroup>
 
   <ItemGroup>

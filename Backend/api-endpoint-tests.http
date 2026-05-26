@@ -208,7 +208,7 @@ Accept: application/json
 ### ---------------- UserService: merchant ----------------
 
 ### Customer: request merchant role
-POST {{users}}/api/users/merchant-request
+POST {{users}}/api/merchants/requests
 Authorization: Bearer {{customerToken}}
 Content-Type: application/json
 
@@ -221,12 +221,12 @@ Content-Type: application/json
 }
 
 ### Admin: get merchant requests
-GET {{users}}/api/users/merchant-request?pageIndex=1&pageSize=10
+GET {{users}}/api/merchants/requests?pageIndex=1&pageSize=10
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 
 ### Admin: review merchant request - replace request id
-PATCH {{users}}/api/users/merchant-request/replace-request-id/review
+PATCH {{users}}/api/merchants/requests/replace-request-id/review
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -236,32 +236,32 @@ Content-Type: application/json
 }
 
 ### Authenticated: get merchants
-GET {{users}}/api/users/merchants?pageIndex=1&pageSize=10
+GET {{users}}/api/merchants?pageIndex=1&pageSize=10
 Authorization: Bearer {{customerToken}}
 Accept: application/json
 
 ### Authenticated: get merchant by id
-GET {{users}}/api/users/merchants/{{merchantId}}
+GET {{users}}/api/merchants/{{merchantId}}
 Authorization: Bearer {{customerToken}}
 Accept: application/json
 
 ### Authenticated: get merchant location
-GET {{users}}/api/users/merchants/{{merchantId}}/location?pageIndex=1&pageSize=10
+GET {{users}}/api/merchants/{{merchantId}}/location?pageIndex=1&pageSize=10
 Authorization: Bearer {{customerToken}}
 Accept: application/json
 
 ### Merchant owner: get merchant addresses
-GET {{users}}/api/users/merchants/{{merchantId}}/addresses?pageIndex=1&pageSize=10
+GET {{users}}/api/merchants/{{merchantId}}/addresses?pageIndex=1&pageSize=10
 Authorization: Bearer {{merchantToken}}
 Accept: application/json
 
 ### Merchant owner: get merchant address by id
-GET {{users}}/api/users/merchants/{{merchantId}}/addresses/{{merchantAddressId}}
+GET {{users}}/api/merchants/{{merchantId}}/addresses/{{merchantAddressId}}
 Authorization: Bearer {{merchantToken}}
 Accept: application/json
 
 ### Merchant owner: add merchant address
-POST {{users}}/api/users/merchants/{{merchantId}}/addresses
+POST {{users}}/api/merchants/{{merchantId}}/addresses
 Authorization: Bearer {{merchantToken}}
 Content-Type: application/json
 
@@ -275,7 +275,7 @@ Content-Type: application/json
 }
 
 ### Merchant owner: update merchant address
-PUT {{users}}/api/users/merchants/{{merchantId}}/addresses/{{merchantAddressId}}
+PUT {{users}}/api/merchants/{{merchantId}}/addresses/{{merchantAddressId}}
 Authorization: Bearer {{merchantToken}}
 Content-Type: application/json
 
@@ -289,7 +289,7 @@ Content-Type: application/json
 }
 
 ### Merchant owner: update merchant
-PUT {{users}}/api/users/merchants/{{merchantId}}
+PUT {{users}}/api/merchants/{{merchantId}}
 Authorization: Bearer {{merchantToken}}
 Content-Type: application/json
 
@@ -309,19 +309,19 @@ Content-Type: application/json
 }
 
 ### Merchant owner: delete merchant address - destructive; prefer using an address created by add-merchant-address
-DELETE {{users}}/api/users/merchants/{{merchantId}}/addresses/replace-created-merchant-address-id
+DELETE {{users}}/api/merchants/{{merchantId}}/addresses/replace-created-merchant-address-id
 Authorization: Bearer {{merchantToken}}
 Accept: application/json
 
 ### Merchant owner/admin: delete merchant - destructive; do not run against seeded merchant unless you plan to reseed
-DELETE {{users}}/api/users/merchants/{{merchantId}}
+DELETE {{users}}/api/merchants/{{merchantId}}
 Authorization: Bearer {{merchantToken}}
 Accept: application/json
 
 ### ---------------- UserService: shipper ----------------
 
 ### Customer: request shipper role
-POST {{users}}/api/users/shipper-request
+POST {{users}}/api/shippers/requests
 Authorization: Bearer {{customerToken}}
 Content-Type: application/json
 
@@ -338,12 +338,12 @@ Content-Type: application/json
 }
 
 ### Admin: get shipper requests
-GET {{users}}/api/users/shipper-request?pageIndex=1&pageSize=10
+GET {{users}}/api/shippers/requests?pageIndex=1&pageSize=10
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 
 ### Admin: review shipper request - replace request id
-PATCH {{users}}/api/users/shipper-request/replace-request-id/review
+PATCH {{users}}/api/shippers/requests/replace-request-id/review
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -353,15 +353,15 @@ Content-Type: application/json
 }
 
 ### Public: get shippers
-GET {{users}}/api/users/shippers?pageIndex=1&pageSize=10
+GET {{users}}/api/shippers?pageIndex=1&pageSize=10
 Accept: application/json
 
 ### Public: get shipper by id
-GET {{users}}/api/users/shippers/{{shipperId}}
+GET {{users}}/api/shippers/{{shipperId}}
 Accept: application/json
 
 ### Shipper owner: update shipper
-PUT {{users}}/api/users/shippers/{{shipperId}}
+PUT {{users}}/api/shippers/{{shipperId}}
 Authorization: Bearer {{shipperToken}}
 Content-Type: application/json
 
@@ -371,7 +371,7 @@ Content-Type: application/json
 }
 
 ### Shipper owner/admin: delete shipper - destructive; do not run against seeded shipper unless you plan to reseed
-DELETE {{users}}/api/users/shippers/{{shipperId}}
+DELETE {{users}}/api/shippers/{{shipperId}}
 Authorization: Bearer {{shipperToken}}
 Accept: application/json
 

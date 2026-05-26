@@ -35,7 +35,7 @@ export class OrderCompletedConsumer {
 
     const channel = await this.rabbitMqClient.createConsumerQueue(this.queueName, ["order.completed"]);
 
-    await channel.consume(this.queueName, (message) => {
+    await channel.consume(this.queueName, (message: RabbitConsumerMessage | null) => {
       void this.handleMessage(message, channel);
     }, {
       noAck: false,
@@ -130,6 +130,14 @@ export class OrderCompletedConsumer {
         const merchantBalanceAfter = merchantBalanceBefore - commissionAmount;
         const adminBalanceBefore = Number(adminWallet.balance);
         const adminBalanceAfter = adminBalanceBefore + commissionAmount;
+        const merchantNegativeSince =
+          merchantBalanceAfter < 0
+            ? merchantWallet.negativeSince ?? new Date()
+            : null;
+        const adminNegativeSince =
+          adminBalanceAfter < 0
+            ? adminWallet.negativeSince ?? new Date()
+            : null;
 
         await tx.walletTransaction.create({
           data: {
@@ -160,6 +168,7 @@ export class OrderCompletedConsumer {
           where: { id: merchantWallet.id },
           data: {
             balance: new Prisma.Decimal(merchantBalanceAfter),
+            negativeSince: merchantNegativeSince,
           },
         });
 
@@ -192,6 +201,7 @@ export class OrderCompletedConsumer {
           where: { id: adminWallet.id },
           data: {
             balance: new Prisma.Decimal(adminBalanceAfter),
+            negativeSince: adminNegativeSince,
           },
         });
       });

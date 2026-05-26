@@ -167,6 +167,20 @@ namespace UserService.Services.Implements
             return new ApiResponse<MerchantResponse>(StatusCodes.Status200OK, response);
         }
 
+        public async Task<ApiResponse<MerchantResponse>> GetMerchantByUserIdAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return new ApiResponse<MerchantResponse>(StatusCodes.Status400BadRequest, "Invalid user id");
+
+            var merchant = await _userRepository.GetMerchantByUserIdAsync(userId);
+            if (merchant == null)
+                return new ApiResponse<MerchantResponse>(StatusCodes.Status404NotFound, "No merchant found");
+
+            var response = _mapper.ToMerchantResponse(merchant);
+
+            return new ApiResponse<MerchantResponse>(StatusCodes.Status200OK, response);
+        }
+
         public async Task<ApiResponse<ConfirmationResponse>> UpdateMerchantAsync(Guid merchantId, UpdateMerchantRequest request)
         {
             if (merchantId == Guid.Empty)

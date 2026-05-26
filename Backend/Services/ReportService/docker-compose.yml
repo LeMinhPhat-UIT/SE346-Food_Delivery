@@ -1,0 +1,43 @@
+services:
+  report-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: report-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${REPORT_SERVICE_HOST_PORT:-8088}:${REPORT_SERVICE_CONTAINER_PORT:-8080}"
+    environment:
+      NODE_ENV: development
+      PORT: ${REPORT_SERVICE_CONTAINER_PORT:-8080}
+      DATABASE_URL: postgresql://${REPORT_DB_USER:-report_service}:${REPORT_DB_PASSWORD:-report_strong_password}@${REPORT_DB_HOST:-report-db}:5432/${REPORT_DB_NAME:-report_db}?schema=public
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-appuser}:${RABBITMQ_DEFAULT_PASS:-app_password}@${RABBITMQ_HOST:-rabbitmq}:5672
+      JWT_SECRET: ${JWT_KEY:-replace_with_strong_jwt_key}
+      JWT_ISSUER: ${JWT_ISSUER:-https://auth.myapp.dev}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-https://api.myapp.dev}
+      USER_SERVICE_URL: ${REPORT_USER_SERVICE_URL:-http://user-service:8080/api/users}
+      ORDER_SERVICE_URL: ${REPORT_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
+      DELIVERY_SERVICE_URL: ${REPORT_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
+    depends_on:
+      - report-db
+      - rabbitmq
+    networks:
+      - backend-network
+
+  report-db:
+    image: postgres:17-alpine
+    container_name: report-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${REPORT_DB_USER:-report_service}
+      POSTGRES_PASSWORD: ${REPORT_DB_PASSWORD:-report_strong_password}
+      POSTGRES_DB: ${REPORT_DB_NAME:-report_db}
+    ports:
+      - "${REPORT_DB_PORT:-5437}:5432"
+    volumes:
+      - report_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+

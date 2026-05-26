@@ -1,0 +1,57 @@
+services:
+  wallet-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wallet-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${WALLET_SERVICE_HOST_PORT:-8089}:${WALLET_SERVICE_CONTAINER_PORT:-8080}"
+    environment:
+      NODE_ENV: development
+      PORT: ${WALLET_SERVICE_CONTAINER_PORT:-8080}
+      DATABASE_URL: postgresql://${WALLET_DB_USER:-wallet_service}:${WALLET_DB_PASSWORD:-wallet_strong_password}@${WALLET_DB_HOST:-wallet-db}:5432/${WALLET_DB_NAME:-wallet_db}?schema=public
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-appuser}:${RABBITMQ_DEFAULT_PASS:-app_password}@${RABBITMQ_HOST:-rabbitmq}:5672
+      JWT_SECRET: ${JWT_KEY:-replace_with_strong_jwt_key}
+      JWT_ISSUER: ${JWT_ISSUER:-https://auth.myapp.dev}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-https://api.myapp.dev}
+      USER_SERVICE_URL: ${WALLET_USER_SERVICE_URL:-http://user-service:8080/api/users}
+      ORDER_SERVICE_URL: ${WALLET_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
+      DELIVERY_SERVICE_URL: ${WALLET_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-notify-exchange}
+      VNPAY_URL: ${VNPAY_URL}
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET}
+      WALLET_VNPAY_RETURN_URL: ${WALLET_VNPAY_RETURN_URL}
+      WALLET_VNPAY_IPN_URL: ${WALLET_VNPAY_IPN_URL}
+      VNPAY_VERSION: ${VNPAY_VERSION:-2.1.0}
+      VNPAY_COMMAND: ${VNPAY_COMMAND:-pay}
+      VNPAY_CURRENCY: ${VNPAY_CURRENCY:-VND}
+      VNPAY_LOCALE: ${VNPAY_LOCALE:-vn}
+      VNPAY_ORDER_TYPE: ${VNPAY_ORDER_TYPE:-180000}
+      VNPAY_EXPIRE_MINUTES: ${VNPAY_EXPIRE_MINUTES:-15}
+      WALLET_PLATFORM_OWNER_ID: ${WALLET_PLATFORM_OWNER_ID:-55555555-5555-5555-5555-555555555555}
+      WALLET_MERCHANT_COMMISSION_RATE: ${WALLET_MERCHANT_COMMISSION_RATE:-22}
+    depends_on:
+      - wallet-db
+      - rabbitmq
+    networks:
+      - backend-network
+
+  wallet-db:
+    image: postgres:17-alpine
+    container_name: wallet-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${WALLET_DB_USER:-wallet_service}
+      POSTGRES_PASSWORD: ${WALLET_DB_PASSWORD:-wallet_strong_password}
+      POSTGRES_DB: ${WALLET_DB_NAME:-wallet_db}
+    ports:
+      - "${WALLET_DB_PORT:-5438}:5432"
+    volumes:
+      - wallet_db_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+

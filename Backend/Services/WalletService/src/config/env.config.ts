@@ -33,6 +33,7 @@ const envSchema = z.object({
   VNPAY_EXPIRE_MINUTES: z.coerce.number().int().positive().default(15),
   WALLET_PLATFORM_OWNER_ID: z.string().min(1).default("55555555-5555-5555-5555-555555555555"),
   WALLET_MERCHANT_COMMISSION_RATE: z.coerce.number().min(0).max(100).default(22),
+  WALLET_SHIPPER_COMMISSION_RATE: z.coerce.number().min(0).max(100).default(32),
 });
 
 export const env = envSchema.parse(process.env);

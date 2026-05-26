@@ -3,12 +3,15 @@ import { connectDatabase, disconnectDatabase } from "./config/db.config";
 import { env } from "./config/env.config";
 import { logger } from "./utils/logger";
 import { OrderCompletedConsumer } from "./modules/events/order-completed.consumer";
+import { DeliveryDeliveredConsumer } from "./modules/events/delivery-delivered.consumer";
 
 const startServer = async () => {
   try {
     await connectDatabase();
     const orderCompletedConsumer = new OrderCompletedConsumer();
+    const deliveryDeliveredConsumer = new DeliveryDeliveredConsumer();
     await orderCompletedConsumer.start();
+    await deliveryDeliveredConsumer.start();
 
     const server = app.listen(env.PORT, () => {
       logger.info(`Wallet Service is running on port ${env.PORT}`);
@@ -19,6 +22,7 @@ const startServer = async () => {
 
       server.close(async () => {
         await orderCompletedConsumer.stop();
+        await deliveryDeliveredConsumer.stop();
         await disconnectDatabase();
         process.exit(0);
       });

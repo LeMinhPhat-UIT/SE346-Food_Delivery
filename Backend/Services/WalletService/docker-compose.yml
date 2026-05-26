@@ -34,6 +34,7 @@ services:
       VNPAY_EXPIRE_MINUTES: ${VNPAY_EXPIRE_MINUTES:-15}
       WALLET_PLATFORM_OWNER_ID: ${WALLET_PLATFORM_OWNER_ID:-55555555-5555-5555-5555-555555555555}
       WALLET_MERCHANT_COMMISSION_RATE: ${WALLET_MERCHANT_COMMISSION_RATE:-22}
+      WALLET_SHIPPER_COMMISSION_RATE: ${WALLET_SHIPPER_COMMISSION_RATE:-32}
     depends_on:
       - wallet-db
       - rabbitmq
@@ -44,14 +45,24 @@ services:
     image: postgres:17-alpine
     container_name: wallet-db
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${WALLET_DB_USER:-wallet_service}
-      POSTGRES_PASSWORD: ${WALLET_DB_PASSWORD:-wallet_strong_password}
-      POSTGRES_DB: ${WALLET_DB_NAME:-wallet_db}
+    env_file:
+      - ../../Infrastructure/wallet-db.env
     ports:
       - "${WALLET_DB_PORT:-5438}:5432"
     volumes:
       - wallet_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  wallet_db_data:
 

@@ -48,9 +48,47 @@ export type ShipperDailyMetricDto = {
   deliveryFeeHandled: number;
 };
 
+export type TopMerchantDto = {
+  merchantId: string;
+  metricDate: string;
+  grossRevenue: number;
+  netRevenue: number;
+  orderCount: number;
+  paidOrderCount: number;
+  cancelledOrderCount: number;
+  subtotalRevenue: number;
+  deliveryFeeRevenue: number;
+  discountTotal: number;
+  voucherUsageCount: number;
+  avgOrderValue: number;
+};
+
+export type TopShipperDto = {
+  metricDate: string;
+  shipperId: string;
+  assignedOrderCount: number;
+  pickedUpOrderCount: number;
+  deliveredOrderCount: number;
+  cancelledOrderCount: number;
+  completionRate: number;
+  avgDeliveryTimeMinutes: number;
+  totalDistanceKm: number;
+  deliveryFeeHandled: number;
+};
+
+export type TopProductDto = {
+  productId: string;
+  productName: string;
+  productImage: string | null;
+  quantitySold: number;
+  orderCount: number;
+};
+
+export type ReportSummaryDto = Record<string, number>;
+
 export type ReportOverviewResponseDto<TDaily> = {
   from: string;
   to: string;
-  summary: Record<string, number>;
+  summary: ReportSummaryDto;
   daily: TDaily[];
 };

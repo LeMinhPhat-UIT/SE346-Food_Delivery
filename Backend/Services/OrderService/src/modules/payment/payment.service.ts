@@ -417,6 +417,18 @@ export class PaymentService {
       totalAmount: number;
       paymentMethod: PaymentMethod;
       note: string | null;
+      items?: Array<{
+        productId: string;
+        productName: string;
+        productImage: string | null;
+        unitPrice: number;
+        quantity: number;
+        selectedOptions: Prisma.InputJsonValue;
+        note: string | null;
+      }>;
+      subtotal?: number;
+      deliveryFee?: number;
+      discountAmount?: number;
     };
   }
 }

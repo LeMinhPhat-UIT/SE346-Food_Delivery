@@ -37,4 +37,26 @@ export class ReportController {
     const result = await reportService.getShipperOverview(shipperId, query);
     return Send.success(res, result, "Shipper overview fetched successfully");
   });
+
+  getTopMerchants = asyncHandler(async (req: Request, res: Response) => {
+    this.getAuthContext(req);
+    const query = (req.validated?.query ?? {}) as DateRangeQueryDto;
+    const result = await reportService.getTopMerchants(query);
+    return Send.success(res, result, "Top merchants fetched successfully");
+  });
+
+  getTopShippers = asyncHandler(async (req: Request, res: Response) => {
+    this.getAuthContext(req);
+    const query = (req.validated?.query ?? {}) as DateRangeQueryDto;
+    const result = await reportService.getTopShippers(query);
+    return Send.success(res, result, "Top shippers fetched successfully");
+  });
+
+  getTopProducts = asyncHandler(async (req: Request, res: Response) => {
+    const auth = this.getAuthContext(req);
+    const query = (req.validated?.query ?? {}) as DateRangeQueryDto;
+    const merchantId = auth.roles.includes("MERCHANT") ? (auth.merchantId ?? auth.userId) : undefined;
+    const result = await reportService.getTopProducts(query, merchantId);
+    return Send.success(res, result, "Top products fetched successfully");
+  });
 }

@@ -153,6 +153,18 @@ export class OrderRepository {
       totalAmount: number;
       paymentMethod: PaymentMethod;
       note: string | null;
+      items: Array<{
+        productId: string;
+        productName: string;
+        productImage: string | null;
+        unitPrice: number;
+        quantity: number;
+        selectedOptions: Prisma.InputJsonValue;
+        note: string | null;
+      }>;
+      subtotal: number;
+      deliveryFee: number;
+      discountAmount: number;
     };
   }) {
     return prisma.$transaction(async (tx) => {
@@ -234,6 +246,18 @@ export class OrderRepository {
               TotalAmount: payload.orderCompletedEvent.totalAmount,
               PaymentMethod: payload.orderCompletedEvent.paymentMethod,
               Note: payload.orderCompletedEvent.note,
+              Items: payload.orderCompletedEvent.items.map((item) => ({
+                ProductId: item.productId,
+                ProductName: item.productName,
+                ProductImage: item.productImage,
+                UnitPrice: item.unitPrice,
+                Quantity: item.quantity,
+                SelectedOptions: item.selectedOptions,
+                Note: item.note,
+              })),
+              Subtotal: payload.orderCompletedEvent.subtotal,
+              DeliveryFee: payload.orderCompletedEvent.deliveryFee,
+              DiscountAmount: payload.orderCompletedEvent.discountAmount,
             } satisfies Prisma.InputJsonValue,
           },
         });

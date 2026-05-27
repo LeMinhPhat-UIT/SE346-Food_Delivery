@@ -26,11 +26,69 @@ router.get(
 );
 
 router.get(
+  "/admin/top-merchants",
+  requireRoles(ROLES.ADMIN),
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopMerchants,
+);
+
+router.get(
+  "/admin/top-shippers",
+  requireRoles(ROLES.ADMIN),
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopShippers,
+);
+
+router.get(
+  "/admin/top-products",
+  requireRoles(ROLES.ADMIN),
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopProducts,
+);
+
+router.get(
+  "/admin/top-merchants",
+  requireRoles(ROLES.ADMIN),
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopMerchants,
+);
+
+router.get(
+  "/admin/top-shippers",
+  requireRoles(ROLES.ADMIN),
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopShippers,
+);
+
+router.get(
+  "/admin/top-products",
+  requireRoles(ROLES.ADMIN),
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopProducts,
+);
+
+router.get(
   "/merchant/me/overview",
   requireRoles(ROLES.MERCHANT, ROLES.ADMIN),
   attachMerchantContext,
   validate({ query: dateRangeQuerySchema }),
   reportController.getMerchantOverview,
+);
+
+router.get(
+  "/merchant/me/top-products",
+  requireRoles(ROLES.MERCHANT, ROLES.ADMIN),
+  attachMerchantContext,
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopProducts,
+);
+
+router.get(
+  "/merchant/me/top-products",
+  requireRoles(ROLES.MERCHANT, ROLES.ADMIN),
+  attachMerchantContext,
+  validate({ query: dateRangeQuerySchema }),
+  reportController.getTopProducts,
 );
 
 router.get(

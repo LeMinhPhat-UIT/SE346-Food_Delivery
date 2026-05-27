@@ -3,6 +3,9 @@ import {
   AdminDailyMetricDto,
   MerchantDailyMetricDto,
   ReportOverviewResponseDto,
+  TopMerchantDto,
+  TopProductDto,
+  TopShipperDto,
   ShipperDailyMetricDto,
 } from "./report.dto";
 import { toNumber } from "./report.mapper";
@@ -92,6 +95,72 @@ export class ReportService {
     };
   }
 
+  async getTopMerchants(query: DateRangeInput): Promise<{ from: string; to: string; items: TopMerchantDto[] }> {
+    const { from, to } = this.resolveDateRange(query);
+    const rows = await this.reportRepository.findTopMerchants(from, to, 10);
+
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      items: rows.map((row) => ({
+        metricDate: row.metricDate.toISOString(),
+        merchantId: row.merchantId,
+        grossRevenue: toNumber(row.grossRevenue),
+        netRevenue: toNumber(row.netRevenue),
+        orderCount: row.orderCount,
+        paidOrderCount: row.paidOrderCount,
+        cancelledOrderCount: row.cancelledOrderCount,
+        subtotalRevenue: toNumber(row.subtotalRevenue),
+        deliveryFeeRevenue: toNumber(row.deliveryFeeRevenue),
+        discountTotal: toNumber(row.discountTotal),
+        voucherUsageCount: row.voucherUsageCount,
+        avgOrderValue: toNumber(row.avgOrderValue),
+      })),
+    };
+  }
+
+  async getTopShippers(query: DateRangeInput): Promise<{ from: string; to: string; items: TopShipperDto[] }> {
+    const { from, to } = this.resolveDateRange(query);
+    const rows = await this.reportRepository.findTopShippers(from, to, 10);
+
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      items: rows.map((row) => ({
+        metricDate: row.metricDate.toISOString(),
+        shipperId: row.shipperId,
+        assignedOrderCount: row.assignedOrderCount,
+        pickedUpOrderCount: row.pickedUpOrderCount,
+        deliveredOrderCount: row.deliveredOrderCount,
+        cancelledOrderCount: row.cancelledOrderCount,
+        completionRate: toNumber(row.completionRate),
+        avgDeliveryTimeMinutes: toNumber(row.avgDeliveryTimeMinutes),
+        totalDistanceKm: toNumber(row.totalDistanceKm),
+        deliveryFeeHandled: toNumber(row.deliveryFeeHandled),
+      })),
+    };
+  }
+
+  async getTopProducts(
+    query: DateRangeInput,
+    merchantId?: string,
+  ): Promise<{ from: string; to: string; items: TopProductDto[] }> {
+    const { from, to } = this.resolveDateRange(query);
+    const rows = await this.reportRepository.findTopProducts(from, to, 10, merchantId);
+
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      items: rows.map((row) => ({
+        productId: row.productId,
+        productName: row.productName,
+        productImage: row.productImage ?? null,
+        quantitySold: row.quantitySold,
+        orderCount: row.orderCount,
+      })),
+    };
+  }
+
   private resolveDateRange(query: DateRangeInput) {
     const to = query.to ? this.parseDateOrThrow(query.to, "to") : new Date();
     const from = query.from
@@ -174,7 +243,7 @@ export class ReportService {
 
     return {
       ...summary,
-      avgOrderValue: rows.length ? summary.grossRevenue / rows.length : 0,
+      avgOrderValue: summary.orderCount ? summary.netRevenue / summary.orderCount : 0,
     };
   }
 

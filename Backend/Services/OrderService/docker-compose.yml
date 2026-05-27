@@ -7,6 +7,16 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env
+    environment:
+      PORT: ${ORDER_SERVICE_CONTAINER_PORT:-8080}
+      DATABASE_URL: postgresql://${ORDER_DB_USER:-postgres}:${ORDER_DB_PASSWORD:-order_strong_password}@${ORDER_DB_HOST:-order-db}:5432/${ORDER_DB_NAME:-order_db}
+      REDIS_HOST: ${ORDER_REDIS_HOST:-order-redis}
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${ORDER_REDIS_PASSWORD:-order_redis_secure_password}
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-appuser}:${RABBITMQ_DEFAULT_PASS:-app_password}@${RABBITMQ_HOST:-rabbitmq}:5672
+      USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:8080/api/users}
+      CATALOG_SERVICE_URL: ${CATALOG_SERVICE_URL:-http://catalog-service:8080/api/catalog}
+      DELIVERY_SERVICE_URL: ${DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
     ports:
       - "${ORDER_SERVICE_HOST_PORT}:${ORDER_SERVICE_CONTAINER_PORT}"
     depends_on:

@@ -2,10 +2,19 @@ import app from "./app";
 import { connectDatabase, disconnectDatabase } from "./config/db.config";
 import { env } from "./config/env.config";
 import { logger } from "./utils/logger";
+import { OrderCompletedConsumer } from "./modules/events/order-completed.consumer";
+import { DeliveryMilestoneConsumer } from "./modules/events/delivery-milestone.consumer";
+import { DeliveryDeliveredConsumer } from "./modules/events/delivery-delivered.consumer";
 
 const startServer = async () => {
   try {
     await connectDatabase();
+    const orderCompletedConsumer = new OrderCompletedConsumer();
+    const deliveryMilestoneConsumer = new DeliveryMilestoneConsumer();
+    const deliveryDeliveredConsumer = new DeliveryDeliveredConsumer();
+    await orderCompletedConsumer.start();
+    await deliveryMilestoneConsumer.start();
+    await deliveryDeliveredConsumer.start();
 
     const server = app.listen(env.PORT, () => {
       logger.info(`Report Service is running on port ${env.PORT}`);
@@ -15,6 +24,9 @@ const startServer = async () => {
       logger.warn(`Received ${signal}. Shutting down Report Service...`);
 
       server.close(async () => {
+        await orderCompletedConsumer.stop();
+        await deliveryMilestoneConsumer.stop();
+        await deliveryDeliveredConsumer.stop();
         await disconnectDatabase();
         process.exit(0);
       });

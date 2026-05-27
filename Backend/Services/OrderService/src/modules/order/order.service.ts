@@ -143,6 +143,20 @@ export class OrderService {
           : context.cart.subtotal + context.deliveryFee,
         paymentMethod: payload.paymentMethod as PaymentMethod,
         note: payload.note ?? null,
+        items: context.cart.items.map((item) => ({
+          productId: item.productId,
+          productName: item.productName,
+          productImage: item.productImage,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          selectedOptions: item.selectedOptions,
+          note: item.note,
+        })),
+        subtotal: context.cart.subtotal,
+        deliveryFee: context.voucherResult
+          ? context.voucherResult.finalDeliveryFee
+          : context.deliveryFee,
+        discountAmount: context.voucherResult?.discountAmount ?? 0,
       },
     });
 

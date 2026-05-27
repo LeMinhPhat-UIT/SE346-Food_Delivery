@@ -69,6 +69,11 @@ services:
       file: ./Services/ReportService/docker-compose.yml
       service: report-service
 
+  wallet-service:
+    extends:
+      file: ./Services/WalletService/docker-compose.yml
+      service: wallet-service
+
   order-db:
     extends:
       file: ./Services/OrderService/docker-compose.yml
@@ -83,6 +88,11 @@ services:
     extends:
       file: ./Services/OrderService/docker-compose.yml
       service: order-redis
+
+  wallet-db:
+    extends:
+      file: ./Services/WalletService/docker-compose.yml
+      service: wallet-db
 
   rabbitmq:
     extends:
@@ -101,3 +111,5 @@ volumes:
   order_redis_data:
   notification_db_data:
   report_db_data:
+  wallet_db_data:
+  rabbitmq_data:

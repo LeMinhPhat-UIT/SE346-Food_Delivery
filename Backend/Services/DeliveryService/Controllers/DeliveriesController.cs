@@ -244,6 +244,63 @@ namespace DeliveryService.Controllers
             }
         }
 
+        [HttpPost("assignments/{assignmentId:guid}/accept")]
+        [Authorize(Policy = "ShipperOrAdmin")]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> AcceptAssignmentOffer([FromRoute] Guid assignmentId, [FromBody] AcceptAssignmentRequest request)
+        {
+            try
+            {
+                var response = await _deliveryService.AcceptAssignmentAsync(assignmentId, request, User);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("assignments/{assignmentId:guid}/reject")]
+        [Authorize(Policy = "ShipperOrAdmin")]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> RejectAssignmentOffer([FromRoute] Guid assignmentId, [FromBody] RejectAssignmentRequest request)
+        {
+            try
+            {
+                var response = await _deliveryService.RejectAssignmentAsync(assignmentId, request, User);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpGet("shippers/me/active-offer")]
+        [Authorize(Policy = "ShipperOrAdmin")]
+        public async Task<ActionResult<ApiResponse<ActiveAssignmentOfferResponse>>> GetActiveOffer()
+        {
+            try
+            {
+                var response = await _deliveryService.GetActiveOfferAsync(User);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpPost("assignments/{assignmentId:guid}/status")]
         [Authorize(Policy = "ShipperOrAdmin")]
         public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateAssignmentStatus([FromRoute] Guid assignmentId, [FromBody] UpdateDeliveryStatusRequest request)

@@ -12,6 +12,10 @@ namespace DeliveryService.Options
         public decimal FeePerKm { get; set; } = 5000m;
         public decimal MinimumDeliveryFee { get; set; } = 10000m;
         public string Currency { get; set; } = "VND";
+        public int MaxShippersPerBatch { get; set; } = 5;
+        public int AssignmentOfferTimeoutSeconds { get; set; } = 20;
+        public int AllowedLocationStalenessSeconds { get; set; } = 30;
+        public int AssignmentOfferExpirationScanSeconds { get; set; } = 5;
 
         public bool TryGetRedisGeoUnit(out RedisGeoUnit geoUnit)
         {

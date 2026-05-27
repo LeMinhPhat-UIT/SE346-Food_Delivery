@@ -2,7 +2,9 @@ using DeliveryService.DTOs;
 using DeliveryService.Entities;
 using DeliveryService.Enums;
 using DeliveryService.Exceptions;
+using DeliveryService.Integrations;
 using DeliveryService.Mappers;
+using DeliveryService.Repositories;
 using DeliveryService.Repositories.Interfaces;
 using DeliveryService.Services.Interfaces;
 using Messaging.Contracts.Common;
@@ -18,6 +20,7 @@ namespace DeliveryService.Services.Implements
         private readonly IDeliveryRepository _deliveryRepository;
         private readonly IRedisRepository _redisRepository;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IUserServiceClient _userServiceClient;
         private readonly IDeliveryEstimator _deliveryEstimator;
         private readonly DeliveryMapper _mapper;
         private readonly ILogger<DeliveryService> _logger;
@@ -26,6 +29,7 @@ namespace DeliveryService.Services.Implements
             IDeliveryRepository deliveryRepository,
             IRedisRepository redisRepository,
             IEventPublisher eventPublisher,
+            IUserServiceClient userServiceClient,
             IDeliveryEstimator deliveryEstimator,
             DeliveryMapper mapper,
             ILogger<DeliveryService> logger)
@@ -33,6 +37,7 @@ namespace DeliveryService.Services.Implements
             _deliveryRepository = deliveryRepository;
             _redisRepository = redisRepository;
             _eventPublisher = eventPublisher;
+            _userServiceClient = userServiceClient;
             _deliveryEstimator = deliveryEstimator;
             _mapper = mapper;
             _logger = logger;
@@ -257,20 +262,130 @@ namespace DeliveryService.Services.Implements
             if (request.AssignmentId == Guid.Empty)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
 
-            var assignment = await _deliveryRepository.GetShipperAssignmentByIdAsync(request.AssignmentId);
-            if (assignment == null)
-                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No shipper assignment found");
-
-            if (!CanAccessShipper(user, assignment.ShipperId))
-                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only respond to your own assignment");
-
-            if (assignment.Status != AssignmentStatus.Pending)
-                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment has already been handled");
-
             if (request.IsAccepted)
-                return await AcceptAssignmentAsync(assignment);
+                return await AcceptAssignmentAsync(request.AssignmentId, request, user);
 
-            return await RejectAssignmentAsync(assignment, request);
+            return await RejectAssignmentAsync(
+                request.AssignmentId,
+                new RejectAssignmentRequest
+                {
+                    OfferId = request.OfferId,
+                    Reason = request.RejectReason
+                },
+                user);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(Guid assignmentId, AcceptAssignmentRequest request, ClaimsPrincipal user)
+        {
+            if (assignmentId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
+
+            if (request.OfferId.HasValue && request.OfferId.Value != assignmentId)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Offer id does not match assignment id");
+
+            var shipperId = await ResolveCurrentShipperIdAsync(user);
+            if (!shipperId.HasValue)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "SHIPPER_NOT_ELIGIBLE");
+
+            var now = DateTime.UtcNow;
+            var result = await _deliveryRepository.AcceptAssignmentOfferAsync(assignmentId, shipperId.Value, now);
+
+            if (result.Outcome == AssignmentAcceptanceOutcome.Accepted && result.Assignment != null)
+            {
+                await _eventPublisher.PublishAsync(new AssignmentAcceptedEvent
+                {
+                    CorrelationId = result.Assignment.OrderId.ToString(),
+                    AssignmentId = result.Assignment.Id,
+                    OfferId = result.Assignment.Id,
+                    OrderId = result.Assignment.OrderId,
+                    OrderNumber = result.Assignment.OrderNumber,
+                    CustomerId = result.Assignment.CustomerId,
+                    MerchantId = result.Assignment.MerchantId,
+                    AcceptedByShipperId = result.Assignment.ShipperId,
+                    CancelledOfferIds = result.CancelledAssignments.Select(assignment => assignment.Id).ToArray(),
+                    CancelledShipperIds = result.CancelledAssignments.Select(assignment => assignment.ShipperId).ToArray()
+                });
+
+                return new ApiResponse<ConfirmationResponse>(
+                    StatusCodes.Status200OK,
+                    new ConfirmationResponse("Assignment accepted successfully."));
+            }
+
+            return result.Outcome switch
+            {
+                AssignmentAcceptanceOutcome.NotFound => new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "OFFER_NOT_FOUND"),
+                AssignmentAcceptanceOutcome.OfferNotFound => new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "OFFER_NOT_FOUND"),
+                AssignmentAcceptanceOutcome.OfferExpired => new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "OFFER_EXPIRED"),
+                AssignmentAcceptanceOutcome.AlreadyTaken => new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "ASSIGNMENT_ALREADY_TAKEN"),
+                _ => new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "Assignment is no longer available.")
+            };
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> RejectAssignmentAsync(Guid assignmentId, RejectAssignmentRequest request, ClaimsPrincipal user)
+        {
+            if (assignmentId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
+
+            if (request.OfferId.HasValue && request.OfferId.Value != assignmentId)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Offer id does not match assignment id");
+
+            if (string.IsNullOrWhiteSpace(request.Reason))
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Reject reason is required when rejecting an assignment");
+
+            var shipperId = await ResolveCurrentShipperIdAsync(user);
+            if (!shipperId.HasValue)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "SHIPPER_NOT_ELIGIBLE");
+
+            var rejected = await _deliveryRepository.RejectAssignmentOfferAsync(
+                assignmentId,
+                shipperId.Value,
+                request.Reason.Trim(),
+                DateTime.UtcNow);
+
+            if (rejected == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "Assignment offer is no longer available.");
+
+            await _eventPublisher.PublishAsync(new AssignmentRejectedEvent
+            {
+                CorrelationId = rejected.OrderId.ToString(),
+                AssignmentId = rejected.Id,
+                OfferId = rejected.Id,
+                OrderId = rejected.OrderId,
+                OrderNumber = rejected.OrderNumber,
+                ShipperId = rejected.ShipperId,
+                Reason = rejected.RejectReason ?? request.Reason.Trim(),
+                RejectedAt = rejected.RespondedAt ?? DateTime.UtcNow
+            });
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Assignment rejected successfully."));
+        }
+
+        public async Task<ApiResponse<ActiveAssignmentOfferResponse>> GetActiveOfferAsync(ClaimsPrincipal user)
+        {
+            var shipperId = await ResolveCurrentShipperIdAsync(user);
+            if (!shipperId.HasValue)
+                return new ApiResponse<ActiveAssignmentOfferResponse>(StatusCodes.Status403Forbidden, "SHIPPER_NOT_ELIGIBLE");
+
+            var offer = await _deliveryRepository.GetActiveOfferForShipperAsync(shipperId.Value);
+            if (offer == null)
+            {
+                return new ApiResponse<ActiveAssignmentOfferResponse>(
+                    StatusCodes.Status200OK,
+                    new ActiveAssignmentOfferResponse { HasActiveOffer = false });
+            }
+
+            return new ApiResponse<ActiveAssignmentOfferResponse>(
+                StatusCodes.Status200OK,
+                new ActiveAssignmentOfferResponse
+                {
+                    HasActiveOffer = true,
+                    AssignmentId = offer.Id,
+                    OfferId = offer.Id,
+                    OrderId = offer.OrderId,
+                    ExpiresAt = offer.OfferExpiresAt
+                });
         }
 
         public async Task<ApiResponse<ConfirmationResponse>> UpdateAssignmentStatusAsync(Guid assignmentId, UpdateDeliveryStatusRequest request, ClaimsPrincipal user)
@@ -509,6 +624,7 @@ namespace DeliveryService.Services.Implements
             if (assignment.Status != AssignmentStatus.Accepted || assignment.PickedUpAt != null)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment is not ready for pickup confirmation");
 
+            assignment.Status = AssignmentStatus.PickedUp;
             assignment.PickedUpAt = DateTime.UtcNow;
             assignment.PickupProofFileKey = request.ProofFileKey;
 
@@ -536,6 +652,7 @@ namespace DeliveryService.Services.Implements
             if (assignment.PickedUpAt == null || assignment.DeliveredAt != null)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment is not ready for delivery confirmation");
 
+            assignment.Status = AssignmentStatus.Completed;
             assignment.DeliveredAt = DateTime.UtcNow;
             assignment.DeliveryProofFileKey = request.ProofFileKey;
             var deliveredAt = assignment.DeliveredAt.Value;
@@ -585,6 +702,9 @@ namespace DeliveryService.Services.Implements
 
             availability.CurrentOrderId = orderId;
             availability.Status = status;
+            availability.CurrentAssignmentId = status == ShipperWorkStatus.ActiveIdle ? null : availability.CurrentAssignmentId;
+            availability.CurrentOfferedAssignmentId = null;
+            availability.OfferingExpiresAt = null;
             availability.LastSeenAt = DateTime.UtcNow;
 
             if (existingAvailability == null)
@@ -669,6 +789,22 @@ namespace DeliveryService.Services.Implements
                 ?? user.FindFirstValue("shipper_id");
 
             return Guid.TryParse(shipperIdClaim, out var shipperId) ? shipperId : null;
+        }
+
+        private async Task<Guid?> ResolveCurrentShipperIdAsync(ClaimsPrincipal user)
+        {
+            var shipperId = GetCurrentShipperId(user);
+            if (shipperId.HasValue)
+                return shipperId;
+
+            var userId = GetCurrentUserId(user);
+            if (!userId.HasValue)
+                return null;
+
+            if (!IsCurrentUserInRole(user, "Shipper", "SHIPPER") && !IsCurrentUserAdmin(user))
+                return null;
+
+            return await _userServiceClient.GetShipperIdByUserIdAsync(userId.Value);
         }
 
         private static bool IsCurrentUserAdmin(ClaimsPrincipal user)

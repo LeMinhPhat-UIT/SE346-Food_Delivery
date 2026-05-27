@@ -18,6 +18,9 @@ namespace DeliveryService.Services.Interfaces
         Task<ApiResponse<ShipperAssignment>> GetAssignmentByIdAsync(Guid assignmentId, ClaimsPrincipal user);
         Task<ApiResponse<PagedResult<ShipperAssignment>>> GetAssignmentsByShipperIdAsync(Guid shipperId, PaginationRequest paginationRequest, ClaimsPrincipal user);
         Task<ApiResponse<ConfirmationResponse>> AcceptOrRejectAssignmentAsync(AcceptAssignmentRequest request, ClaimsPrincipal user);
+        Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(Guid assignmentId, AcceptAssignmentRequest request, ClaimsPrincipal user);
+        Task<ApiResponse<ConfirmationResponse>> RejectAssignmentAsync(Guid assignmentId, RejectAssignmentRequest request, ClaimsPrincipal user);
+        Task<ApiResponse<ActiveAssignmentOfferResponse>> GetActiveOfferAsync(ClaimsPrincipal user);
         Task<ApiResponse<ConfirmationResponse>> UpdateAssignmentStatusAsync(Guid assignmentId, UpdateDeliveryStatusRequest request, ClaimsPrincipal user);
         Task<ApiResponse<EstimateDeliveryFeeResponse>> EstimateDeliveryFeeAsync(EstimateDeliveryFeeRequest? request);
         Task<ApiResponse<ConfirmationResponse>> ReportIncidentAsync(ReportIncidentRequest request, ClaimsPrincipal user);

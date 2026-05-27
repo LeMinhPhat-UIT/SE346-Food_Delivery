@@ -1,4 +1,5 @@
-﻿using DeliveryService.Entities;
+using DeliveryService.Entities;
+using DeliveryService.Repositories;
 
 namespace DeliveryService.Repositories.Interfaces
 {
@@ -20,12 +21,16 @@ namespace DeliveryService.Repositories.Interfaces
         Task UpdateShipperAssignment(ShipperAssignment shipperAssignment);
         Task CreateShipperAssignment(ShipperAssignment shipperAssignment);
         Task CreateShipperAssignmentsAsync(IEnumerable<ShipperAssignment> shipperAssignments);
+        Task<bool> TryCreateAssignmentOfferAsync(ShipperAssignment shipperAssignment, DateTime expiresAt);
+        Task<AssignmentAcceptanceResult> AcceptAssignmentOfferAsync(Guid assignmentId, Guid shipperId, DateTime now);
+        Task<ShipperAssignment?> RejectAssignmentOfferAsync(Guid assignmentId, Guid shipperId, string reason, DateTime now);
+        Task<IReadOnlyList<ShipperAssignment>> ExpireStaleAssignmentOffersAsync(DateTime now, CancellationToken cancellationToken = default);
+        Task<ShipperAssignment?> GetActiveOfferForShipperAsync(Guid shipperId);
 
         Task CreateIncidentAsync(Incident incident);
         Task<IQueryable<Incident>> GetAllIncidentsAsync();
         Task<IQueryable<Incident>> GetAllIncidentByReporterId(Guid reporterId);
         Task<Incident?> GetIncidentByIdAsync(Guid incidentId);
         Task UpdateIncidentAsync(Incident incident);
-
     }
 }

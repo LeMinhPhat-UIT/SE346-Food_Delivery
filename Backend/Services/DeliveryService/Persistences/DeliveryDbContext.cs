@@ -26,6 +26,11 @@ namespace DeliveryService.Persistences
             {
                 entity.HasKey(sa => sa.Id);
                 entity.Property(sa => sa.Status).HasConversion<string>();
+                entity.HasIndex(sa => sa.Status);
+                entity.HasIndex(sa => new { sa.OrderId, sa.ShipperId }).IsUnique();
+                entity.HasIndex(sa => sa.OrderId)
+                    .IsUnique()
+                    .HasFilter("\"Status\" = 'Accepted'");
             });
 
             modelBuilder.Entity<ShipperLocationHistory>(entity =>
@@ -39,6 +44,9 @@ namespace DeliveryService.Persistences
             {
                 entity.HasKey(sa => sa.Id);
                 entity.Property(sa => sa.Status).HasConversion<string>();
+                entity.HasIndex(sa => sa.Status);
+                entity.HasIndex(sa => sa.CurrentAssignmentId);
+                entity.HasIndex(sa => sa.CurrentOfferedAssignmentId);
             });
 
             SeedData.InitializeData(modelBuilder);

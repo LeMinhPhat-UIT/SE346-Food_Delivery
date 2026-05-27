@@ -9,11 +9,14 @@ namespace DeliveryService.Entities
 
         public ShipperWorkStatus Status { get; set; } = ShipperWorkStatus.Offline;
         public Guid? CurrentOrderId { get; set; }
+        public Guid? CurrentAssignmentId { get; set; }
+        public Guid? CurrentOfferedAssignmentId { get; set; }
+        public DateTime? OfferingExpiresAt { get; set; }
 
         public decimal CurrentLat { get; set; }
         public decimal CurrentLng { get; set; }
         public DateTime? LastSeenAt { get; set; }
 
-        public bool IsEligibleForAssignment => Status == ShipperWorkStatus.ActiveIdle;
+        public bool IsEligibleForAssignment => Status == ShipperWorkStatus.ActiveIdle && CurrentOfferedAssignmentId == null;
     }
 }

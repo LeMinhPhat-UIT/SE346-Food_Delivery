@@ -1,6 +1,7 @@
 using DeliveryService.Consuming;
 using DeliveryService.HostedService;
 using DeliveryService.Hubs.Implements;
+using DeliveryService.Integrations;
 using DeliveryService.Mappers;
 using DeliveryService.Options;
 using DeliveryService.Persistences;
@@ -26,6 +27,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<DeliveryDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DeliveryDbConnectionString")));
 builder.Services.AddAuthorization(options =>
@@ -60,6 +62,18 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["JwtSettings:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/tracking"))
+                context.Token = accessToken;
+
+            return Task.CompletedTask;
+        }
+    };
 });
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
 builder.Services.AddScoped<IDeliveryRepository, DeliveryRepository>();
@@ -75,8 +89,10 @@ builder.Services.AddEventTypeRegistry();
 
 builder.Services.AddSignalR();
 
-builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
+builder.Services.AddTransient<IEventHandler<OrderReadyForPickupEvent>, OrderReadyForPickupEventHandler>();
+builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderReadyForPickupEventHandler>();
 builder.Services.AddHostedService<DeliveryTrackingHostedService>();
+builder.Services.AddHostedService<AssignmentOfferExpirationHostedService>();
 builder.Services.AddHostedService<EventConsumerHostedService>();
 
 builder.Services.AddOptions<DeliveryOption>()
@@ -113,6 +129,15 @@ builder.Services.AddHttpClient<IOpenRouteServiceClient, OpenRouteServiceClient>(
 
     client.BaseAddress = new Uri(url.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(Math.Max(options.TimeoutSeconds, 1));
+});
+
+builder.Services.AddHttpClient<IUserServiceClient, UserServiceClient>(client =>
+{
+    var baseUrl = builder.Configuration["UserService:BaseUrl"];
+    if (string.IsNullOrWhiteSpace(baseUrl))
+        baseUrl = "http://user-service:8080";
+
+    client.BaseAddress = new Uri(baseUrl.TrimEnd('/'));
 });
 
 builder.Services.AddOpenApi(options =>

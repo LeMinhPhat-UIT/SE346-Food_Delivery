@@ -7,6 +7,10 @@ namespace DeliveryService.Enums
     {
         Offline,
         ActiveIdle,
+        Offering,
+        Busy,
+
+        // Legacy values kept so old rows and clients can still deserialize.
         PendingAssignment,
         Delivering
     }

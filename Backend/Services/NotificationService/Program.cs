@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using NotificationService.Consuming;
 using NotificationService.HostedService;
+using NotificationService.Hubs;
 using NotificationService.Integrations;
 using NotificationService.Mappers;
 using NotificationService.Options;
 using NotificationService.Persistences;
+using NotificationService.Realtime;
 using NotificationService.Repositories.Implements;
 using NotificationService.Repositories.Interfaces;
 using NotificationService.Services.Implements;
@@ -23,6 +25,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSignalR();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -53,6 +57,18 @@ builder.Services
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/assignments"))
+                    context.Token = accessToken;
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddRabbitMq(builder.Configuration);
@@ -63,12 +79,16 @@ builder.Services.AddEventTypeRegistry();
 builder.Services.AddTransient<IEventHandler<OtpSendRequestedEvent>, OtpEmailEventHandler>();
 builder.Services.AddTransient<IEventHandler<LockedOutEvent>, LockedOutEventHandler>();
 builder.Services.AddTransient<IEventHandler<OrderCompletedEvent>, OrderCompletedEventHandler>();
-builder.Services.AddTransient<IEventHandler<ShipperFoundEvent>, ShipperFoundEventHandler>();
+builder.Services.AddTransient<IEventHandler<AssignmentOfferedEvent>, AssignmentOfferedEventHandler>();
+builder.Services.AddTransient<IEventHandler<AssignmentAcceptedEvent>, AssignmentAcceptedEventHandler>();
+builder.Services.AddTransient<IEventHandler<AssignmentExpiredEvent>, AssignmentExpiredEventHandler>();
+builder.Services.AddTransient<IEventHandler<AssignmentRejectedEvent>, AssignmentRejectedEventHandler>();
 builder.Services.AddTransient<IEventHandler<DeliveryMilestoneEvent>, DeliveryMilestoneEventHandler>();
 builder.Services.AddTransient<IEventHandler<MerchantRequestReviewedEvent>, MerchantRequestReviewedEventHandler>();
 builder.Services.AddTransient<IEventHandler<ShipperRequestReviewedEvent>, ShipperRequestReviewedEventHandler>();
 builder.Services.AddTransient<IPushNotificationService, PushNotificationService>();
 builder.Services.AddTransient<UserDeviceMapper>();
+builder.Services.AddSingleton<IRealtimeConnectionTracker, RealtimeConnectionTracker>();
 
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService.Services.Implements.NotificationService>();
@@ -121,5 +141,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<AssignmentHub>("/hubs/assignments");
 
 app.Run();

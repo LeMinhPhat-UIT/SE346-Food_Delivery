@@ -102,6 +102,15 @@
         "Transforms": [
           { "PathPattern": "/api/notifications/{**catch-all}" }
         ]
+      },
+      "assignment-hub-route": {
+        "ClusterId": "notification-cluster",
+        "Match": {
+          "Path": "/hubs/assignments/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/hubs/assignments/{**catch-all}" }
+        ]
       }
     },
     "Clusters": {

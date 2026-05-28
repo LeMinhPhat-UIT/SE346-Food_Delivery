@@ -1,7 +1,9 @@
 import cors from "cors";
 import express from "express";
+import swaggerUi from "swagger-ui-express";
 import walletRoutes from "./modules/wallet/wallet.route";
 import { errorMiddleware } from "./middlewares/error.middleware";
+import { openApiSpec } from "./docs/openapi";
 
 const app = express();
 
@@ -11,6 +13,12 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
   res.status(200).send("Wallet Service is running healthy!");
 });
+
+app.get("/openapi.json", (_req, res) => {
+  res.status(200).json(openApiSpec);
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
 
 app.use("/api/wallets", walletRoutes);
 

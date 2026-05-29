@@ -11,6 +11,16 @@ services:
     depends_on:
       authentication-service:
         condition: service_started
+      catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      report-service:
+        condition: service_started
+      wallet-service:
+        condition: service_started
+      chat-service:
+        condition: service_started
       user-service:
         condition: service_started
       file-service:

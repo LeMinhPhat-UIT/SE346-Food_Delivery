@@ -76,6 +76,42 @@
           { "PathPattern": "/api/catalog/{**catch-all}" }
         ]
       },
+      "order-route": {
+        "ClusterId": "order-cluster",
+        "Match": {
+          "Path": "/api/orders/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/orders/{**catch-all}" }
+        ]
+      },
+      "report-route": {
+        "ClusterId": "report-cluster",
+        "Match": {
+          "Path": "/api/reports/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/reports/{**catch-all}" }
+        ]
+      },
+      "wallet-route": {
+        "ClusterId": "wallet-cluster",
+        "Match": {
+          "Path": "/api/wallets/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/wallets/{**catch-all}" }
+        ]
+      },
+      "chat-route": {
+        "ClusterId": "chat-cluster",
+        "Match": {
+          "Path": "/api/chats/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/chats/{**catch-all}" }
+        ]
+      },
       "delivery-route": {
         "ClusterId": "delivery-cluster",
         "Match": {
@@ -139,6 +175,34 @@
         "Destinations": {
           "catalog-service": {
             "Address": "http://catalog-service:8080"
+          }
+        }
+      },
+      "order-cluster": {
+        "Destinations": {
+          "order-service": {
+            "Address": "http://order-service:8080"
+          }
+        }
+      },
+      "report-cluster": {
+        "Destinations": {
+          "report-service": {
+            "Address": "http://report-service:8080"
+          }
+        }
+      },
+      "wallet-cluster": {
+        "Destinations": {
+          "wallet-service": {
+            "Address": "http://wallet-service:8080"
+          }
+        }
+      },
+      "chat-cluster": {
+        "Destinations": {
+          "chat-service": {
+            "Address": "http://chat-service:8080"
           }
         }
       },

@@ -10,14 +10,14 @@ namespace AuthenticationService.Persistences
         public static void InitializeData(ModelBuilder builder)
         {
             var samplePasswordHash = "AQAAAAIAAYagAAAAEHwR9ekhFFazFAUin52gHpisNjCdZFdVS0N+lAgSluDA+/uEYfuONXMTsB3L8jrAdA==";
-            var adminRoleId = Guid.Parse("44444444-4444-4444-4444-444444444444");
-            var adminUserId = Guid.Parse("55555555-5555-5555-5555-555555555555");
-            var customerRoleId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-            var merchantRoleId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var shipperRoleId = Guid.Parse("33333333-3333-3333-3333-333333333333");
-            var customerUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-            var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-            var shipperUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+            var adminRoleId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+            var adminUserId = Guid.Parse("55555555-5555-4555-8555-555555555555");
+            var customerRoleId = Guid.Parse("11111111-1111-4111-8111-111111111111");
+            var merchantRoleId = Guid.Parse("22222222-2222-4222-8222-222222222222");
+            var shipperRoleId = Guid.Parse("33333333-3333-4333-8333-333333333333");
+            var customerUserId = Guid.Parse("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa");
+            var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb");
+            var shipperUserId = Guid.Parse("99999999-9999-4999-9999-999999999999");
             var seededAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             builder.Entity<ApplicationRole>().HasData(

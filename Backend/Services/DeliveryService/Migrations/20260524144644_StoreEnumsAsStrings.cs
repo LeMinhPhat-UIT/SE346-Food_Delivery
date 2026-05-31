@@ -106,35 +106,35 @@ namespace DeliveryService.Migrations
             migrationBuilder.UpdateData(
                 table: "DeliveryTrackings",
                 keyColumn: "Id",
-                keyValue: new Guid("61111111-1111-1111-1111-111111111111"),
+                keyValue: new Guid("61111111-1111-4111-8111-111111111111"),
                 column: "Status",
                 value: "Assigned");
 
             migrationBuilder.UpdateData(
                 table: "DeliveryTrackings",
                 keyColumn: "Id",
-                keyValue: new Guid("74444444-4444-4444-4444-444444444444"),
+                keyValue: new Guid("74444444-4444-4444-8444-444444444444"),
                 column: "Status",
                 value: "Delivered");
 
             migrationBuilder.UpdateData(
                 table: "Incidents",
                 keyColumn: "Id",
-                keyValue: new Guid("77777777-7777-7777-7777-777777777777"),
+                keyValue: new Guid("77777777-7777-4777-8777-777777777777"),
                 columns: new[] { "Status", "Type" },
                 values: new object[] { "Investigating", "MissingItem" });
 
             migrationBuilder.UpdateData(
                 table: "ShipperAssignments",
                 keyColumn: "Id",
-                keyValue: new Guid("64444444-4444-4444-4444-444444444444"),
+                keyValue: new Guid("64444444-4444-4444-8444-444444444444"),
                 column: "Status",
                 value: "Accepted");
 
             migrationBuilder.UpdateData(
                 table: "ShipperAvailabilities",
                 keyColumn: "Id",
-                keyValue: new Guid("66666666-6666-6666-6666-666666666666"),
+                keyValue: new Guid("66666666-6666-4666-8666-666666666666"),
                 column: "Status",
                 value: "Delivering");
         }
@@ -237,35 +237,35 @@ namespace DeliveryService.Migrations
             migrationBuilder.UpdateData(
                 table: "DeliveryTrackings",
                 keyColumn: "Id",
-                keyValue: new Guid("61111111-1111-1111-1111-111111111111"),
+                keyValue: new Guid("61111111-1111-4111-8111-111111111111"),
                 column: "Status",
                 value: 1);
 
             migrationBuilder.UpdateData(
                 table: "DeliveryTrackings",
                 keyColumn: "Id",
-                keyValue: new Guid("74444444-4444-4444-4444-444444444444"),
+                keyValue: new Guid("74444444-4444-4444-8444-444444444444"),
                 column: "Status",
                 value: 5);
 
             migrationBuilder.UpdateData(
                 table: "Incidents",
                 keyColumn: "Id",
-                keyValue: new Guid("77777777-7777-7777-7777-777777777777"),
+                keyValue: new Guid("77777777-7777-4777-8777-777777777777"),
                 columns: new[] { "Status", "Type" },
                 values: new object[] { 1, 1 });
 
             migrationBuilder.UpdateData(
                 table: "ShipperAssignments",
                 keyColumn: "Id",
-                keyValue: new Guid("64444444-4444-4444-4444-444444444444"),
+                keyValue: new Guid("64444444-4444-4444-8444-444444444444"),
                 column: "Status",
                 value: 1);
 
             migrationBuilder.UpdateData(
                 table: "ShipperAvailabilities",
                 keyColumn: "Id",
-                keyValue: new Guid("66666666-6666-6666-6666-666666666666"),
+                keyValue: new Guid("66666666-6666-4666-8666-666666666666"),
                 column: "Status",
                 value: 3);
         }

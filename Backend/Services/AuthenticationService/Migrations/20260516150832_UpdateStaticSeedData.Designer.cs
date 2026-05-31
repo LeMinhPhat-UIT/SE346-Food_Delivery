@@ -54,28 +54,28 @@ namespace AuthenticationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Id = new Guid("11111111-1111-4111-8111-111111111111"),
                             ConcurrencyStamp = "5e00d580-94e1-461d-b1b4-53799c830806",
                             Name = "Customer",
                             NormalizedName = "CUSTOMER"
                         },
                         new
                         {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Id = new Guid("22222222-2222-4222-8222-222222222222"),
                             ConcurrencyStamp = "e291a0ba-4bc0-483f-a462-548edf727761",
                             Name = "Merchant",
                             NormalizedName = "MERCHANT"
                         },
                         new
                         {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Id = new Guid("33333333-3333-4333-8333-333333333333"),
                             ConcurrencyStamp = "ad0cf025-e031-47d2-80ef-6d1d6e1c5f2e",
                             Name = "Shipper",
                             NormalizedName = "SHIPPER"
                         },
                         new
                         {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            Id = new Guid("44444444-4444-4444-8444-444444444444"),
                             ConcurrencyStamp = "cb8ae184-e6d3-4ddd-8b29-37b836e2cd7f",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
@@ -173,7 +173,7 @@ namespace AuthenticationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            Id = new Guid("55555555-5555-4555-8555-555555555555"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "SEED-ADMIN-CONCURRENCY-STAMP",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -315,8 +315,8 @@ namespace AuthenticationService.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = new Guid("55555555-5555-5555-5555-555555555555"),
-                            RoleId = new Guid("44444444-4444-4444-4444-444444444444")
+                            UserId = new Guid("55555555-5555-4555-8555-555555555555"),
+                            RoleId = new Guid("44444444-4444-4444-8444-444444444444")
                         });
                 });
 

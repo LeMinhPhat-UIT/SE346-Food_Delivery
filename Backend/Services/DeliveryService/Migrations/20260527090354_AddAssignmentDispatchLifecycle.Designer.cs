@@ -78,31 +78,31 @@ namespace DeliveryService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("61111111-1111-1111-1111-111111111111"),
+                            Id = new Guid("61111111-1111-4111-8111-111111111111"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DeliveryLat = 10.7700m,
                             DeliveryLng = 106.6950m,
                             DistanceKm = 2.2m,
                             EstimatedTime = 15,
-                            OrderId = new Guid("62222222-2222-2222-2222-222222222222"),
+                            OrderId = new Guid("62222222-2222-4222-8222-222222222222"),
                             PickupLat = 10.7769m,
                             PickupLng = 106.7009m,
-                            ShipperId = new Guid("56565656-5656-5656-5656-565656565656"),
+                            ShipperId = new Guid("56565656-5656-4656-8656-565656565656"),
                             Status = "Assigned"
                         },
                         new
                         {
-                            Id = new Guid("74444444-4444-4444-4444-444444444444"),
+                            Id = new Guid("74444444-4444-4444-8444-444444444444"),
                             ActualTime = 14,
                             CreatedAt = new DateTime(2025, 12, 31, 23, 0, 0, 0, DateTimeKind.Utc),
                             DeliveryLat = 10.7770m,
                             DeliveryLng = 106.7002m,
                             DistanceKm = 1.8m,
                             EstimatedTime = 12,
-                            OrderId = new Guid("75555555-5555-5555-5555-555555555555"),
+                            OrderId = new Guid("75555555-5555-4555-8555-555555555555"),
                             PickupLat = 10.7821m,
                             PickupLng = 106.6925m,
-                            ShipperId = new Guid("56565656-5656-5656-5656-565656565656"),
+                            ShipperId = new Guid("56565656-5656-4656-8656-565656565656"),
                             Status = "Delivered"
                         });
                 });
@@ -161,12 +161,12 @@ namespace DeliveryService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("77777777-7777-7777-7777-777777777777"),
+                            Id = new Guid("77777777-7777-4777-8777-777777777777"),
                             CreatedAt = new DateTime(2025, 12, 31, 23, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Customer reported one missing item from the delivered order.",
-                            OrderId = new Guid("75555555-5555-5555-5555-555555555555"),
+                            OrderId = new Guid("75555555-5555-4555-8555-555555555555"),
                             ProofUrl = new[] { "https://example.com/incidents/order-2-photo-1.jpg", "https://example.com/incidents/order-2-photo-2.jpg" },
-                            ReportedBy = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            ReportedBy = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                             Resolution = "Awaiting support review and customer confirmation.",
                             Status = "Investigating",
                             Type = "MissingItem"
@@ -275,23 +275,23 @@ namespace DeliveryService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("64444444-4444-4444-4444-444444444444"),
+                            Id = new Guid("64444444-4444-4444-8444-444444444444"),
                             AcceptedAt = new DateTime(2026, 1, 1, 0, 1, 0, 0, DateTimeKind.Utc),
                             AssignedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CustomerId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            CustomerId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                             DeliveryFee = 21000m,
                             DistanceKm = 2.2m,
                             DropoffAddress = "Seed dropoff address",
                             DropoffLatitude = 10.7700m,
                             DropoffLongitude = 106.6950m,
-                            MerchantId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            MerchantId = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                             MerchantName = "Seed Merchant",
-                            OrderId = new Guid("62222222-2222-2222-2222-222222222222"),
+                            OrderId = new Guid("62222222-2222-4222-8222-222222222222"),
                             OrderNumber = "ORD-SEED-0001",
                             PickupAddress = "Seed pickup address",
                             PickupLatitude = 10.7769m,
                             PickupLongitude = 106.7009m,
-                            ShipperId = new Guid("56565656-5656-5656-5656-565656565656"),
+                            ShipperId = new Guid("56565656-5656-4656-8656-565656565656"),
                             Status = "Accepted"
                         });
                 });
@@ -352,13 +352,13 @@ namespace DeliveryService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("66666666-6666-6666-6666-666666666666"),
+                            Id = new Guid("66666666-6666-4666-8666-666666666666"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CurrentLat = 10.7735m,
                             CurrentLng = 106.6975m,
-                            CurrentOrderId = new Guid("62222222-2222-2222-2222-222222222222"),
+                            CurrentOrderId = new Guid("62222222-2222-4222-8222-222222222222"),
                             LastSeenAt = new DateTime(2026, 1, 1, 0, 5, 0, 0, DateTimeKind.Utc),
-                            ShipperId = new Guid("56565656-5656-5656-5656-565656565656"),
+                            ShipperId = new Guid("56565656-5656-4656-8656-565656565656"),
                             Status = "Delivering"
                         });
                 });
@@ -407,25 +407,25 @@ namespace DeliveryService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("65555555-5555-5555-5555-555555555555"),
+                            Id = new Guid("65555555-5555-4555-8555-555555555555"),
                             CorrelationId = "seed-delivery",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Latitude = 10.7735m,
                             Longitude = 106.6975m,
-                            OrderId = new Guid("62222222-2222-2222-2222-222222222222"),
+                            OrderId = new Guid("62222222-2222-4222-8222-222222222222"),
                             RecordedAt = new DateTime(2026, 1, 1, 0, 5, 0, 0, DateTimeKind.Utc),
-                            ShipperId = new Guid("56565656-5656-5656-5656-565656565656")
+                            ShipperId = new Guid("56565656-5656-4656-8656-565656565656")
                         },
                         new
                         {
-                            Id = new Guid("76666666-6666-6666-6666-666666666666"),
+                            Id = new Guid("76666666-6666-4666-8666-666666666666"),
                             CorrelationId = "seed-delivery-completed",
                             CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Latitude = 10.7785m,
                             Longitude = 106.6990m,
-                            OrderId = new Guid("75555555-5555-5555-5555-555555555555"),
+                            OrderId = new Guid("75555555-5555-4555-8555-555555555555"),
                             RecordedAt = new DateTime(2026, 1, 1, 0, 25, 0, 0, DateTimeKind.Utc),
-                            ShipperId = new Guid("56565656-5656-5656-5656-565656565656")
+                            ShipperId = new Guid("56565656-5656-4656-8656-565656565656")
                         });
                 });
 #pragma warning restore 612, 618

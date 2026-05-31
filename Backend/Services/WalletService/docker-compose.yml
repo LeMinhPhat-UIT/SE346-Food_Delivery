@@ -17,7 +17,7 @@ services:
       JWT_SECRET: ${JWT_KEY:-8f3a2c7d9e1b4f6a8c2d7e9f1a3b5c7d8e1f4a6b9c2d7e8f1a3b5c7d9e1f4a6b}
       JWT_ISSUER: ${JWT_ISSUER:-https://auth.myapp.dev}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-https://api.myapp.dev}
-      USER_SERVICE_URL: ${WALLET_USER_SERVICE_URL:-http://user-service:8080/api/users}
+      USER_SERVICE_URL: ${WALLET_USER_SERVICE_URL:-http://user-service:8080/api}
       ORDER_SERVICE_URL: ${WALLET_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
       DELIVERY_SERVICE_URL: ${WALLET_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-notify-exchange}

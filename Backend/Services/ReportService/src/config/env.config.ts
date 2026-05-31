@@ -11,7 +11,7 @@ const envSchema = z.object({
   JWT_AUDIENCE: z.string().optional(),
   RABBITMQ_URL: z.string().url("RABBITMQ_URL must be a valid URL"),
   RABBITMQ_EXCHANGE: z.string().min(1).default("notify-exchange"),
-  USER_SERVICE_URL: z.string().url().default("http://user-service:8080/api/users"),
+  USER_SERVICE_URL: z.string().url().default("http://user-service:8080/api"),
   ORDER_SERVICE_URL: z.string().url().default("http://order-service:8080/api/orders"),
   DELIVERY_SERVICE_URL: z.string().url().default("http://delivery-service:8080/api/deliveries"),
   REPORT_DB_SCHEMA: z.string().default("public"),

@@ -54,28 +54,28 @@ namespace AuthenticationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Id = new Guid("11111111-1111-4111-8111-111111111111"),
                             ConcurrencyStamp = "2e2a574e-c366-4ccf-8070-84c92d3e1ac8",
                             Name = "Customer",
                             NormalizedName = "CUSTOMER"
                         },
                         new
                         {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Id = new Guid("22222222-2222-4222-8222-222222222222"),
                             ConcurrencyStamp = "9b3d1f32-bf61-4a0f-9b19-2a5eea11b963",
                             Name = "Merchant",
                             NormalizedName = "MERCHANT"
                         },
                         new
                         {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Id = new Guid("33333333-3333-4333-8333-333333333333"),
                             ConcurrencyStamp = "21c23bfd-d356-4fae-a1a4-73fb97966d89",
                             Name = "Shipper",
                             NormalizedName = "SHIPPER"
                         },
                         new
                         {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            Id = new Guid("44444444-4444-4444-8444-444444444444"),
                             ConcurrencyStamp = "5d9a7718-e52a-458d-ba86-d784eb280437",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
@@ -173,7 +173,7 @@ namespace AuthenticationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            Id = new Guid("55555555-5555-4555-8555-555555555555"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "SEED-ADMIN-CONCURRENCY-STAMP",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -193,7 +193,7 @@ namespace AuthenticationService.Migrations
                         },
                         new
                         {
-                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Id = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "SEED-CUSTOMER-CONCURRENCY-STAMP",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -213,7 +213,7 @@ namespace AuthenticationService.Migrations
                         },
                         new
                         {
-                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            Id = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "SEED-MERCHANT-CONCURRENCY-STAMP",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -233,7 +233,7 @@ namespace AuthenticationService.Migrations
                         },
                         new
                         {
-                            Id = new Guid("99999999-9999-9999-9999-999999999999"),
+                            Id = new Guid("99999999-9999-4999-9999-999999999999"),
                             AccessFailedCount = 0,
                             ConcurrencyStamp = "SEED-SHIPPER-CONCURRENCY-STAMP",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -375,23 +375,23 @@ namespace AuthenticationService.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = new Guid("55555555-5555-5555-5555-555555555555"),
-                            RoleId = new Guid("44444444-4444-4444-4444-444444444444")
+                            UserId = new Guid("55555555-5555-4555-8555-555555555555"),
+                            RoleId = new Guid("44444444-4444-4444-8444-444444444444")
                         },
                         new
                         {
-                            UserId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                            RoleId = new Guid("11111111-1111-1111-1111-111111111111")
+                            UserId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
+                            RoleId = new Guid("11111111-1111-4111-8111-111111111111")
                         },
                         new
                         {
-                            UserId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                            RoleId = new Guid("22222222-2222-2222-2222-222222222222")
+                            UserId = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
+                            RoleId = new Guid("22222222-2222-4222-8222-222222222222")
                         },
                         new
                         {
-                            UserId = new Guid("99999999-9999-9999-9999-999999999999"),
-                            RoleId = new Guid("33333333-3333-3333-3333-333333333333")
+                            UserId = new Guid("99999999-9999-4999-9999-999999999999"),
+                            RoleId = new Guid("33333333-3333-4333-8333-333333333333")
                         });
                 });
 

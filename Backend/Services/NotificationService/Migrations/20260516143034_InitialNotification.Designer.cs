@@ -66,14 +66,14 @@ namespace NotificationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("72222222-2222-2222-2222-222222222222"),
+                            Id = new Guid("72222222-2222-4222-8222-222222222222"),
                             Body = "Your account is ready to receive order updates.",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsRead = false,
                             ReferenceType = "user",
                             Title = "Welcome to Food Delivery",
                             Type = "system",
-                            UserId = new Guid("71111111-1111-1111-1111-111111111111")
+                            UserId = new Guid("71111111-1111-4111-8111-111111111111")
                         });
                 });
 
@@ -112,12 +112,12 @@ namespace NotificationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("73333333-3333-3333-3333-333333333333"),
+                            Id = new Guid("73333333-3333-4333-8333-333333333333"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DeviceToken = "seed-device-token",
                             DeviceType = 1,
                             IsActive = true,
-                            UserId = new Guid("71111111-1111-1111-1111-111111111111")
+                            UserId = new Guid("71111111-1111-4111-8111-111111111111")
                         });
                 });
 #pragma warning restore 612, 618

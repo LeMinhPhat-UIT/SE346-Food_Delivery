@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using DeliveryService.Persistences;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -40,8 +40,8 @@ namespace DeliveryService.Migrations
                 UPDATE "ShipperAssignments"
                 SET "DeliveryFee" = 21000,
                     "DistanceKm" = 2.2,
-                    "MerchantId" = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-                WHERE "Id" = '64444444-4444-4444-4444-444444444444';
+                    "MerchantId" = 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb'
+                WHERE "Id" = '64444444-4444-4444-8444-444444444444';
                 """);
         }
 

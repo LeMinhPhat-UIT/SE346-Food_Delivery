@@ -8,18 +8,18 @@ namespace DeliveryService.Persistences
     {
         public static void InitializeData(ModelBuilder modelBuilder)
         {
-            var trackingId = Guid.Parse("61111111-1111-1111-1111-111111111111");
-            var orderId = Guid.Parse("62222222-2222-2222-2222-222222222222");
-            var shipperId = Guid.Parse("56565656-5656-5656-5656-565656565656");
-            var assignmentId = Guid.Parse("64444444-4444-4444-4444-444444444444");
-            var locationId = Guid.Parse("65555555-5555-5555-5555-555555555555");
-            var availabilityId = Guid.Parse("66666666-6666-6666-6666-666666666666");
-            var customerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-            var merchantId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-            var secondTrackingId = Guid.Parse("74444444-4444-4444-4444-444444444444");
-            var secondOrderId = Guid.Parse("75555555-5555-5555-5555-555555555555");
-            var secondLocationId = Guid.Parse("76666666-6666-6666-6666-666666666666");
-            var incidentId = Guid.Parse("77777777-7777-7777-7777-777777777777");
+            var trackingId = Guid.Parse("61111111-1111-4111-8111-111111111111");
+            var orderId = Guid.Parse("62222222-2222-4222-8222-222222222222");
+            var shipperId = Guid.Parse("56565656-5656-4656-8656-565656565656");
+            var assignmentId = Guid.Parse("64444444-4444-4444-8444-444444444444");
+            var locationId = Guid.Parse("65555555-5555-4555-8555-555555555555");
+            var availabilityId = Guid.Parse("66666666-6666-4666-8666-666666666666");
+            var customerId = Guid.Parse("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa");
+            var merchantId = Guid.Parse("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb");
+            var secondTrackingId = Guid.Parse("74444444-4444-4444-8444-444444444444");
+            var secondOrderId = Guid.Parse("75555555-5555-4555-8555-555555555555");
+            var secondLocationId = Guid.Parse("76666666-6666-4666-8666-666666666666");
+            var incidentId = Guid.Parse("77777777-7777-4777-8777-777777777777");
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
 
             modelBuilder.Entity<DeliveryTracking>().HasData(

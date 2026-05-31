@@ -100,49 +100,49 @@ namespace UserService.Migrations
             migrationBuilder.UpdateData(
                 table: "Merchants",
                 keyColumn: "Id",
-                keyValue: new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                keyValue: new Guid("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
                 column: "Status",
                 value: "Approved");
 
             migrationBuilder.UpdateData(
                 table: "ShipperRequest",
                 keyColumn: "Id",
-                keyValue: new Guid("34343434-3434-3434-3434-343434343434"),
+                keyValue: new Guid("34343434-3434-4434-8434-343434343434"),
                 column: "VerificationStatus",
                 value: "Approved");
 
             migrationBuilder.UpdateData(
                 table: "Shippers",
                 keyColumn: "Id",
-                keyValue: new Guid("56565656-5656-5656-5656-565656565656"),
+                keyValue: new Guid("56565656-5656-4656-8656-565656565656"),
                 column: "Status",
                 value: "Approved");
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("55555555-5555-5555-5555-555555555555"),
+                keyValue: new Guid("55555555-5555-4555-8555-555555555555"),
                 column: "Status",
                 value: "Active");
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("99999999-9999-9999-9999-999999999999"),
+                keyValue: new Guid("99999999-9999-4999-9999-999999999999"),
                 column: "Status",
                 value: "Active");
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                keyValue: new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                 column: "Status",
                 value: "Active");
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                keyValue: new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                 column: "Status",
                 value: "Active");
         }
@@ -239,49 +239,49 @@ namespace UserService.Migrations
             migrationBuilder.UpdateData(
                 table: "Merchants",
                 keyColumn: "Id",
-                keyValue: new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                keyValue: new Guid("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
                 column: "Status",
                 value: 1);
 
             migrationBuilder.UpdateData(
                 table: "ShipperRequest",
                 keyColumn: "Id",
-                keyValue: new Guid("34343434-3434-3434-3434-343434343434"),
+                keyValue: new Guid("34343434-3434-4434-8434-343434343434"),
                 column: "VerificationStatus",
                 value: 1);
 
             migrationBuilder.UpdateData(
                 table: "Shippers",
                 keyColumn: "Id",
-                keyValue: new Guid("56565656-5656-5656-5656-565656565656"),
+                keyValue: new Guid("56565656-5656-4656-8656-565656565656"),
                 column: "Status",
                 value: 1);
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("55555555-5555-5555-5555-555555555555"),
+                keyValue: new Guid("55555555-5555-4555-8555-555555555555"),
                 column: "Status",
                 value: 0);
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("99999999-9999-9999-9999-999999999999"),
+                keyValue: new Guid("99999999-9999-4999-9999-999999999999"),
                 column: "Status",
                 value: 0);
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                keyValue: new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                 column: "Status",
                 value: 0);
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
-                keyValue: new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                keyValue: new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                 column: "Status",
                 value: 0);
         }

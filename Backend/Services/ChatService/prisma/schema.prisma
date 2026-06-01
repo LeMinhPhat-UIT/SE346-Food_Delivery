@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ChatConversationType {
+  ORDER_MERCHANT
+  ORDER_SHIPPER
+}
+
+enum ChatSenderRole {
+  CUSTOMER
+  MERCHANT
+  SHIPPER
+  SYSTEM
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+enum ChatMessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+model ChatConversation {
+  id                  String              @id @default(uuid())
+  conversationType    ChatConversationType
+  orderId             String
+  deliveryId          String?
+  customerId          String
+  merchantId          String
+  shipperId           String?
+  lastMessageAt       DateTime?
+  lastMessagePreview   String?             @db.Text
+  unreadCustomerCount Int                 @default(0)
+  unreadMerchantCount Int                 @default(0)
+  unreadShipperCount  Int                 @default(0)
+  archivedAt          DateTime?
+  messages            ChatMessage[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@unique([orderId, conversationType])
+  @@index([customerId])
+  @@index([merchantId])
+  @@index([shipperId])
+  @@index([updatedAt])
+}
+
+model ChatMessage {
+  id             String            @id @default(uuid())
+  conversationId  String
+  conversation    ChatConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderRole     ChatSenderRole
+  senderId       String
+  content        String            @db.Text
+  messageType    ChatMessageType   @default(TEXT)
+  status         ChatMessageStatus  @default(SENT)
+  readAt         DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model ChatEventInbox {
+  id          String   @id @default(uuid())
+  messageId   String   @unique
+  eventType   String
+  routingKey  String
+  aggregateId String?
+  payload     Json
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([aggregateId])
+}

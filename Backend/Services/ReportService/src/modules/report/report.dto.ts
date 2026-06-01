@@ -7,6 +7,9 @@ export type AdminDailyMetricDto = {
   metricDate: string;
   grossRevenue: number;
   netRevenue: number;
+  platformRevenue: number;
+  merchantCommissionTotal: number;
+  shipperCommissionTotal: number;
   orderCount: number;
   paidOrderCount: number;
   cancelledOrderCount: number;
@@ -25,6 +28,7 @@ export type MerchantDailyMetricDto = {
   merchantId: string;
   grossRevenue: number;
   netRevenue: number;
+  merchantCommissionTotal: number;
   orderCount: number;
   paidOrderCount: number;
   cancelledOrderCount: number;
@@ -38,6 +42,9 @@ export type MerchantDailyMetricDto = {
 export type ShipperDailyMetricDto = {
   metricDate: string;
   shipperId: string;
+  grossRevenue: number;
+  netEarnings: number;
+  shipperCommissionTotal: number;
   assignedOrderCount: number;
   pickedUpOrderCount: number;
   deliveredOrderCount: number;
@@ -53,6 +60,7 @@ export type TopMerchantDto = {
   metricDate: string;
   grossRevenue: number;
   netRevenue: number;
+  merchantCommissionTotal: number;
   orderCount: number;
   paidOrderCount: number;
   cancelledOrderCount: number;
@@ -66,6 +74,9 @@ export type TopMerchantDto = {
 export type TopShipperDto = {
   metricDate: string;
   shipperId: string;
+  grossRevenue: number;
+  netEarnings: number;
+  shipperCommissionTotal: number;
   assignedOrderCount: number;
   pickedUpOrderCount: number;
   deliveredOrderCount: number;

@@ -65,44 +65,28 @@ export class UserServiceClient {
     userId: string,
     token?: string,
   ): Promise<MerchantProfile | null> {
-    let pageIndex = 1;
-    const pageSize = 100;
+    const response = await fetch(`${env.USER_SERVICE_URL}/merchants/by-user/${userId}`, {
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : undefined,
+    });
 
-    while (true) {
-      const url = new URL(`${env.USER_SERVICE_URL}/merchants`);
-      url.searchParams.set("pageIndex", String(pageIndex));
-      url.searchParams.set("pageSize", String(pageSize));
-
-      const response = await fetch(url, {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
-      });
-
-      const payload = await this.parseResponse<PagedResult<MerchantProfile>>(
-        response,
-        "Failed to resolve merchant context from User Service",
-      );
-      const items = payload.data?.items ?? [];
-      const matchedMerchant = items.find((merchant) => merchant.userId === userId);
-
-      if (matchedMerchant) {
-        return matchedMerchant;
-      }
-
-      const hasNextPage =
-        payload.data?.hasNextPage ??
-        ((payload.data?.paginationRequest?.pageIndex ?? pageIndex) <
-          (payload.data?.totalPages ?? pageIndex));
-
-      if (!hasNextPage) {
-        return null;
-      }
-
-      pageIndex += 1;
+    if (response.status === 404) {
+      return null;
     }
+
+    const payload = await this.parseResponse<MerchantProfile>(
+      response,
+      "Failed to resolve merchant context from User Service",
+    );
+
+    if (!payload.data) {
+      return null;
+    }
+
+    return payload.data;
   }
 
   async getUserAddressById(
@@ -111,7 +95,7 @@ export class UserServiceClient {
     token: string,
   ): Promise<UserAddress> {
     const response = await fetch(
-      `${env.USER_SERVICE_URL}/${userId}/addresses/${addressId}`,
+      `${env.USER_SERVICE_URL}/users/${userId}/addresses/${addressId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -1,0 +1,29 @@
+services:
+  chat-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat-service
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: development
+      PORT: ${CHAT_SERVICE_CONTAINER_PORT:-8080}
+      DIRECT_URL: ${DIRECT_URL:-}
+      JWT_ISSUER: ${JWT_ISSUER:-https://auth.myapp.dev}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-https://api.myapp.dev}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://appuser:app_password@rabbitmq:5672}
+      USER_SERVICE_URL: ${CHAT_USER_SERVICE_URL:-http://user-service:8080/api}
+      ORDER_SERVICE_URL: ${CHAT_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
+      DELIVERY_SERVICE_URL: ${CHAT_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
+    ports:
+      - "${CHAT_SERVICE_HOST_PORT:-8090}:${CHAT_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      - rabbitmq
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge

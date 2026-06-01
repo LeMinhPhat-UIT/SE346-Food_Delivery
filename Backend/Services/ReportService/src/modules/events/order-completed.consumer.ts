@@ -1,4 +1,5 @@
 import { prisma } from "../../prisma/prisma.client";
+import { env } from "../../config/env.config";
 import { logger } from "../../utils/logger";
 import { RabbitConsumerMessage, RabbitMqClient } from "../../infrastructure/rabbitmq.client";
 
@@ -8,6 +9,8 @@ type OrderCompletedEventPayload = {
   MerchantId?: string;
   MerchantStoreName?: string;
   UserId?: string;
+  Data?: Record<string, unknown>;
+  data?: Record<string, unknown>;
   TotalAmount?: number | string;
   PaymentMethod?: string;
   Note?: string | null;
@@ -64,7 +67,8 @@ export class OrderCompletedConsumer {
     }
 
     try {
-      const payload = JSON.parse(message.content.toString("utf8")) as OrderCompletedEventPayload;
+      const rawPayload = JSON.parse(message.content.toString("utf8")) as OrderCompletedEventPayload;
+      const payload = this.unwrapPayload(rawPayload);
       const orderId = payload.OrderId ?? payload.orderId;
       const orderNumber = payload.OrderNumber ?? payload.orderNumber;
       const merchantId = payload.MerchantId ?? payload.merchantId;
@@ -112,7 +116,7 @@ export class OrderCompletedConsumer {
         });
 
         if (!existingOrder) {
-          await tx.reportOrderFact.create({
+        await tx.reportOrderFact.create({
             data: {
               orderId,
               orderNumber,
@@ -185,49 +189,89 @@ export class OrderCompletedConsumer {
     }
   }
 
+  private unwrapPayload(payload: OrderCompletedEventPayload) {
+    const data = payload.Data ?? payload.data;
+
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return {
+        ...payload,
+        ...data,
+        Data: data,
+      } as OrderCompletedEventPayload & Record<string, unknown>;
+    }
+
+    return payload;
+  }
+
   private async rebuildAdminDailyMetric(tx: any, metricDate: Date) {
     const range = this.buildDateRange(metricDate);
-    const orders = await tx.reportOrderFact.findMany({
-      where: {
-        createdAt: {
-          gte: range.from,
-          lt: range.to,
-        },
-      },
-      select: {
-        customerId: true,
-        merchantId: true,
-        paymentMethod: true,
-        paymentStatus: true,
-        orderStatus: true,
-        subtotal: true,
-        deliveryFee: true,
-        discountAmount: true,
-        totalAmount: true,
-      },
-    });
+        const orders = await tx.reportOrderFact.findMany({
+          where: {
+            createdAt: {
+              gte: range.from,
+              lt: range.to,
+            },
+          },
+          select: {
+            customerId: true,
+            merchantId: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            orderStatus: true,
+            subtotal: true,
+            deliveryFee: true,
+            discountAmount: true,
+            totalAmount: true,
+          },
+        });
 
-    const deliveries = await tx.reportDeliveryFact.findMany({
-      where: {
-        createdAt: {
-          gte: range.from,
-          lt: range.to,
-        },
-      },
-      select: {
-        shipperId: true,
-      },
-    });
+        const deliveries = await tx.reportDeliveryFact.findMany({
+          where: {
+            createdAt: {
+              gte: range.from,
+              lt: range.to,
+            },
+          },
+          select: {
+            shipperId: true,
+            status: true,
+            deliveryFee: true,
+            deliveredAt: true,
+          },
+        });
 
-    const summary = orders.reduce(
-      (acc: any, row: any) => ({
-        grossRevenue: acc.grossRevenue + this.toDecimal(row.subtotal) - this.toDecimal(row.discountAmount) - this.toDecimal(row.deliveryFee),
-        netRevenue: acc.netRevenue + this.toDecimal(row.totalAmount),
+        const merchantCommissionTotal = orders.reduce(
+          (acc: number, row: any) =>
+            acc +
+            this.roundMoney(
+              this.toDecimal(row.totalAmount) * (env.WALLET_MERCHANT_COMMISSION_RATE / 100),
+            ),
+          0,
+        );
+
+        const shipperCommissionTotal = deliveries.reduce(
+          (acc: number, row: any) =>
+            acc +
+            (row.deliveredAt || row.status === "DELIVERED"
+              ? this.roundMoney(
+                  this.toDecimal(row.deliveryFee) * (env.WALLET_SHIPPER_COMMISSION_RATE / 100),
+                )
+              : 0),
+          0,
+        );
+
+        const summary = orders.reduce(
+          (acc: any, row: any) => ({
+        grossRevenue: this.roundMoney(acc.grossRevenue + this.toDecimal(row.totalAmount)),
+        netRevenue: acc.netRevenue,
+        platformRevenue: acc.platformRevenue,
+        merchantCommissionTotal: acc.merchantCommissionTotal,
+        shipperCommissionTotal: acc.shipperCommissionTotal,
         orderCount: acc.orderCount + 1,
         paidOrderCount: acc.paidOrderCount + (row.paymentStatus === "PAID" ? 1 : 0),
         cancelledOrderCount: acc.cancelledOrderCount + (row.orderStatus === "CANCELLED" ? 1 : 0),
-        deliveryFeeTotal: acc.deliveryFeeTotal + this.toDecimal(row.deliveryFee),
-        discountTotal: acc.discountTotal + this.toDecimal(row.discountAmount),
+        deliveryFeeTotal: this.roundMoney(acc.deliveryFeeTotal + this.toDecimal(row.deliveryFee)),
+        discountTotal: this.roundMoney(acc.discountTotal + this.toDecimal(row.discountAmount)),
         voucherUsageCount: acc.voucherUsageCount + (this.toDecimal(row.discountAmount) > 0 ? 1 : 0),
         codOrderCount: acc.codOrderCount + (row.paymentMethod === "COD" ? 1 : 0),
         vnpayOrderCount: acc.vnpayOrderCount + (row.paymentMethod === "VNPAY" ? 1 : 0),
@@ -238,6 +282,9 @@ export class OrderCompletedConsumer {
       {
         grossRevenue: 0,
         netRevenue: 0,
+        platformRevenue: 0,
+        merchantCommissionTotal: 0,
+        shipperCommissionTotal: 0,
         orderCount: 0,
         paidOrderCount: 0,
         cancelledOrderCount: 0,
@@ -255,6 +302,10 @@ export class OrderCompletedConsumer {
     summary.uniqueCustomers = new Set(orders.map((row: any) => row.customerId)).size;
     summary.uniqueMerchants = new Set(orders.map((row: any) => row.merchantId)).size;
     summary.uniqueShippers = new Set(deliveries.map((row: any) => row.shipperId).filter(Boolean)).size;
+    summary.merchantCommissionTotal = this.roundMoney(merchantCommissionTotal);
+    summary.shipperCommissionTotal = this.roundMoney(shipperCommissionTotal);
+    summary.platformRevenue = this.roundMoney(merchantCommissionTotal + shipperCommissionTotal);
+    summary.netRevenue = summary.platformRevenue;
 
     await tx.reportAdminDailyMetric.upsert({
       where: { metricDate },
@@ -286,21 +337,34 @@ export class OrderCompletedConsumer {
       },
     });
 
+    const merchantCommissionTotal = orders.reduce(
+      (acc: number, row: any) =>
+        acc +
+        this.roundMoney(
+          this.toDecimal(row.totalAmount) * (env.WALLET_MERCHANT_COMMISSION_RATE / 100),
+        ),
+      0,
+    );
+
     const summary = orders.reduce(
       (acc: any, row: any) => ({
-        grossRevenue: acc.grossRevenue + this.toDecimal(row.subtotal) - this.toDecimal(row.discountAmount) - this.toDecimal(row.deliveryFee),
-        netRevenue: acc.netRevenue + this.toDecimal(row.totalAmount),
+        grossRevenue: this.roundMoney(
+          acc.grossRevenue + this.toDecimal(row.subtotal) - this.toDecimal(row.discountAmount),
+        ),
+        netRevenue: acc.netRevenue,
+        merchantCommissionTotal: acc.merchantCommissionTotal,
         orderCount: acc.orderCount + 1,
         paidOrderCount: acc.paidOrderCount + (row.paymentStatus === "PAID" ? 1 : 0),
         cancelledOrderCount: acc.cancelledOrderCount + (row.orderStatus === "CANCELLED" ? 1 : 0),
-        subtotalRevenue: acc.subtotalRevenue + this.toDecimal(row.subtotal),
-        deliveryFeeRevenue: acc.deliveryFeeRevenue + this.toDecimal(row.deliveryFee),
-        discountTotal: acc.discountTotal + this.toDecimal(row.discountAmount),
+        subtotalRevenue: this.roundMoney(acc.subtotalRevenue + this.toDecimal(row.subtotal)),
+        deliveryFeeRevenue: this.roundMoney(acc.deliveryFeeRevenue + this.toDecimal(row.deliveryFee)),
+        discountTotal: this.roundMoney(acc.discountTotal + this.toDecimal(row.discountAmount)),
         voucherUsageCount: acc.voucherUsageCount + (this.toDecimal(row.discountAmount) > 0 ? 1 : 0),
       }),
       {
         grossRevenue: 0,
         netRevenue: 0,
+        merchantCommissionTotal: 0,
         orderCount: 0,
         paidOrderCount: 0,
         cancelledOrderCount: 0,
@@ -312,6 +376,8 @@ export class OrderCompletedConsumer {
     );
 
     const avgOrderValue = summary.orderCount ? this.roundMoney(summary.netRevenue / summary.orderCount) : 0;
+    summary.merchantCommissionTotal = this.roundMoney(merchantCommissionTotal);
+    summary.netRevenue = this.roundMoney(summary.grossRevenue - merchantCommissionTotal);
 
     await tx.reportMerchantDailyMetric.upsert({
       where: {

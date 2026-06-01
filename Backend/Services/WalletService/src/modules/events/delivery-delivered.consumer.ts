@@ -10,6 +10,8 @@ type DeliveryDeliveredEventPayload = {
   CustomerId?: string;
   ShipperId?: string;
   MerchantId?: string;
+  Data?: Record<string, unknown>;
+  data?: Record<string, unknown>;
   DeliveryFee?: number | string;
   DistanceKm?: number | string;
   DeliveryAt?: string;
@@ -66,7 +68,8 @@ export class DeliveryDeliveredConsumer {
     }
 
     try {
-      const payload = JSON.parse(message.content.toString("utf8")) as DeliveryDeliveredEventPayload;
+      const rawPayload = JSON.parse(message.content.toString("utf8")) as DeliveryDeliveredEventPayload;
+      const payload = this.unwrapPayload(rawPayload);
       const orderId = payload.OrderId ?? payload.orderId;
       const orderNumber = payload.OrderNumber ?? payload.orderNumber;
       const shipperId = payload.ShipperId ?? payload.shipperId;
@@ -231,6 +234,20 @@ export class DeliveryDeliveredConsumer {
       logger.error("Failed to process delivery.delivered event", error);
       channel.nack(message, false, false);
     }
+  }
+
+  private unwrapPayload(payload: DeliveryDeliveredEventPayload) {
+    const data = payload.Data ?? payload.data;
+
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return {
+        ...payload,
+        ...data,
+        Data: data,
+      } as DeliveryDeliveredEventPayload & Record<string, unknown>;
+    }
+
+    return payload;
   }
 
   private roundMoney(value: number) {

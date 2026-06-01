@@ -84,6 +84,11 @@ services:
       file: ./Services/WalletService/docker-compose.yml
       service: wallet-service
 
+  chat-service:
+    extends:
+      file: ./Services/ChatService/docker-compose.yml
+      service: chat-service
+
   order-db:
     extends:
       file: ./Services/OrderService/docker-compose.yml

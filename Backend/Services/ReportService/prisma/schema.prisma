@@ -149,6 +149,9 @@ model ReportAdminDailyMetric {
   metricDate           DateTime @db.Date
   grossRevenue         Decimal  @default(0) @db.Decimal(14, 2)
   netRevenue           Decimal  @default(0) @db.Decimal(14, 2)
+  platformRevenue      Decimal  @default(0) @db.Decimal(14, 2)
+  merchantCommissionTotal Decimal @default(0) @db.Decimal(14, 2)
+  shipperCommissionTotal Decimal @default(0) @db.Decimal(14, 2)
   orderCount           Int      @default(0)
   paidOrderCount       Int      @default(0)
   cancelledOrderCount   Int      @default(0)
@@ -172,6 +175,7 @@ model ReportMerchantDailyMetric {
   merchantId           String   @db.Uuid
   grossRevenue         Decimal  @default(0) @db.Decimal(14, 2)
   netRevenue           Decimal  @default(0) @db.Decimal(14, 2)
+  merchantCommissionTotal Decimal @default(0) @db.Decimal(14, 2)
   orderCount           Int      @default(0)
   paidOrderCount       Int      @default(0)
   cancelledOrderCount   Int      @default(0)
@@ -191,6 +195,9 @@ model ReportShipperDailyMetric {
   id                      String   @id @default(uuid()) @db.Uuid
   metricDate              DateTime @db.Date
   shipperId               String   @db.Uuid
+  grossRevenue            Decimal  @default(0) @db.Decimal(14, 2)
+  netEarnings             Decimal  @default(0) @db.Decimal(14, 2)
+  shipperCommissionTotal  Decimal  @default(0) @db.Decimal(14, 2)
   assignedOrderCount      Int      @default(0)
   pickedUpOrderCount      Int      @default(0)
   deliveredOrderCount     Int      @default(0)

@@ -20,53 +20,30 @@ type UserServiceApiResponse<T> = {
 
 export class UserServiceClient {
   async getMerchantByUserId(userId: string, token: string) {
-    let pageIndex = 1;
-    const pageSize = 100;
+    const url = new URL(`${env.USER_SERVICE_URL}/merchants/by-user/${userId}`);
 
-    while (true) {
-      const url = new URL(`${env.USER_SERVICE_URL}/merchants`);
-      url.searchParams.set("PageIndex", String(pageIndex));
-      url.searchParams.set("PageSize", String(pageSize));
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          "Failed to resolve merchant profile from User Service"
-        );
-      }
-
-      const payload =
-        (await response.json()) as UserServiceApiResponse<UserServicePagedResult<MerchantResponse>>;
-
-      if (!payload.success) {
-        throw new ApiError(
-          HTTP_STATUS.BAD_REQUEST,
-          payload.errors?.join(", ") || "Failed to resolve merchant profile"
-        );
-      }
-
-      const merchant = payload.data.items.find((item) => item.userId === userId);
-
-      if (merchant) {
-        return merchant;
-      }
-
-      if (pageIndex >= payload.data.totalPages) {
-        break;
-      }
-
-      pageIndex += 1;
+    if (!response.ok) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Failed to resolve merchant profile from User Service"
+      );
     }
 
-    throw new ApiError(
-      HTTP_STATUS.FORBIDDEN,
-      "Merchant profile not found for current user"
-    );
+    const payload = (await response.json()) as UserServiceApiResponse<MerchantResponse>;
+
+    if (!payload.success) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        payload.errors?.join(", ") || "Failed to resolve merchant profile"
+      );
+    }
+
+    return payload.data;
   }
 }

@@ -14,6 +14,8 @@ const envSchema = z.object({
   USER_SERVICE_URL: z.string().url().default("http://user-service:8080/api"),
   ORDER_SERVICE_URL: z.string().url().default("http://order-service:8080/api/orders"),
   DELIVERY_SERVICE_URL: z.string().url().default("http://delivery-service:8080/api/deliveries"),
+  WALLET_MERCHANT_COMMISSION_RATE: z.coerce.number().min(0).max(100).default(22),
+  WALLET_SHIPPER_COMMISSION_RATE: z.coerce.number().min(0).max(100).default(32),
   REPORT_DB_SCHEMA: z.string().default("public"),
 });
 

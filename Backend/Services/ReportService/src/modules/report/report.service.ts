@@ -1,4 +1,5 @@
 import { ReportRepository } from "./report.repository";
+import { env } from "../../config/env.config";
 import {
   AdminDailyMetricDto,
   MerchantDailyMetricDto,
@@ -32,6 +33,9 @@ export class ReportService {
         metricDate: row.metricDate.toISOString(),
         grossRevenue: toNumber(row.grossRevenue),
         netRevenue: toNumber(row.netRevenue),
+        platformRevenue: toNumber(row.platformRevenue),
+        merchantCommissionTotal: toNumber(row.merchantCommissionTotal),
+        shipperCommissionTotal: toNumber(row.shipperCommissionTotal),
         orderCount: row.orderCount,
         paidOrderCount: row.paidOrderCount,
         cancelledOrderCount: row.cancelledOrderCount,
@@ -60,6 +64,7 @@ export class ReportService {
         merchantId: row.merchantId,
         grossRevenue: toNumber(row.grossRevenue),
         netRevenue: toNumber(row.netRevenue),
+        merchantCommissionTotal: toNumber(row.merchantCommissionTotal),
         orderCount: row.orderCount,
         paidOrderCount: row.paidOrderCount,
         cancelledOrderCount: row.cancelledOrderCount,
@@ -83,6 +88,9 @@ export class ReportService {
       daily: rows.map((row) => ({
         metricDate: row.metricDate.toISOString(),
         shipperId: row.shipperId,
+        grossRevenue: toNumber(row.grossRevenue),
+        netEarnings: toNumber(row.netEarnings),
+        shipperCommissionTotal: toNumber(row.shipperCommissionTotal),
         assignedOrderCount: row.assignedOrderCount,
         pickedUpOrderCount: row.pickedUpOrderCount,
         deliveredOrderCount: row.deliveredOrderCount,
@@ -107,6 +115,7 @@ export class ReportService {
         merchantId: row.merchantId,
         grossRevenue: toNumber(row.grossRevenue),
         netRevenue: toNumber(row.netRevenue),
+        merchantCommissionTotal: toNumber(row.merchantCommissionTotal),
         orderCount: row.orderCount,
         paidOrderCount: row.paidOrderCount,
         cancelledOrderCount: row.cancelledOrderCount,
@@ -129,6 +138,9 @@ export class ReportService {
       items: rows.map((row) => ({
         metricDate: row.metricDate.toISOString(),
         shipperId: row.shipperId,
+        grossRevenue: toNumber(row.grossRevenue),
+        netEarnings: toNumber(row.netEarnings),
+        shipperCommissionTotal: toNumber(row.shipperCommissionTotal),
         assignedOrderCount: row.assignedOrderCount,
         pickedUpOrderCount: row.pickedUpOrderCount,
         deliveredOrderCount: row.deliveredOrderCount,
@@ -185,6 +197,11 @@ export class ReportService {
       (summary, row) => ({
         grossRevenue: summary.grossRevenue + toNumber(row.grossRevenue),
         netRevenue: summary.netRevenue + toNumber(row.netRevenue),
+        platformRevenue: summary.platformRevenue + toNumber(row.platformRevenue),
+        merchantCommissionTotal:
+          summary.merchantCommissionTotal + toNumber(row.merchantCommissionTotal),
+        shipperCommissionTotal:
+          summary.shipperCommissionTotal + toNumber(row.shipperCommissionTotal),
         orderCount: summary.orderCount + row.orderCount,
         paidOrderCount: summary.paidOrderCount + row.paidOrderCount,
         cancelledOrderCount: summary.cancelledOrderCount + row.cancelledOrderCount,
@@ -200,6 +217,9 @@ export class ReportService {
       {
         grossRevenue: 0,
         netRevenue: 0,
+        platformRevenue: 0,
+        merchantCommissionTotal: 0,
+        shipperCommissionTotal: 0,
         orderCount: 0,
         paidOrderCount: 0,
         cancelledOrderCount: 0,
@@ -220,6 +240,8 @@ export class ReportService {
       (acc, row) => ({
         grossRevenue: acc.grossRevenue + toNumber(row.grossRevenue),
         netRevenue: acc.netRevenue + toNumber(row.netRevenue),
+        merchantCommissionTotal:
+          acc.merchantCommissionTotal + toNumber(row.merchantCommissionTotal),
         orderCount: acc.orderCount + row.orderCount,
         paidOrderCount: acc.paidOrderCount + row.paidOrderCount,
         cancelledOrderCount: acc.cancelledOrderCount + row.cancelledOrderCount,
@@ -231,6 +253,7 @@ export class ReportService {
       {
         grossRevenue: 0,
         netRevenue: 0,
+        merchantCommissionTotal: 0,
         orderCount: 0,
         paidOrderCount: 0,
         cancelledOrderCount: 0,
@@ -250,6 +273,10 @@ export class ReportService {
   private buildShipperSummary(rows: Awaited<ReturnType<ReportRepository["findShipperDailyMetrics"]>>) {
     const summary = rows.reduce(
       (acc, row) => ({
+        grossRevenue: acc.grossRevenue + toNumber(row.grossRevenue),
+        netEarnings: acc.netEarnings + toNumber(row.netEarnings),
+        shipperCommissionTotal:
+          acc.shipperCommissionTotal + toNumber(row.shipperCommissionTotal),
         assignedOrderCount: acc.assignedOrderCount + row.assignedOrderCount,
         pickedUpOrderCount: acc.pickedUpOrderCount + row.pickedUpOrderCount,
         deliveredOrderCount: acc.deliveredOrderCount + row.deliveredOrderCount,
@@ -260,6 +287,9 @@ export class ReportService {
         deliveryFeeHandled: acc.deliveryFeeHandled + toNumber(row.deliveryFeeHandled),
       }),
       {
+        grossRevenue: 0,
+        netEarnings: 0,
+        shipperCommissionTotal: 0,
         assignedOrderCount: 0,
         pickedUpOrderCount: 0,
         deliveredOrderCount: 0,

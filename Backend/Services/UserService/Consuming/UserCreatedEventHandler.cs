@@ -31,6 +31,7 @@ namespace UserService.Consuming
                 Id = @event.UserId,
                 FullName = string.IsNullOrWhiteSpace(@event.FullName) ? string.Empty : @event.FullName,
                 AvatarUrl = string.Empty,
+                PhoneNumber = string.IsNullOrWhiteSpace(@event.Phone) ? string.Empty : @event.Phone,
                 Status = UserStatus.PendingVerification,
                 CreatedAt = DateTime.UtcNow,
                 Addresses = new List<Address>()

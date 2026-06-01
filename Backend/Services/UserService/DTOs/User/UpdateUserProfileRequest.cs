@@ -5,5 +5,7 @@
         public string FullName { get; set; } = null!;
 
         public string AvatarUrl { get; set; } = null!;
+
+        public string PhoneNumber { get; set; } = null!;
     }
 }

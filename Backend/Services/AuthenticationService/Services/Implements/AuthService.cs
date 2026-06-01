@@ -61,6 +61,8 @@ namespace AuthenticationService.Services.Implements
                 }
 
                 var otp = GenerateOtp();
+                existingUser.FullName = string.IsNullOrWhiteSpace(request.FullName) ? existingUser.FullName : request.FullName;
+                existingUser.PhoneNumber = request.PhoneNumber;
                 existingUser.Otp = otp;
                 existingUser.OtpExpiresAt = DateTime.UtcNow.AddSeconds(OTP_EXPIRY_SECONDS);
 

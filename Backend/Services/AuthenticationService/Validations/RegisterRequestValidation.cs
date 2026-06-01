@@ -14,6 +14,10 @@ namespace AuthenticationService.Validations
             RuleFor(request => request.Password)
                 .NotEmpty().WithMessage("Password is required")
                 .MinimumLength(6).WithMessage("Password must be at least 6 characters");
+
+            RuleFor(request => request.PhoneNumber)
+                .NotEmpty().WithMessage("Phone number is required")
+                .MinimumLength(9).WithMessage("Phone number must be at least 9 characters");
         }
     }
 

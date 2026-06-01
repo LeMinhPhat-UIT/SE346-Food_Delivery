@@ -78,6 +78,9 @@ namespace UserService.Services.Implements
             if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
                 user.AvatarUrl = request.AvatarUrl;
 
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+                user.PhoneNumber = request.PhoneNumber;
+
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateUserAsync(user);

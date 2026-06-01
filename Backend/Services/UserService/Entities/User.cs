@@ -7,6 +7,7 @@ namespace UserService.Entities
     {
         public string FullName { get; set; } = null!;
         public string AvatarUrl { get; set; } = null!;
+        public string PhoneNumber { get; set; } = string.Empty;
 
         public UserStatus Status { get; set; } = UserStatus.PendingVerification;
 

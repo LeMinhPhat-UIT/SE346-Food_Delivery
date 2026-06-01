@@ -27,6 +27,7 @@ namespace UserService.Persistences
                     Id = adminUserId,
                     FullName = "Seeded Admin",
                     AvatarUrl = "https://example.com/avatars/admin.png",
+                    PhoneNumber = "0900000000",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 },
@@ -35,6 +36,7 @@ namespace UserService.Persistences
                     Id = customerUserId,
                     FullName = "Seeded Customer",
                     AvatarUrl = "https://example.com/avatars/customer.png",
+                    PhoneNumber = "0900000001",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 },
@@ -43,6 +45,7 @@ namespace UserService.Persistences
                     Id = merchantUserId,
                     FullName = "Seeded Merchant Owner",
                     AvatarUrl = "https://example.com/avatars/merchant.png",
+                    PhoneNumber = "0900000002",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 },
@@ -51,6 +54,7 @@ namespace UserService.Persistences
                     Id = shipperUserId,
                     FullName = "Seeded Shipper",
                     AvatarUrl = "https://example.com/avatars/shipper.png",
+                    PhoneNumber = "0900000003",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 }

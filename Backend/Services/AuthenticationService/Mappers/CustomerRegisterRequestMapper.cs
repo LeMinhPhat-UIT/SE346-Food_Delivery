@@ -14,7 +14,7 @@ namespace AuthenticationService.Mappers
                 UserName = dto.Email,
                 Email = dto.Email,
                 FullName = dto.FullName ?? string.Empty,
-                PhoneNumber = null  // Will be set later by user
+                PhoneNumber = dto.PhoneNumber
             };
         }
     }

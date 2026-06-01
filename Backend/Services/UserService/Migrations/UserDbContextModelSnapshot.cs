@@ -503,6 +503,10 @@ namespace UserService.Migrations
                     b.Property<Guid?>("MerchantId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uuid");
 
@@ -524,6 +528,7 @@ namespace UserService.Migrations
                             AvatarUrl = "https://example.com/avatars/admin.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Admin",
+                            PhoneNumber = "0900000000",
                             Status = "Active"
                         },
                         new
@@ -532,6 +537,7 @@ namespace UserService.Migrations
                             AvatarUrl = "https://example.com/avatars/customer.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Customer",
+                            PhoneNumber = "0900000001",
                             Status = "Active"
                         },
                         new
@@ -540,6 +546,7 @@ namespace UserService.Migrations
                             AvatarUrl = "https://example.com/avatars/merchant.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Merchant Owner",
+                            PhoneNumber = "0900000002",
                             Status = "Active"
                         },
                         new
@@ -548,6 +555,7 @@ namespace UserService.Migrations
                             AvatarUrl = "https://example.com/avatars/shipper.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Shipper",
+                            PhoneNumber = "0900000003",
                             Status = "Active"
                         });
                 });

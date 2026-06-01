@@ -13,5 +13,8 @@ namespace AuthenticationService.DTOs
         public string Password { get; set; } = null!;
 
         public string FullName { get; set; } = string.Empty;
+
+        [Required]
+        public string PhoneNumber { get; set; } = null!;
     }
 }

@@ -7,7 +7,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "${ADDRESS_SERVICE_HOST_PORT:-8090}:${ADDRESS_SERVICE_CONTAINER_PORT:-8080}"
+      - "${ADDRESS_SERVICE_HOST_PORT:-8091}:${ADDRESS_SERVICE_CONTAINER_PORT:-8080}"
     depends_on:
       address-db:
         condition: service_healthy

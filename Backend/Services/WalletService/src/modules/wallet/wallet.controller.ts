@@ -4,6 +4,7 @@ import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import Send from "../../utils/response";
+import { UserServiceClient } from "../../integrations/user.service";
 import {
   ListTransactionsQueryDto,
   OrderTransactionParamDto,
@@ -19,6 +20,8 @@ import {
 import { walletService } from "./wallet.bootstrap";
 
 export class WalletController {
+  private readonly userServiceClient = new UserServiceClient();
+
   private getAuthContext(req: Request) {
     if (!req.auth?.userId) {
       throw new ApiError(HTTP_STATUS.UNAUTHORIZED, "Invalid user context");
@@ -45,6 +48,26 @@ export class WalletController {
     throw new ApiError(HTTP_STATUS.FORBIDDEN, "Wallet access is not allowed for this role");
   }
 
+  private async resolveOwnerId(req: Request, ownerType: WalletOwnerType) {
+    const auth = this.getAuthContext(req);
+
+    if (ownerType === "ADMIN") {
+      return auth.userId;
+    }
+
+    if (!auth.token) {
+      throw new ApiError(HTTP_STATUS.UNAUTHORIZED, "Invalid access token");
+    }
+
+    if (ownerType === "MERCHANT") {
+      const merchant = await this.userServiceClient.getMerchantByUserId(auth.userId, auth.token);
+      return merchant?.id ?? auth.merchantId ?? auth.userId;
+    }
+
+    const shipper = await this.userServiceClient.getShipperByUserId(auth.userId, auth.token);
+    return shipper?.id ?? auth.shipperId ?? auth.userId;
+  }
+
   private getRequestIp(req: Request) {
     const forwardedFor = req.headers["x-forwarded-for"];
     if (typeof forwardedFor === "string" && forwardedFor.trim().length > 0) {
@@ -57,7 +80,8 @@ export class WalletController {
   getMyWallet = asyncHandler(async (req: Request, res: Response) => {
     const auth = this.getAuthContext(req);
     const ownerType = this.resolveOwnerTypeFromAuth(req);
-    const wallet = await walletService.getMyWallet(ownerType, auth.userId);
+    const ownerId = await this.resolveOwnerId(req, ownerType);
+    const wallet = await walletService.getMyWallet(ownerType, ownerId);
     return Send.success(res, wallet, "Wallet fetched successfully");
   });
 
@@ -65,7 +89,8 @@ export class WalletController {
     const auth = this.getAuthContext(req);
     const ownerType = this.resolveOwnerTypeFromAuth(req);
     const query = (req.validated?.query ?? {}) as ListTransactionsQueryDto;
-    const result = await walletService.getMyTransactions(ownerType, auth.userId, query);
+    const ownerId = await this.resolveOwnerId(req, ownerType);
+    const result = await walletService.getMyTransactions(ownerType, ownerId, query);
     return Send.success(res, result, "Wallet transactions fetched successfully");
   });
 
@@ -74,7 +99,8 @@ export class WalletController {
     const ownerType = this.resolveOwnerTypeFromAuth(req);
     const query = (req.validated?.query ?? {}) as ListTransactionsQueryDto;
     const params = (req.validated?.params ?? {}) as ReferenceTransactionParamDto;
-    const result = await walletService.getMyTransactionsByReference(ownerType, auth.userId, params, query);
+    const ownerId = await this.resolveOwnerId(req, ownerType);
+    const result = await walletService.getMyTransactionsByReference(ownerType, ownerId, params, query);
     return Send.success(res, result, "Wallet transactions fetched successfully");
   });
 
@@ -83,7 +109,8 @@ export class WalletController {
     const ownerType = this.resolveOwnerTypeFromAuth(req);
     const query = (req.validated?.query ?? {}) as ListTransactionsQueryDto;
     const params = (req.validated?.params ?? {}) as OrderTransactionParamDto;
-    const result = await walletService.getMyTransactionsByOrderId(ownerType, auth.userId, params, query);
+    const ownerId = await this.resolveOwnerId(req, ownerType);
+    const result = await walletService.getMyTransactionsByOrderId(ownerType, ownerId, params, query);
     return Send.success(res, result, "Wallet transactions fetched successfully");
   });
 
@@ -91,10 +118,11 @@ export class WalletController {
     const auth = this.getAuthContext(req);
     const ownerType = this.resolveOwnerTypeFromAuth(req);
     const body = (req.validated?.body ?? {}) as TopupBodyDto;
+    const ownerId = await this.resolveOwnerId(req, ownerType);
 
     const paymentUrl = await walletService.createTopupPaymentUrl(
       ownerType,
-      auth.userId,
+      ownerId,
       this.getRequestIp(req),
       body,
     );
@@ -106,7 +134,8 @@ export class WalletController {
     const auth = this.getAuthContext(req);
     const ownerType = this.resolveOwnerTypeFromAuth(req);
     const query = (req.validated?.query ?? {}) as TopupQueryDto;
-    const result: TopupListResponseDto = await walletService.getMyTopups(ownerType, auth.userId, query);
+    const ownerId = await this.resolveOwnerId(req, ownerType);
+    const result: TopupListResponseDto = await walletService.getMyTopups(ownerType, ownerId, query);
     return Send.success(res, result, "Wallet topups fetched successfully");
   });
 
@@ -114,7 +143,8 @@ export class WalletController {
     const auth = this.getAuthContext(req);
     const ownerType = this.resolveOwnerTypeFromAuth(req);
     const params = (req.validated?.params ?? {}) as TopupParamDto;
-    const topup: WalletTopupResponseDto = await walletService.getMyTopupById(ownerType, auth.userId, params.topupId);
+    const ownerId = await this.resolveOwnerId(req, ownerType);
+    const topup: WalletTopupResponseDto = await walletService.getMyTopupById(ownerType, ownerId, params.topupId);
     return Send.success(res, topup, "Wallet topup fetched successfully");
   });
 

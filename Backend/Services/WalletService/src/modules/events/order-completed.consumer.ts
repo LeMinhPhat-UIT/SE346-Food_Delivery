@@ -10,6 +10,8 @@ type OrderCompletedEventPayload = {
   MerchantId?: string;
   MerchantStoreName?: string;
   UserId?: string;
+  Data?: Record<string, unknown>;
+  data?: Record<string, unknown>;
   TotalAmount?: number;
   PaymentMethod?: string;
   Note?: string | null;
@@ -56,7 +58,8 @@ export class OrderCompletedConsumer {
     }
 
     try {
-      const payload = JSON.parse(message.content.toString("utf8")) as OrderCompletedEventPayload;
+      const rawPayload = JSON.parse(message.content.toString("utf8")) as OrderCompletedEventPayload;
+      const payload = this.unwrapPayload(rawPayload);
       const orderId = payload.OrderId ?? payload.orderId;
       const orderNumber = payload.OrderNumber ?? payload.orderNumber;
       const merchantId = payload.MerchantId ?? payload.merchantId;
@@ -211,6 +214,20 @@ export class OrderCompletedConsumer {
       logger.error("Failed to process order.completed event", error);
       channel.nack(message, false, false);
     }
+  }
+
+  private unwrapPayload(payload: OrderCompletedEventPayload) {
+    const data = payload.Data ?? payload.data;
+
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return {
+        ...payload,
+        ...data,
+        Data: data,
+      } as OrderCompletedEventPayload & Record<string, unknown>;
+    }
+
+    return payload;
   }
 
   private roundMoney(value: number) {

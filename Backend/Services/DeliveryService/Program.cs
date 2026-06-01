@@ -78,6 +78,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
 builder.Services.AddScoped<IDeliveryRepository, DeliveryRepository>();
 builder.Services.AddScoped<IDeliveryService, DeliveryService.Services.Implements.DeliveryService>();
+builder.Services.AddScoped<IDeliveryFeePolicyService, DeliveryFeePolicyService>();
 builder.Services.AddScoped<IDeliveryEstimator, DeliveryEstimator>();
 builder.Services.AddScoped<IRedisRepository, RedisRepository>();
 builder.Services.AddSingleton<DeliveryMapper>();

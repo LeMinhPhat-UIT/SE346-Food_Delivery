@@ -22,6 +22,250 @@ namespace DeliveryService.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeeDistanceTier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("FeePerKm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("FromKm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("ToKm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PolicyId");
+
+                    b.ToTable("DeliveryFeeDistanceTiers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("82222222-2222-4222-8222-222222222222"),
+                            FeePerKm = 0m,
+                            FromKm = 0m,
+                            PolicyId = new Guid("81111111-1111-4111-8111-111111111111"),
+                            ToKm = 2m
+                        },
+                        new
+                        {
+                            Id = new Guid("83333333-3333-4333-8333-333333333333"),
+                            FeePerKm = 4000m,
+                            FromKm = 2m,
+                            PolicyId = new Guid("81111111-1111-4111-8111-111111111111"),
+                            ToKm = 5m
+                        },
+                        new
+                        {
+                            Id = new Guid("84444444-4444-4444-8444-444444444444"),
+                            FeePerKm = 5000m,
+                            FromKm = 5m,
+                            PolicyId = new Guid("81111111-1111-4111-8111-111111111111"),
+                            ToKm = 10m
+                        },
+                        new
+                        {
+                            Id = new Guid("85555555-5555-4555-8555-555555555555"),
+                            FeePerKm = 6000m,
+                            FromKm = 10m,
+                            PolicyId = new Guid("81111111-1111-4111-8111-111111111111")
+                        });
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeePolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BaseFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal?>("MaxFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("MinFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("RushHourSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("SmallOrderSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("SmallOrderThreshold")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("DeliveryFeePolicies");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("81111111-1111-4111-8111-111111111111"),
+                            BaseFee = 10000m,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            MaxFee = 60000m,
+                            MinFee = 10000m,
+                            Name = "Default Delivery Fee Policy",
+                            RushHourSurcharge = 5000m,
+                            SmallOrderSurcharge = 5000m,
+                            SmallOrderThreshold = 50000m
+                        });
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeeQuote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<decimal>("DeliveryFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("DistanceKm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal>("DropoffLat")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("numeric(10,7)");
+
+                    b.Property<decimal>("DropoffLng")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("numeric(10,7)");
+
+                    b.Property<bool>("IsRushHour")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("PickupLat")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("numeric(10,7)");
+
+                    b.Property<decimal>("PickupLng")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("numeric(10,7)");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("DeliveryFeeQuotes");
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeeQuoteDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BaseFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("DistanceFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("FinalFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("IsRushHour")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSmallOrder")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PolicyName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("QuoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RawFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("RushHourSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("SmallOrderSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PolicyId");
+
+                    b.HasIndex("QuoteId");
+
+                    b.ToTable("DeliveryFeeQuoteDetails");
+                });
+
             modelBuilder.Entity("DeliveryService.Entities.DeliveryTracking", b =>
                 {
                     b.Property<Guid>("Id")
@@ -424,6 +668,48 @@ namespace DeliveryService.Migrations
                             RecordedAt = new DateTime(2026, 1, 1, 0, 25, 0, 0, DateTimeKind.Utc),
                             ShipperId = new Guid("56565656-5656-4656-8656-565656565656")
                         });
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeeDistanceTier", b =>
+                {
+                    b.HasOne("DeliveryService.Entities.DeliveryFeePolicy", "Policy")
+                        .WithMany("DistanceTiers")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeeQuoteDetail", b =>
+                {
+                    b.HasOne("DeliveryService.Entities.DeliveryFeePolicy", "Policy")
+                        .WithMany("QuoteDetails")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DeliveryService.Entities.DeliveryFeeQuote", "Quote")
+                        .WithMany("Details")
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
+
+                    b.Navigation("Quote");
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeePolicy", b =>
+                {
+                    b.Navigation("DistanceTiers");
+
+                    b.Navigation("QuoteDetails");
+                });
+
+            modelBuilder.Entity("DeliveryService.Entities.DeliveryFeeQuote", b =>
+                {
+                    b.Navigation("Details");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,11 +1,13 @@
-using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using UserService.Persistences;
 
 #nullable disable
 
 namespace UserService.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(UserDbContext))]
     [Migration("20260601000000_AddUserPhoneNumber")]
     public partial class AddUserPhoneNumber : Migration
     {
@@ -19,33 +21,12 @@ namespace UserService.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.UpdateData(
-                table: "Users",
-                keyColumn: "Id",
-                keyValue: new Guid("55555555-5555-4555-8555-555555555555"),
-                column: "PhoneNumber",
-                value: "0900000000");
-
-            migrationBuilder.UpdateData(
-                table: "Users",
-                keyColumn: "Id",
-                keyValue: new Guid("99999999-9999-4999-9999-999999999999"),
-                column: "PhoneNumber",
-                value: "0900000003");
-
-            migrationBuilder.UpdateData(
-                table: "Users",
-                keyColumn: "Id",
-                keyValue: new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
-                column: "PhoneNumber",
-                value: "0900000001");
-
-            migrationBuilder.UpdateData(
-                table: "Users",
-                keyColumn: "Id",
-                keyValue: new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
-                column: "PhoneNumber",
-                value: "0900000002");
+            migrationBuilder.Sql("""
+                UPDATE "Users" SET "PhoneNumber" = '0900000000' WHERE "Id" = '55555555-5555-4555-8555-555555555555';
+                UPDATE "Users" SET "PhoneNumber" = '0900000003' WHERE "Id" = '99999999-9999-4999-9999-999999999999';
+                UPDATE "Users" SET "PhoneNumber" = '0900000001' WHERE "Id" = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
+                UPDATE "Users" SET "PhoneNumber" = '0900000002' WHERE "Id" = 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb';
+                """);
         }
 
         /// <inheritdoc />

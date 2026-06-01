@@ -49,6 +49,7 @@ namespace DeliveryService.Consuming
                 MerchantAddress = @event.MerchantAddress,
                 CustomerId = @event.UserId,
                 DeliveryAddress = @event.DeliveryAddress,
+                TotalAmount = @event.TotalAmount,
                 DeliveryFee = @event.DeliveryFee,
                 DistanceKm = @event.DistanceKm,
                 CorrelationId = @event.CorrelationId
@@ -66,6 +67,7 @@ namespace DeliveryService.Consuming
                 MerchantAddress = @event.MerchantAddress,
                 CustomerId = @event.UserId,
                 DeliveryAddress = @event.DeliveryAddress,
+                TotalAmount = @event.TotalAmount,
                 DeliveryFee = @event.DeliveryFee,
                 DistanceKm = @event.DistanceKm,
                 CorrelationId = @event.CorrelationId
@@ -92,10 +94,13 @@ namespace DeliveryService.Consuming
             {
                 var estimate = await _deliveryEstimator.EstimateAsync(new DeliveryFeeEstimateInput
                 {
+                    OrderId = payload.OrderId,
                     PickupLat = merchantLatDecimal,
                     PickupLng = merchantLngDecimal,
                     DeliveryLat = customerLatDecimal,
-                    DeliveryLng = customerLngDecimal
+                    DeliveryLng = customerLngDecimal,
+                    Subtotal = payload.TotalAmount,
+                    PersistQuote = deliveryFee <= 0m
                 });
 
                 distanceKm = estimate.DistanceKm;
@@ -105,7 +110,18 @@ namespace DeliveryService.Consuming
             }
             else if (deliveryFee <= 0m)
             {
-                deliveryFee = _deliveryEstimator.EstimateDeliveryFee(distanceKm);
+                var estimate = await _deliveryEstimator.EstimateAsync(new DeliveryFeeEstimateInput
+                {
+                    OrderId = payload.OrderId,
+                    PickupLat = merchantLatDecimal,
+                    PickupLng = merchantLngDecimal,
+                    DeliveryLat = customerLatDecimal,
+                    DeliveryLng = customerLngDecimal,
+                    DistanceKm = distanceKm,
+                    Subtotal = payload.TotalAmount
+                });
+
+                deliveryFee = estimate.DeliveryFee;
             }
 
             var shippers = await _redisRepository.GetShipperLocationInRadiusAsync(
@@ -212,6 +228,7 @@ namespace DeliveryService.Consuming
             public MerchantAddressBaseDto? MerchantAddress { get; init; }
             public Guid CustomerId { get; init; }
             public UserAddressBaseDto? DeliveryAddress { get; init; }
+            public decimal TotalAmount { get; init; }
             public decimal DeliveryFee { get; init; }
             public decimal DistanceKm { get; init; }
             public string? CorrelationId { get; init; }

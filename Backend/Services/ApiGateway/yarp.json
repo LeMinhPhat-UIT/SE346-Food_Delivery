@@ -105,6 +105,15 @@
           { "PathPattern": "/api/deliveries/{**catch-all}" }
         ]
       },
+      "delivery-fee-route": {
+        "ClusterId": "delivery-cluster",
+        "Match": {
+          "Path": "/api/delivery-fee/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathPattern": "/api/delivery-fee/{**catch-all}" }
+        ]
+      },
       "delivery-hub-route": {
         "ClusterId": "delivery-cluster",
         "Match": {

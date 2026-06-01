@@ -20,7 +20,63 @@ namespace DeliveryService.Persistences
             var secondOrderId = Guid.Parse("75555555-5555-4555-8555-555555555555");
             var secondLocationId = Guid.Parse("76666666-6666-4666-8666-666666666666");
             var incidentId = Guid.Parse("77777777-7777-4777-8777-777777777777");
+            var defaultFeePolicyId = Guid.Parse("81111111-1111-4111-8111-111111111111");
+            var defaultTierOneId = Guid.Parse("82222222-2222-4222-8222-222222222222");
+            var defaultTierTwoId = Guid.Parse("83333333-3333-4333-8333-333333333333");
+            var defaultTierThreeId = Guid.Parse("84444444-4444-4444-8444-444444444444");
+            var defaultTierFourId = Guid.Parse("85555555-5555-4555-8555-555555555555");
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
+
+            modelBuilder.Entity<DeliveryFeePolicy>().HasData(
+                new DeliveryFeePolicy
+                {
+                    Id = defaultFeePolicyId,
+                    Name = "Default Delivery Fee Policy",
+                    BaseFee = 10000m,
+                    MinFee = 10000m,
+                    MaxFee = 60000m,
+                    SmallOrderThreshold = 50000m,
+                    SmallOrderSurcharge = 5000m,
+                    RushHourSurcharge = 5000m,
+                    IsActive = true,
+                    CreatedAt = seededAt
+                }
+            );
+
+            modelBuilder.Entity<DeliveryFeeDistanceTier>().HasData(
+                new DeliveryFeeDistanceTier
+                {
+                    Id = defaultTierOneId,
+                    PolicyId = defaultFeePolicyId,
+                    FromKm = 0m,
+                    ToKm = 2m,
+                    FeePerKm = 0m
+                },
+                new DeliveryFeeDistanceTier
+                {
+                    Id = defaultTierTwoId,
+                    PolicyId = defaultFeePolicyId,
+                    FromKm = 2m,
+                    ToKm = 5m,
+                    FeePerKm = 4000m
+                },
+                new DeliveryFeeDistanceTier
+                {
+                    Id = defaultTierThreeId,
+                    PolicyId = defaultFeePolicyId,
+                    FromKm = 5m,
+                    ToKm = 10m,
+                    FeePerKm = 5000m
+                },
+                new DeliveryFeeDistanceTier
+                {
+                    Id = defaultTierFourId,
+                    PolicyId = defaultFeePolicyId,
+                    FromKm = 10m,
+                    ToKm = null,
+                    FeePerKm = 6000m
+                }
+            );
 
             modelBuilder.Entity<DeliveryTracking>().HasData(
                 new DeliveryTracking

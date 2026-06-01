@@ -6,6 +6,8 @@ import { RabbitConsumerMessage, RabbitMqClient } from "../../infrastructure/rabb
 type AssignmentAcceptedEventPayload = {
   EventId?: string;
   eventId?: string;
+  Data?: Record<string, unknown>;
+  data?: Record<string, unknown>;
   OrderId?: string;
   orderId?: string;
   OrderNumber?: string;
@@ -57,7 +59,8 @@ export class AssignmentAcceptedConsumer {
     }
 
     try {
-      const payload = JSON.parse(message.content.toString("utf8")) as AssignmentAcceptedEventPayload;
+      const rawPayload = JSON.parse(message.content.toString("utf8")) as AssignmentAcceptedEventPayload;
+      const payload = this.unwrapPayload(rawPayload);
       const orderId = payload.OrderId ?? payload.orderId;
       const orderNumber = payload.OrderNumber ?? payload.orderNumber;
       const merchantId = payload.MerchantId ?? payload.merchantId;
@@ -123,5 +126,19 @@ export class AssignmentAcceptedConsumer {
       logger.error("Failed to process assignment.accepted event", error);
       channel.nack(message, false, false);
     }
+  }
+
+  private unwrapPayload(payload: AssignmentAcceptedEventPayload) {
+    const data = payload.Data ?? payload.data;
+
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return {
+        ...payload,
+        ...data,
+        Data: data,
+      } as AssignmentAcceptedEventPayload & Record<string, unknown>;
+    }
+
+    return payload;
   }
 }

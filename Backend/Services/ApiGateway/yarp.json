@@ -45,6 +45,17 @@
           }
         ]
       },
+      "address-route": {
+        "ClusterId": "address-cluster",
+        "Match": {
+          "Path": "/api/addresses/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "/api/addresses/{**catch-all}"
+          }
+        ]
+      },
       "files-route": {
         "ClusterId": "file-cluster",
         "Match": {
@@ -134,6 +145,13 @@
         "Destinations": {
           "user-service": {
             "Address": "http://user-service:8080"
+          }
+        }
+      },
+      "address-cluster": {
+        "Destinations": {
+          "address-service": {
+            "Address": "http://address-service:8080"
           }
         }
       },

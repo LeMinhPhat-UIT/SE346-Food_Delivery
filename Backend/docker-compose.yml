@@ -24,6 +24,16 @@ services:
       file: ./Services/UserService/docker-compose.yml
       service: user-db
 
+  address-service:
+    extends:
+      file: ./Services/AddressService/docker-compose.yml
+      service: address-service
+
+  address-db:
+    extends:
+      file: ./Services/AddressService/docker-compose.yml
+      service: address-db
+
   file-service:
     extends:
       file: ./Services/FileService/docker-compose.yml
@@ -106,6 +116,7 @@ networks:
 volumes:
   authentication_db_data:
   user_db_data:
+  address_db_data:
   delivery_db_data:
   order_db_data:
   order_redis_data:

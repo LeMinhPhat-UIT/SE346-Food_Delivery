@@ -436,5 +436,97 @@ namespace DeliveryService.Repositories.Implements
             _context.Incidents.Update(incident);
             await _context.SaveChangesAsync();
         }
+
+        public Task<IQueryable<DeliveryFeePolicy>> GetAllDeliveryFeePoliciesAsync(bool includeInactive = true)
+        {
+            IQueryable<DeliveryFeePolicy> query = _context.DeliveryFeePolicies
+                .AsNoTracking()
+                .Include(policy => policy.DistanceTiers)
+                .Where(policy => policy.DeletedAt == null);
+
+            if (!includeInactive)
+                query = query.Where(policy => policy.IsActive);
+
+            query = query
+                .OrderByDescending(policy => policy.CreatedAt)
+                .ThenBy(policy => policy.Name)
+                .AsQueryable();
+
+            return Task.FromResult(query);
+        }
+
+        public async Task<IReadOnlyList<DeliveryFeePolicy>> GetActiveDeliveryFeePoliciesWithTiersAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.DeliveryFeePolicies
+                .AsNoTracking()
+                .Include(policy => policy.DistanceTiers)
+                .Where(policy => policy.IsActive && policy.DeletedAt == null)
+                .OrderBy(policy => policy.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<DeliveryFeePolicy?> GetDeliveryFeePolicyByIdAsync(Guid policyId, CancellationToken cancellationToken = default)
+        {
+            return await _context.DeliveryFeePolicies
+                .Include(policy => policy.DistanceTiers)
+                .FirstOrDefaultAsync(policy => policy.Id == policyId && policy.DeletedAt == null, cancellationToken);
+        }
+
+        public async Task CreateDeliveryFeePolicyAsync(DeliveryFeePolicy policy, CancellationToken cancellationToken = default)
+        {
+            await _context.DeliveryFeePolicies.AddAsync(policy, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<bool> HasDeliveryFeeQuoteDetailsForPolicyAsync(Guid policyId, CancellationToken cancellationToken = default)
+        {
+            return await _context.DeliveryFeeQuoteDetails
+                .AnyAsync(detail => detail.PolicyId == policyId, cancellationToken);
+        }
+
+        public async Task ReplaceUsedDeliveryFeePolicyAsync(DeliveryFeePolicy usedPolicy, DeliveryFeePolicy replacementPolicy, CancellationToken cancellationToken = default)
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            _context.DeliveryFeePolicies.Update(usedPolicy);
+            await _context.DeliveryFeePolicies.AddAsync(replacementPolicy, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        public async Task UpdateDeliveryFeePolicyAsync(
+            DeliveryFeePolicy policy,
+            IEnumerable<DeliveryFeeDistanceTier> replacementTiers,
+            CancellationToken cancellationToken = default)
+        {
+            var existingTiers = policy.DistanceTiers.ToList();
+            _context.DeliveryFeeDistanceTiers.RemoveRange(existingTiers);
+
+            policy.DistanceTiers = replacementTiers.ToList();
+            await _context.DeliveryFeeDistanceTiers.AddRangeAsync(policy.DistanceTiers, cancellationToken);
+
+            _context.DeliveryFeePolicies.Update(policy);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task SoftDeleteDeliveryFeePolicyAsync(
+            DeliveryFeePolicy policy,
+            DateTime deletedAt,
+            CancellationToken cancellationToken = default)
+        {
+            policy.IsActive = false;
+            policy.DeletedAt = deletedAt;
+            policy.UpdatedAt = deletedAt;
+
+            _context.DeliveryFeePolicies.Update(policy);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task CreateDeliveryFeeQuoteAsync(DeliveryFeeQuote quote, CancellationToken cancellationToken = default)
+        {
+            await _context.DeliveryFeeQuotes.AddAsync(quote, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 }

@@ -7,7 +7,5 @@ namespace DeliveryService.Services.Interfaces
         Task<DeliveryFeeEstimate> EstimateAsync(
             DeliveryFeeEstimateInput input,
             CancellationToken cancellationToken = default);
-
-        decimal EstimateDeliveryFee(decimal distanceKm);
     }
 }

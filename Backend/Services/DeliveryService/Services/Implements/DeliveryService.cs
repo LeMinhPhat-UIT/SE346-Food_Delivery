@@ -434,6 +434,13 @@ namespace DeliveryService.Services.Implements
                     StatusCodes.Status502BadGateway,
                     "Unable to estimate delivery route at the moment");
             }
+            catch (DeliveryFeePolicyException ex)
+            {
+                _logger.LogWarning(ex, "Unable to estimate delivery fee because no active policy is available");
+                return new ApiResponse<EstimateDeliveryFeeResponse>(
+                    StatusCodes.Status409Conflict,
+                    ex.Message);
+            }
         }
 
         public async Task<ApiResponse<PagedResult<ShipperLocationHistory>>> GetLocationHistoryByOrderIdAsync(Guid orderId, PaginationRequest paginationRequest, ClaimsPrincipal user)
@@ -858,6 +865,14 @@ namespace DeliveryService.Services.Implements
             ValidateLongitude(nameof(request.PickupLng), request.PickupLng, errors);
             ValidateLatitude(nameof(request.DeliveryLat), request.DeliveryLat, errors);
             ValidateLongitude(nameof(request.DeliveryLng), request.DeliveryLng, errors);
+
+            if (!request.Subtotal.HasValue)
+                errors.Add($"{nameof(request.Subtotal)} is required");
+            else if (request.Subtotal.Value < 0m)
+                errors.Add($"{nameof(request.Subtotal)} must be greater than or equal to 0");
+
+            if (request.OrderId.HasValue && request.OrderId.Value == Guid.Empty)
+                errors.Add($"{nameof(request.OrderId)} must be a valid id when provided");
 
             return errors;
         }

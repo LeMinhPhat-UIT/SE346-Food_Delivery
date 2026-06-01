@@ -32,5 +32,15 @@ namespace DeliveryService.Repositories.Interfaces
         Task<IQueryable<Incident>> GetAllIncidentByReporterId(Guid reporterId);
         Task<Incident?> GetIncidentByIdAsync(Guid incidentId);
         Task UpdateIncidentAsync(Incident incident);
+
+        Task<IQueryable<DeliveryFeePolicy>> GetAllDeliveryFeePoliciesAsync(bool includeInactive = true);
+        Task<IReadOnlyList<DeliveryFeePolicy>> GetActiveDeliveryFeePoliciesWithTiersAsync(CancellationToken cancellationToken = default);
+        Task<DeliveryFeePolicy?> GetDeliveryFeePolicyByIdAsync(Guid policyId, CancellationToken cancellationToken = default);
+        Task CreateDeliveryFeePolicyAsync(DeliveryFeePolicy policy, CancellationToken cancellationToken = default);
+        Task<bool> HasDeliveryFeeQuoteDetailsForPolicyAsync(Guid policyId, CancellationToken cancellationToken = default);
+        Task ReplaceUsedDeliveryFeePolicyAsync(DeliveryFeePolicy usedPolicy, DeliveryFeePolicy replacementPolicy, CancellationToken cancellationToken = default);
+        Task UpdateDeliveryFeePolicyAsync(DeliveryFeePolicy policy, IEnumerable<DeliveryFeeDistanceTier> replacementTiers, CancellationToken cancellationToken = default);
+        Task SoftDeleteDeliveryFeePolicyAsync(DeliveryFeePolicy policy, DateTime deletedAt, CancellationToken cancellationToken = default);
+        Task CreateDeliveryFeeQuoteAsync(DeliveryFeeQuote quote, CancellationToken cancellationToken = default);
     }
 }

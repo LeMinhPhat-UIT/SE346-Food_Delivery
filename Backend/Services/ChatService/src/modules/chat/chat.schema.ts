@@ -12,6 +12,11 @@ export const conversationIdParamSchema = z.object({
   conversationId: z.string().uuid("conversationId must be a valid UUID"),
 });
 
+export const conversationOrderParamSchema = z.object({
+  orderId: z.string().min(1, "orderId is required"),
+  conversationType: chatConversationTypeSchema,
+});
+
 export const createConversationSchema = z
   .object({
     conversationType: chatConversationTypeSchema,

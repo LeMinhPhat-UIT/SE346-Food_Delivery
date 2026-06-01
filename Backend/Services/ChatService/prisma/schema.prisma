@@ -73,3 +73,17 @@ model ChatMessage {
   @@index([conversationId, createdAt])
   @@index([senderId])
 }
+
+model ChatEventInbox {
+  id          String   @id @default(uuid())
+  messageId   String   @unique
+  eventType   String
+  routingKey  String
+  aggregateId String?
+  payload     Json
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([aggregateId])
+}

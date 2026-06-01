@@ -77,12 +77,10 @@ export class ChatRepository {
     orderId: string,
     conversationType: ChatConversationType,
   ): Promise<ChatConversation | null> {
-    return prisma.chatConversation.findUnique({
+    return prisma.chatConversation.findFirst({
       where: {
-        orderId_conversationType: {
-          orderId,
-          conversationType,
-        },
+        orderId,
+        conversationType,
       },
     });
   }
@@ -97,15 +95,13 @@ export class ChatRepository {
 
     const skip = (filter.page - 1) * filter.limit;
 
-    const [total, items] = await prisma.$transaction([
-      prisma.chatConversation.count({ where }),
-      prisma.chatConversation.findMany({
-        where,
-        orderBy: { updatedAt: "desc" },
-        skip,
-        take: filter.limit,
-      }),
-    ]);
+    const total = await prisma.chatConversation.count({ where });
+    const items = await prisma.chatConversation.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip,
+      take: filter.limit,
+    });
 
     return { total, items };
   }
@@ -113,17 +109,15 @@ export class ChatRepository {
   async listMessages(filter: MessageFilter) {
     const skip = (filter.page - 1) * filter.limit;
 
-    const [total, items] = await prisma.$transaction([
-      prisma.chatMessage.count({
-        where: { conversationId: filter.conversationId },
-      }),
-      prisma.chatMessage.findMany({
-        where: { conversationId: filter.conversationId },
-        orderBy: { createdAt: "asc" },
-        skip,
-        take: filter.limit,
-      }),
-    ]);
+    const total = await prisma.chatMessage.count({
+      where: { conversationId: filter.conversationId },
+    });
+    const items = await prisma.chatMessage.findMany({
+      where: { conversationId: filter.conversationId },
+      orderBy: { createdAt: "asc" },
+      skip,
+      take: filter.limit,
+    });
 
     return { total, items };
   }

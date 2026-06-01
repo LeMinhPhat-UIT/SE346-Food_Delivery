@@ -12,7 +12,9 @@ export const validate = (schema: ZodTypeAny, source: "body" | "query" | "params"
       return next(new ApiError(HTTP_STATUS.BAD_REQUEST, message));
     }
 
-    (req as unknown as Record<string, unknown>)[source] = result.data;
+    if (source === "body" || source === "params") {
+      (req as unknown as Record<string, unknown>)[source] = result.data;
+    }
     next();
   };
 };

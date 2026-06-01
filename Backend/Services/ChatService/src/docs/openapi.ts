@@ -206,6 +206,37 @@ export const openApiSpec = {
         },
       },
     },
+    "/api/chats/orders/{orderId}/{conversationType}": {
+      get: {
+        tags: ["Chats"],
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          {
+            name: "orderId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+          {
+            name: "conversationType",
+            in: "path",
+            required: true,
+            schema: { $ref: "#/components/schemas/ChatConversationType" },
+          },
+        ],
+        summary: "Get conversation by order and type",
+        responses: {
+          200: {
+            description: "Conversation fetched successfully",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ChatConversation" },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/chats/conversations/{conversationId}/messages": {
       get: {
         tags: ["Chats"],

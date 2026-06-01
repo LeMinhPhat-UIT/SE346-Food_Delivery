@@ -4,6 +4,7 @@ import { authenticate } from "../../middlewares/auth.middleware";
 import { validate } from "../../middlewares/validate.middleware";
 import {
   chatFilterSchema,
+  conversationOrderParamSchema,
   conversationIdParamSchema,
   createConversationSchema,
   createMessageSchema,
@@ -17,6 +18,11 @@ router.use(authenticate);
 
 router.get("/conversations", validate(chatFilterSchema, "query"), chatController.listConversations);
 router.post("/conversations", validate(createConversationSchema), chatController.createConversation);
+router.get(
+  "/orders/:orderId/:conversationType",
+  validate(conversationOrderParamSchema, "params"),
+  chatController.getConversationByOrder,
+);
 router.get(
   "/conversations/:conversationId",
   validate(conversationIdParamSchema, "params"),

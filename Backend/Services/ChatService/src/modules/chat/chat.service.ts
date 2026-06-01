@@ -2,6 +2,7 @@ import { ChatConversation, ChatConversationType, ChatMessageType, ChatSenderRole
 import { ApiError } from "../../utils/apiError";
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ROLES } from "../../constants/roles";
+import { UserServiceClient } from "../../integrations/user.service";
 import {
   ChatConversationDto,
   ChatMessageDto,
@@ -40,10 +41,16 @@ export interface MessageQuery {
 }
 
 export class ChatService {
-  constructor(private readonly chatRepository = new ChatRepository()) {}
+  constructor(
+    private readonly chatRepository = new ChatRepository(),
+    private readonly userServiceClient = new UserServiceClient(),
+  ) {}
 
-  async createConversation(auth: AuthContext, command: CreateConversationCommand): Promise<ChatConversationDto> {
-    this.assertConversationOwnership(auth, command);
+  async createConversation(
+    auth: AuthContext,
+    command: CreateConversationCommand,
+  ): Promise<ChatConversationDto> {
+    await this.assertConversationOwnership(auth, command);
 
     const conversation = await this.chatRepository.upsertConversation(command);
     return toConversationDto(conversation);
@@ -54,11 +61,20 @@ export class ChatService {
     return toConversationDto(conversation);
   }
 
+  async getConversationByOrder(
+    auth: AuthContext,
+    orderId: string,
+    conversationType: ChatConversationType,
+  ): Promise<ChatConversationDto> {
+    const conversation = await this.findAccessibleConversationByOrder(auth, orderId, conversationType);
+    return toConversationDto(conversation);
+  }
+
   async listConversations(
     auth: AuthContext,
     query: ConversationQuery,
   ): Promise<PaginatedChatResponse<ChatConversationDto>> {
-    const filter = this.buildConversationFilter(auth, query);
+    const filter = await this.buildConversationFilter(auth, query);
     const { total, items } = await this.chatRepository.listConversations(filter);
 
     return {
@@ -86,7 +102,7 @@ export class ChatService {
     });
 
     return {
-      items: items.map(toMessageDto),
+      items: items.map((item) => toMessageDto(item as never)),
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -103,7 +119,7 @@ export class ChatService {
   ): Promise<ChatMessageDto> {
     const conversation = await this.findAccessibleConversation(auth, conversationId);
     const actor = this.resolveActor(auth);
-    const senderId = this.resolveSenderId(auth, actor);
+    const senderId = await this.resolveSenderId(auth, actor);
 
     const message = await this.chatRepository.createMessage({
       conversationId,
@@ -126,13 +142,13 @@ export class ChatService {
   async markConversationAsRead(auth: AuthContext, conversationId: string): Promise<ChatConversationDto> {
     const conversation = await this.findAccessibleConversation(auth, conversationId);
     const actor = this.resolveActor(auth);
-    const actorId = this.resolveSenderId(auth, actor);
+    const actorId = await this.resolveSenderId(auth, actor);
 
     const updated = await this.chatRepository.markConversationAsRead(conversation.id, actor, actorId);
     return toConversationDto(updated);
   }
 
-  private buildConversationFilter(auth: AuthContext, query: ConversationQuery) {
+  private async buildConversationFilter(auth: AuthContext, query: ConversationQuery) {
     if (this.isAdmin(auth)) {
       return {
         page: query.page,
@@ -142,19 +158,21 @@ export class ChatService {
     }
 
     if (auth.roles.includes(ROLES.MERCHANT)) {
+      const merchantId = await this.resolveMerchantProfileId(auth);
       return {
         page: query.page,
         limit: query.limit,
-        merchantId: auth.merchantId ?? auth.userId,
+        merchantId,
         conversationType: query.conversationType,
       };
     }
 
     if (auth.roles.includes(ROLES.SHIPPER)) {
+      const shipperId = await this.resolveShipperProfileId(auth);
       return {
         page: query.page,
         limit: query.limit,
-        shipperId: auth.shipperId ?? auth.userId,
+        shipperId,
         conversationType: query.conversationType,
       };
     }
@@ -167,7 +185,10 @@ export class ChatService {
     };
   }
 
-  private async findAccessibleConversation(auth: AuthContext, conversationId: string): Promise<ChatConversation> {
+  private async findAccessibleConversation(
+    auth: AuthContext,
+    conversationId: string,
+  ): Promise<ChatConversation> {
     const conversation = await this.chatRepository.findConversationById(conversationId);
     if (!conversation) {
       throw new ApiError(HTTP_STATUS.NOT_FOUND, "Conversation not found");
@@ -178,7 +199,7 @@ export class ChatService {
     }
 
     const actor = this.resolveActor(auth);
-    const actorId = this.resolveSenderId(auth, actor);
+    const actorId = await this.resolveSenderId(auth, actor);
 
     const canAccess =
       (actor === ChatSenderRole.CUSTOMER && conversation.customerId === actorId) ||
@@ -192,7 +213,36 @@ export class ChatService {
     return conversation;
   }
 
-  private assertConversationOwnership(auth: AuthContext, command: CreateConversationCommand) {
+  private async findAccessibleConversationByOrder(
+    auth: AuthContext,
+    orderId: string,
+    conversationType: ChatConversationType,
+  ): Promise<ChatConversation> {
+    const conversation = await this.chatRepository.findConversationByOrderAndType(orderId, conversationType);
+    if (!conversation) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Conversation not found");
+    }
+
+    if (this.isAdmin(auth)) {
+      return conversation;
+    }
+
+    const actor = this.resolveActor(auth);
+    const actorId = await this.resolveSenderId(auth, actor);
+
+    const canAccess =
+      (actor === ChatSenderRole.CUSTOMER && conversation.customerId === actorId) ||
+      (actor === ChatSenderRole.MERCHANT && conversation.merchantId === actorId) ||
+      (actor === ChatSenderRole.SHIPPER && conversation.shipperId === actorId);
+
+    if (!canAccess) {
+      throw new ApiError(HTTP_STATUS.FORBIDDEN, "You do not have access to this conversation");
+    }
+
+    return conversation;
+  }
+
+  private async assertConversationOwnership(auth: AuthContext, command: CreateConversationCommand) {
     if (this.isAdmin(auth)) {
       return;
     }
@@ -202,14 +252,14 @@ export class ChatService {
     }
 
     if (auth.roles.includes(ROLES.MERCHANT)) {
-      const merchantId = auth.merchantId ?? auth.userId;
+      const merchantId = await this.resolveMerchantProfileId(auth);
       if (command.merchantId !== merchantId) {
         throw new ApiError(HTTP_STATUS.FORBIDDEN, "Merchant cannot create conversation for another merchant");
       }
     }
 
     if (auth.roles.includes(ROLES.SHIPPER)) {
-      const shipperId = auth.shipperId ?? auth.userId;
+      const shipperId = await this.resolveShipperProfileId(auth);
       if (command.shipperId && command.shipperId !== shipperId) {
         throw new ApiError(HTTP_STATUS.FORBIDDEN, "Shipper cannot create conversation for another shipper");
       }
@@ -232,16 +282,44 @@ export class ChatService {
     return ChatSenderRole.CUSTOMER;
   }
 
-  private resolveSenderId(auth: AuthContext, actor: ChatSenderRole): string {
+  private async resolveSenderId(auth: AuthContext, actor: ChatSenderRole): Promise<string> {
     if (actor === ChatSenderRole.MERCHANT) {
-      return auth.merchantId ?? auth.userId;
+      return this.resolveMerchantProfileId(auth);
     }
 
     if (actor === ChatSenderRole.SHIPPER) {
-      return auth.shipperId ?? auth.userId;
+      return this.resolveShipperProfileId(auth);
     }
 
     return auth.userId;
+  }
+
+  private async resolveMerchantProfileId(auth: AuthContext): Promise<string> {
+    if (auth.merchantId) {
+      return auth.merchantId;
+    }
+
+    const merchant = await this.userServiceClient.getMerchantByUserId(auth.userId, auth.token);
+
+    if (!merchant) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Merchant profile not found");
+    }
+
+    return merchant.id;
+  }
+
+  private async resolveShipperProfileId(auth: AuthContext): Promise<string> {
+    if (auth.shipperId) {
+      return auth.shipperId;
+    }
+
+    const shipper = await this.userServiceClient.getShipperByUserId(auth.userId, auth.token);
+
+    if (!shipper) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Shipper profile not found");
+    }
+
+    return shipper.id;
   }
 
   private isAdmin(auth: AuthContext) {

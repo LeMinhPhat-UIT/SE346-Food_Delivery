@@ -8,6 +8,8 @@
 
         public string AvatarUrl { get; set; } = null!;
 
+        public string PhoneNumber { get; set; } = null!;
+
         public string Status { get; set; } = null!;
     }
 }

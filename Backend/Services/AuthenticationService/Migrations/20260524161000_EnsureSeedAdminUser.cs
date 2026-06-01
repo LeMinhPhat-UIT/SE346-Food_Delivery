@@ -1,4 +1,4 @@
-using AuthenticationService.Persistences;
+﻿using AuthenticationService.Persistences;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
@@ -16,13 +16,13 @@ namespace AuthenticationService.Migrations
                 """
                 INSERT INTO "AspNetRoles" ("Id", "ConcurrencyStamp", "Name", "NormalizedName")
                 SELECT
-                    '44444444-4444-4444-4444-444444444444'::uuid,
+                    '44444444-4444-4444-8444-444444444444'::uuid,
                     'SEED-ADMIN-ROLE-CONCURRENCY-STAMP',
                     'Admin',
                     'ADMIN'
                 WHERE NOT EXISTS (
                     SELECT 1 FROM "AspNetRoles"
-                    WHERE "Id" = '44444444-4444-4444-4444-444444444444'::uuid
+                    WHERE "Id" = '44444444-4444-4444-8444-444444444444'::uuid
                        OR "NormalizedName" = 'ADMIN'
                 );
 
@@ -51,7 +51,7 @@ namespace AuthenticationService.Migrations
                     "UserName"
                 )
                 SELECT
-                    '55555555-5555-5555-5555-555555555555'::uuid,
+                    '55555555-5555-4555-8555-555555555555'::uuid,
                     0,
                     'SEED-ADMIN-CONCURRENCY-STAMP',
                     TIMESTAMPTZ '2026-01-01 00:00:00+00',
@@ -75,25 +75,25 @@ namespace AuthenticationService.Migrations
                     'admin@fooddelivery.local'
                 WHERE NOT EXISTS (
                     SELECT 1 FROM "AspNetUsers"
-                    WHERE "Id" = '55555555-5555-5555-5555-555555555555'::uuid
+                    WHERE "Id" = '55555555-5555-4555-8555-555555555555'::uuid
                 );
 
                 INSERT INTO "AspNetUserRoles" ("UserId", "RoleId")
                 SELECT
-                    '55555555-5555-5555-5555-555555555555'::uuid,
-                    '44444444-4444-4444-4444-444444444444'::uuid
+                    '55555555-5555-4555-8555-555555555555'::uuid,
+                    '44444444-4444-4444-8444-444444444444'::uuid
                 WHERE EXISTS (
                     SELECT 1 FROM "AspNetUsers"
-                    WHERE "Id" = '55555555-5555-5555-5555-555555555555'::uuid
+                    WHERE "Id" = '55555555-5555-4555-8555-555555555555'::uuid
                 )
                 AND EXISTS (
                     SELECT 1 FROM "AspNetRoles"
-                    WHERE "Id" = '44444444-4444-4444-4444-444444444444'::uuid
+                    WHERE "Id" = '44444444-4444-4444-8444-444444444444'::uuid
                 )
                 AND NOT EXISTS (
                     SELECT 1 FROM "AspNetUserRoles"
-                    WHERE "UserId" = '55555555-5555-5555-5555-555555555555'::uuid
-                      AND "RoleId" = '44444444-4444-4444-4444-444444444444'::uuid
+                    WHERE "UserId" = '55555555-5555-4555-8555-555555555555'::uuid
+                      AND "RoleId" = '44444444-4444-4444-8444-444444444444'::uuid
                 );
                 """);
         }
@@ -103,11 +103,11 @@ namespace AuthenticationService.Migrations
             migrationBuilder.Sql(
                 """
                 DELETE FROM "AspNetUserRoles"
-                WHERE "UserId" = '55555555-5555-5555-5555-555555555555'::uuid
-                  AND "RoleId" = '44444444-4444-4444-4444-444444444444'::uuid;
+                WHERE "UserId" = '55555555-5555-4555-8555-555555555555'::uuid
+                  AND "RoleId" = '44444444-4444-4444-8444-444444444444'::uuid;
 
                 DELETE FROM "AspNetUsers"
-                WHERE "Id" = '55555555-5555-5555-5555-555555555555'::uuid;
+                WHERE "Id" = '55555555-5555-4555-8555-555555555555'::uuid;
                 """);
         }
     }

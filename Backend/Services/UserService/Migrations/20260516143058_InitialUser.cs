@@ -230,8 +230,8 @@ namespace UserService.Migrations
                 columns: new[] { "Id", "AvatarUrl", "CreatedAt", "DeletedAt", "FullName", "MerchantId", "ShipperId", "Status", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "https://example.com/avatars/customer.png", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Seeded Customer", null, null, 0, null },
-                    { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "https://example.com/avatars/merchant.png", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Seeded Merchant Owner", null, null, 0, null }
+                    { new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"), "https://example.com/avatars/customer.png", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Seeded Customer", null, null, 0, null },
+                    { new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"), "https://example.com/avatars/merchant.png", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "Seeded Merchant Owner", null, null, 0, null }
                 });
 
             migrationBuilder.InsertData(
@@ -239,19 +239,19 @@ namespace UserService.Migrations
                 columns: new[] { "Id", "AddressLine", "City", "CreatedAt", "DeletedAt", "District", "IsDefault", "Label", "Lat", "Lng", "Phone", "RecipientName", "UpdatedAt", "UserId", "Ward" },
                 values: new object[,]
                 {
-                    { new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"), "1 Nguyen Hue", "Ho Chi Minh City", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "District 1", true, "Home", 10.7769m, 106.7009m, "0900000001", "Seeded Customer", null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Ben Nghe" },
-                    { new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), "2 Le Loi", "Ho Chi Minh City", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "District 1", true, "Store Contact", 10.7722m, 106.6983m, "0900000002", "Seeded Merchant Owner", null, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Ben Thanh" }
+                    { new Guid("dddddddd-dddd-4ddd-8ddd-dddddddddddd"), "1 Nguyen Hue", "Ho Chi Minh City", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "District 1", true, "Home", 10.7769m, 106.7009m, "0900000001", "Seeded Customer", null, new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"), "Ben Nghe" },
+                    { new Guid("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"), "2 Le Loi", "Ho Chi Minh City", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "District 1", true, "Store Contact", 10.7722m, 106.6983m, "0900000002", "Seeded Merchant Owner", null, new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"), "Ben Thanh" }
                 });
 
             migrationBuilder.InsertData(
                 table: "Merchants",
                 columns: new[] { "Id", "AvgPrepTime", "BusinessLicense", "ClosingTime", "CreatedAt", "DeletedAt", "IsOpen", "MinOrderAmount", "OpeningTime", "Status", "StoreBannerUrl", "StoreDescription", "StoreLogoUrl", "StoreName", "TaxId", "UpdatedAt", "UserId" },
-                values: new object[] { new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), 20, "BL-SEED-0001", new TimeSpan(0, 22, 0, 0, 0), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, true, 30000m, new TimeSpan(0, 8, 0, 0, 0), 1, "https://example.com/stores/banner.png", "Default merchant store for local development.", "https://example.com/stores/logo.png", "Seeded Merchant Store", "TAX-SEED-0001", null, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb") });
+                values: new object[] { new Guid("cccccccc-cccc-4ccc-8ccc-cccccccccccc"), 20, "BL-SEED-0001", new TimeSpan(0, 22, 0, 0, 0), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, true, 30000m, new TimeSpan(0, 8, 0, 0, 0), 1, "https://example.com/stores/banner.png", "Default merchant store for local development.", "https://example.com/stores/logo.png", "Seeded Merchant Store", "TAX-SEED-0001", null, new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb") });
 
             migrationBuilder.InsertData(
                 table: "MerchantAddresses",
                 columns: new[] { "Id", "AddressLine", "City", "CreatedAt", "DeletedAt", "District", "Lat", "Lng", "MerchantId", "UpdatedAt", "Ward" },
-                values: new object[] { new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"), "2 Le Loi", "Ho Chi Minh City", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "District 1", 10.7722m, 106.6983m, new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), null, "Ben Thanh" });
+                values: new object[] { new Guid("ffffffff-ffff-4fff-8fff-ffffffffffff"), "2 Le Loi", "Ho Chi Minh City", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "District 1", 10.7722m, 106.6983m, new Guid("cccccccc-cccc-4ccc-8ccc-cccccccccccc"), null, "Ben Thanh" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Addresses_UserId",

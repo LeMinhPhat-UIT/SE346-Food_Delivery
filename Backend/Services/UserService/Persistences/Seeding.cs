@@ -8,17 +8,17 @@ namespace UserService.Persistences
     {
         public static void InitializeData(ModelBuilder builder)
         {
-            var adminUserId = Guid.Parse("55555555-5555-5555-5555-555555555555");
-            var customerUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-            var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-            var shipperUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
-            var merchantId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-            var customerAddressId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
-            var merchantAddressId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-            var merchantStoreAddressId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
-            var shipperAddressId = Guid.Parse("12121212-1212-1212-1212-121212121212");
-            var shipperRequestId = Guid.Parse("34343434-3434-3434-3434-343434343434");
-            var shipperId = Guid.Parse("56565656-5656-5656-5656-565656565656");
+            var adminUserId = Guid.Parse("55555555-5555-4555-8555-555555555555");
+            var customerUserId = Guid.Parse("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa");
+            var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb");
+            var shipperUserId = Guid.Parse("99999999-9999-4999-9999-999999999999");
+            var merchantId = Guid.Parse("cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+            var customerAddressId = Guid.Parse("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
+            var merchantAddressId = Guid.Parse("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+            var merchantStoreAddressId = Guid.Parse("ffffffff-ffff-4fff-8fff-ffffffffffff");
+            var shipperAddressId = Guid.Parse("12121212-1212-4212-8212-121212121212");
+            var shipperRequestId = Guid.Parse("34343434-3434-4434-8434-343434343434");
+            var shipperId = Guid.Parse("56565656-5656-4656-8656-565656565656");
             var seededAt = DateTime.SpecifyKind(new DateTime(2026, 1, 1, 0, 0, 0), DateTimeKind.Utc);
 
             builder.Entity<User>().HasData(
@@ -27,6 +27,7 @@ namespace UserService.Persistences
                     Id = adminUserId,
                     FullName = "Seeded Admin",
                     AvatarUrl = "https://example.com/avatars/admin.png",
+                    PhoneNumber = "0900000000",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 },
@@ -35,6 +36,7 @@ namespace UserService.Persistences
                     Id = customerUserId,
                     FullName = "Seeded Customer",
                     AvatarUrl = "https://example.com/avatars/customer.png",
+                    PhoneNumber = "0900000001",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 },
@@ -43,6 +45,7 @@ namespace UserService.Persistences
                     Id = merchantUserId,
                     FullName = "Seeded Merchant Owner",
                     AvatarUrl = "https://example.com/avatars/merchant.png",
+                    PhoneNumber = "0900000002",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 },
@@ -51,6 +54,7 @@ namespace UserService.Persistences
                     Id = shipperUserId,
                     FullName = "Seeded Shipper",
                     AvatarUrl = "https://example.com/avatars/shipper.png",
+                    PhoneNumber = "0900000003",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
                 }

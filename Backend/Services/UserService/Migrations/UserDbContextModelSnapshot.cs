@@ -86,7 +86,7 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                            Id = new Guid("dddddddd-dddd-4ddd-8ddd-dddddddddddd"),
                             AddressLine = "1 Nguyen Hue",
                             City = "Ho Chi Minh City",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -97,12 +97,12 @@ namespace UserService.Migrations
                             Lng = 106.7009m,
                             Phone = "0900000001",
                             RecipientName = "Seeded Customer",
-                            UserId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            UserId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                             Ward = "Ben Nghe"
                         },
                         new
                         {
-                            Id = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            Id = new Guid("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"),
                             AddressLine = "2 Le Loi",
                             City = "Ho Chi Minh City",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -113,12 +113,12 @@ namespace UserService.Migrations
                             Lng = 106.6983m,
                             Phone = "0900000002",
                             RecipientName = "Seeded Merchant Owner",
-                            UserId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            UserId = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                             Ward = "Ben Thanh"
                         },
                         new
                         {
-                            Id = new Guid("12121212-1212-1212-1212-121212121212"),
+                            Id = new Guid("12121212-1212-4212-8212-121212121212"),
                             AddressLine = "3 Nguyen Trai",
                             City = "Ho Chi Minh City",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
@@ -129,7 +129,7 @@ namespace UserService.Migrations
                             Lng = 106.6824m,
                             Phone = "0900000003",
                             RecipientName = "Seeded Shipper",
-                            UserId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            UserId = new Guid("99999999-9999-4999-9999-999999999999"),
                             Ward = "Pham Ngu Lao"
                         });
                 });
@@ -205,7 +205,7 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            Id = new Guid("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
                             AvgPrepTime = 20,
                             BusinessLicense = "BL-SEED-0001",
                             ClosingTime = new TimeSpan(0, 22, 0, 0, 0),
@@ -219,7 +219,7 @@ namespace UserService.Migrations
                             StoreLogoUrl = "https://example.com/stores/logo.png",
                             StoreName = "Seeded Merchant Store",
                             TaxId = "TAX-SEED-0001",
-                            UserId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+                            UserId = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb")
                         });
                 });
 
@@ -272,14 +272,14 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            Id = new Guid("ffffffff-ffff-4fff-8fff-ffffffffffff"),
                             AddressLine = "2 Le Loi",
                             City = "Ho Chi Minh City",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             District = "District 1",
                             Lat = 10.7722m,
                             Lng = 106.6983m,
-                            MerchantId = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            MerchantId = new Guid("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
                             Ward = "Ben Thanh"
                         });
                 });
@@ -380,11 +380,11 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("56565656-5656-5656-5656-565656565656"),
+                            Id = new Guid("56565656-5656-4656-8656-565656565656"),
                             CreatedAt = new DateTime(2026, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
-                            RequestId = new Guid("34343434-3434-3434-3434-343434343434"),
+                            RequestId = new Guid("34343434-3434-4434-8434-343434343434"),
                             Status = "Approved",
-                            UserId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            UserId = new Guid("99999999-9999-4999-9999-999999999999"),
                             VehiclePlate = "59A-123.45"
                         });
                 });
@@ -461,7 +461,7 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("34343434-3434-3434-3434-343434343434"),
+                            Id = new Guid("34343434-3434-4434-8434-343434343434"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DateOfBirth = new DateTime(1998, 4, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Shipper",
@@ -472,9 +472,9 @@ namespace UserService.Migrations
                             LicenseFrontUrl = "https://example.com/shipper/license-front.jpg",
                             LicenseNumber = "DL-SEED-0001",
                             RejectedReason = "",
-                            ReviewedBy = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            ReviewedBy = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                             SelfieUrl = "https://example.com/shipper/selfie.jpg",
-                            UserId = new Guid("99999999-9999-9999-9999-999999999999"),
+                            UserId = new Guid("99999999-9999-4999-9999-999999999999"),
                             VerificationStatus = "Approved",
                             VerifiedAt = new DateTime(2026, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
@@ -503,6 +503,10 @@ namespace UserService.Migrations
                     b.Property<Guid?>("MerchantId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("ShipperId")
                         .HasColumnType("uuid");
 
@@ -520,34 +524,38 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            Id = new Guid("55555555-5555-4555-8555-555555555555"),
                             AvatarUrl = "https://example.com/avatars/admin.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Admin",
+                            PhoneNumber = "0900000000",
                             Status = "Active"
                         },
                         new
                         {
-                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Id = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                             AvatarUrl = "https://example.com/avatars/customer.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Customer",
+                            PhoneNumber = "0900000001",
                             Status = "Active"
                         },
                         new
                         {
-                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            Id = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb"),
                             AvatarUrl = "https://example.com/avatars/merchant.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Merchant Owner",
+                            PhoneNumber = "0900000002",
                             Status = "Active"
                         },
                         new
                         {
-                            Id = new Guid("99999999-9999-9999-9999-999999999999"),
+                            Id = new Guid("99999999-9999-4999-9999-999999999999"),
                             AvatarUrl = "https://example.com/avatars/shipper.png",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             FullName = "Seeded Shipper",
+                            PhoneNumber = "0900000003",
                             Status = "Active"
                         });
                 });

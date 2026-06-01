@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Services/">
     <Project Path="Services/ApiGateway/ApiGateway.csproj" />
+    <Project Path="Services/AddressService/AddressService.csproj" />
     <Project Path="Services/AuthenticationService/AuthenticationService.csproj" />
     <Project Path="Services/DeliveryService/DeliveryService.csproj" Id="6de472ec-ab6a-4e4a-8fbb-d75059041dfa" />
     <Project Path="Services/FileService/FileService.csproj" />

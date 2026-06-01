@@ -125,22 +125,22 @@ namespace DeliveryService.Migrations
             migrationBuilder.InsertData(
                 table: "DeliveryTrackings",
                 columns: new[] { "Id", "ActualTime", "CreatedAt", "DeletedAt", "DeliveryLat", "DeliveryLng", "DistanceKm", "EstimatedTime", "OrderId", "PickupLat", "PickupLng", "ShipperId", "Status", "UpdatedAt" },
-                values: new object[] { new Guid("61111111-1111-1111-1111-111111111111"), null, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, 10.7700m, 106.6950m, 2.2m, 15, new Guid("62222222-2222-2222-2222-222222222222"), 10.7769m, 106.7009m, new Guid("63333333-3333-3333-3333-333333333333"), 1, null });
+                values: new object[] { new Guid("61111111-1111-4111-8111-111111111111"), null, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, 10.7700m, 106.6950m, 2.2m, 15, new Guid("62222222-2222-4222-8222-222222222222"), 10.7769m, 106.7009m, new Guid("63333333-3333-4333-8333-333333333333"), 1, null });
 
             migrationBuilder.InsertData(
                 table: "ShipperAssignments",
                 columns: new[] { "Id", "AcceptedAt", "AssignedAt", "CustomerId", "DeliveredAt", "DeliveryProofFileKey", "OrderId", "OrderNumber", "PickedUpAt", "PickupProofFileKey", "RejectReason", "RespondedAt", "ShipperId", "Status" },
-                values: new object[] { new Guid("64444444-4444-4444-4444-444444444444"), new DateTime(2026, 1, 1, 0, 1, 0, 0, DateTimeKind.Utc), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("67777777-7777-7777-7777-777777777777"), null, null, new Guid("62222222-2222-2222-2222-222222222222"), "ORD-SEED-0001", null, null, null, null, new Guid("63333333-3333-3333-3333-333333333333"), 1 });
+                values: new object[] { new Guid("64444444-4444-4444-8444-444444444444"), new DateTime(2026, 1, 1, 0, 1, 0, 0, DateTimeKind.Utc), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("67777777-7777-4777-8777-777777777777"), null, null, new Guid("62222222-2222-4222-8222-222222222222"), "ORD-SEED-0001", null, null, null, null, new Guid("63333333-3333-4333-8333-333333333333"), 1 });
 
             migrationBuilder.InsertData(
                 table: "ShipperAvailabilities",
                 columns: new[] { "Id", "CreatedAt", "CurrentLat", "CurrentLng", "CurrentOrderId", "DeletedAt", "LastSeenAt", "ShipperId", "Status", "UpdatedAt" },
-                values: new object[] { new Guid("66666666-6666-6666-6666-666666666666"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), 10.7735m, 106.6975m, new Guid("62222222-2222-2222-2222-222222222222"), null, new DateTime(2026, 1, 1, 0, 5, 0, 0, DateTimeKind.Utc), new Guid("63333333-3333-3333-3333-333333333333"), 3, null });
+                values: new object[] { new Guid("66666666-6666-4666-8666-666666666666"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), 10.7735m, 106.6975m, new Guid("62222222-2222-4222-8222-222222222222"), null, new DateTime(2026, 1, 1, 0, 5, 0, 0, DateTimeKind.Utc), new Guid("63333333-3333-4333-8333-333333333333"), 3, null });
 
             migrationBuilder.InsertData(
                 table: "ShipperLocationHistories",
                 columns: new[] { "Id", "CorrelationId", "CreatedAt", "DeletedAt", "Latitude", "Longitude", "OrderId", "RecordedAt", "ShipperId", "UpdatedAt" },
-                values: new object[] { new Guid("65555555-5555-5555-5555-555555555555"), "seed-delivery", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 10.7735m, 106.6975m, new Guid("62222222-2222-2222-2222-222222222222"), new DateTime(2026, 1, 1, 0, 5, 0, 0, DateTimeKind.Utc), new Guid("63333333-3333-3333-3333-333333333333"), null });
+                values: new object[] { new Guid("65555555-5555-4555-8555-555555555555"), "seed-delivery", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 10.7735m, 106.6975m, new Guid("62222222-2222-4222-8222-222222222222"), new DateTime(2026, 1, 1, 0, 5, 0, 0, DateTimeKind.Utc), new Guid("63333333-3333-4333-8333-333333333333"), null });
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShipperLocationHistories_OrderId_RecordedAt",

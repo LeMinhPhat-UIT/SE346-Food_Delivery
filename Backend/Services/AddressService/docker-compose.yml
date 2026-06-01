@@ -1,0 +1,40 @@
+services:
+  address-service:
+    container_name: address-service
+    build:
+      context: ../..
+      dockerfile: Services/AddressService/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${ADDRESS_SERVICE_HOST_PORT:-8090}:${ADDRESS_SERVICE_CONTAINER_PORT:-8080}"
+    depends_on:
+      address-db:
+        condition: service_healthy
+    networks:
+      - backend-network
+
+  address-db:
+    image: postgres:17-alpine
+    container_name: address-db
+    restart: unless-stopped
+    env_file:
+      - ../../Infrastructure/address-db.env
+    ports:
+      - "${ADDRESS_DB_PORT:-5439}:5432"
+    volumes:
+      - address_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  address_db_data:

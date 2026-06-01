@@ -63,38 +63,38 @@ namespace NotificationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("72222222-2222-2222-2222-222222222222"),
+                            Id = new Guid("72222222-2222-4222-8222-222222222222"),
                             Body = "Your account is ready to receive order updates.",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsRead = false,
                             ReferenceType = "user",
                             Title = "Welcome to Food Delivery",
                             Type = "system",
-                            UserId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                            UserId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa")
                         },
                         new
                         {
-                            Id = new Guid("74444444-4444-4444-4444-444444444444"),
+                            Id = new Guid("74444444-4444-4444-8444-444444444444"),
                             Body = "The merchant has confirmed the order and it is being prepared for delivery.",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 10, 0, 0, DateTimeKind.Utc),
                             IsRead = true,
-                            ReferenceId = new Guid("62222222-2222-2222-2222-222222222222"),
+                            ReferenceId = new Guid("62222222-2222-4222-8222-222222222222"),
                             ReferenceType = "delivery_tracking",
                             Title = "Your order is being prepared",
                             Type = "order_update",
-                            UserId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                            UserId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa")
                         },
                         new
                         {
-                            Id = new Guid("75555555-5555-5555-5555-555555555555"),
+                            Id = new Guid("75555555-5555-4555-8555-555555555555"),
                             Body = "You have a new order waiting for pickup.",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 15, 0, 0, DateTimeKind.Utc),
                             IsRead = false,
-                            ReferenceId = new Guid("64444444-4444-4444-4444-444444444444"),
+                            ReferenceId = new Guid("64444444-4444-4444-8444-444444444444"),
                             ReferenceType = "delivery_assignment",
                             Title = "New delivery assignment",
                             Type = "assignment",
-                            UserId = new Guid("99999999-9999-9999-9999-999999999999")
+                            UserId = new Guid("99999999-9999-4999-9999-999999999999")
                         });
                 });
 
@@ -134,30 +134,30 @@ namespace NotificationService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("73333333-3333-3333-3333-333333333333"),
+                            Id = new Guid("73333333-3333-4333-8333-333333333333"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DeviceToken = "seed-device-token",
                             DeviceType = "Android",
                             IsActive = true,
-                            UserId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                            UserId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa")
                         },
                         new
                         {
-                            Id = new Guid("76666666-6666-6666-6666-666666666666"),
+                            Id = new Guid("76666666-6666-4666-8666-666666666666"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DeviceToken = "seed-merchant-device-token",
                             DeviceType = "Web",
                             IsActive = true,
-                            UserId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+                            UserId = new Guid("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb")
                         },
                         new
                         {
-                            Id = new Guid("77777777-7777-7777-7777-777777777777"),
+                            Id = new Guid("77777777-7777-4777-8777-777777777777"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DeviceToken = "seed-shipper-device-token",
                             DeviceType = "Ios",
                             IsActive = true,
-                            UserId = new Guid("99999999-9999-9999-9999-999999999999")
+                            UserId = new Guid("99999999-9999-4999-9999-999999999999")
                         });
                 });
 #pragma warning restore 612, 618

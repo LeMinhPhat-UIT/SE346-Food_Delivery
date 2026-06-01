@@ -33,21 +33,21 @@ namespace NotificationService.Migrations
             migrationBuilder.UpdateData(
                 table: "UserDevices",
                 keyColumn: "Id",
-                keyValue: new Guid("73333333-3333-3333-3333-333333333333"),
+                keyValue: new Guid("73333333-3333-4333-8333-333333333333"),
                 column: "DeviceType",
                 value: "Android");
 
             migrationBuilder.UpdateData(
                 table: "UserDevices",
                 keyColumn: "Id",
-                keyValue: new Guid("76666666-6666-6666-6666-666666666666"),
+                keyValue: new Guid("76666666-6666-4666-8666-666666666666"),
                 column: "DeviceType",
                 value: "Web");
 
             migrationBuilder.UpdateData(
                 table: "UserDevices",
                 keyColumn: "Id",
-                keyValue: new Guid("77777777-7777-7777-7777-777777777777"),
+                keyValue: new Guid("77777777-7777-4777-8777-777777777777"),
                 column: "DeviceType",
                 value: "Ios");
         }
@@ -77,21 +77,21 @@ namespace NotificationService.Migrations
             migrationBuilder.UpdateData(
                 table: "UserDevices",
                 keyColumn: "Id",
-                keyValue: new Guid("73333333-3333-3333-3333-333333333333"),
+                keyValue: new Guid("73333333-3333-4333-8333-333333333333"),
                 column: "DeviceType",
                 value: 1);
 
             migrationBuilder.UpdateData(
                 table: "UserDevices",
                 keyColumn: "Id",
-                keyValue: new Guid("76666666-6666-6666-6666-666666666666"),
+                keyValue: new Guid("76666666-6666-4666-8666-666666666666"),
                 column: "DeviceType",
                 value: 2);
 
             migrationBuilder.UpdateData(
                 table: "UserDevices",
                 keyColumn: "Id",
-                keyValue: new Guid("77777777-7777-7777-7777-777777777777"),
+                keyValue: new Guid("77777777-7777-4777-8777-777777777777"),
                 column: "DeviceType",
                 value: 0);
         }

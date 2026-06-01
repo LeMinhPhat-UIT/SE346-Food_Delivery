@@ -51,12 +51,12 @@ namespace NotificationService.Migrations
             migrationBuilder.InsertData(
                 table: "Notifications",
                 columns: new[] { "Id", "Body", "CreatedAt", "IsRead", "ReferenceId", "ReferenceType", "Title", "Type", "UserId" },
-                values: new object[] { new Guid("72222222-2222-2222-2222-222222222222"), "Your account is ready to receive order updates.", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), false, null, "user", "Welcome to Food Delivery", "system", new Guid("71111111-1111-1111-1111-111111111111") });
+                values: new object[] { new Guid("72222222-2222-4222-8222-222222222222"), "Your account is ready to receive order updates.", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), false, null, "user", "Welcome to Food Delivery", "system", new Guid("71111111-1111-4111-8111-111111111111") });
 
             migrationBuilder.InsertData(
                 table: "UserDevices",
                 columns: new[] { "Id", "CreatedAt", "DeletedAt", "DeviceToken", "DeviceType", "IsActive", "UpdatedAt", "UserId" },
-                values: new object[] { new Guid("73333333-3333-3333-3333-333333333333"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "seed-device-token", 1, true, null, new Guid("71111111-1111-1111-1111-111111111111") });
+                values: new object[] { new Guid("73333333-3333-4333-8333-333333333333"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "seed-device-token", 1, true, null, new Guid("71111111-1111-4111-8111-111111111111") });
         }
 
         /// <inheritdoc />

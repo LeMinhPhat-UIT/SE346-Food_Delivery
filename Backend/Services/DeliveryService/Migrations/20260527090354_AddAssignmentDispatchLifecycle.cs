@@ -93,14 +93,14 @@ namespace DeliveryService.Migrations
             migrationBuilder.UpdateData(
                 table: "ShipperAssignments",
                 keyColumn: "Id",
-                keyValue: new Guid("64444444-4444-4444-4444-444444444444"),
+                keyValue: new Guid("64444444-4444-4444-8444-444444444444"),
                 columns: new[] { "CancelledReason", "DropoffAddress", "DropoffLatitude", "DropoffLongitude", "MerchantName", "OfferExpiresAt", "PickupAddress", "PickupLatitude", "PickupLongitude" },
                 values: new object[] { null, "Seed dropoff address", 10.7700m, 106.6950m, "Seed Merchant", null, "Seed pickup address", 10.7769m, 106.7009m });
 
             migrationBuilder.UpdateData(
                 table: "ShipperAvailabilities",
                 keyColumn: "Id",
-                keyValue: new Guid("66666666-6666-6666-6666-666666666666"),
+                keyValue: new Guid("66666666-6666-4666-8666-666666666666"),
                 columns: new[] { "CurrentAssignmentId", "CurrentOfferedAssignmentId", "OfferingExpiresAt" },
                 values: new object[] { null, null, null });
 

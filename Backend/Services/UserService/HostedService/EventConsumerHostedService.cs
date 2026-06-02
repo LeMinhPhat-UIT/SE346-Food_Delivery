@@ -25,53 +25,57 @@ namespace UserService.HostedService
         {
             _logger.LogInformation("UserService Event Consumer Hosted Service starting...");
 
-            try
+            while (!stoppingToken.IsCancellationRequested)
             {
-                using var scope = _serviceProvider.CreateScope();
-
-                var rabbitOptions = scope.ServiceProvider.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
-                var connectionManager = scope.ServiceProvider.GetRequiredService<ConnectionManager>();
-                var eventDispatcher = scope.ServiceProvider.GetRequiredService<IEventDispatcher>();
-                var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-                var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
-
-                var connection = await connectionManager.GetConnectionAsync();
-                var channel = await connection.CreateChannelAsync();
-
-                await RabbitMqTopology.EnsureTopologyAsync(channel, rabbitOptions);
-
-                var queues = rabbitOptions
-                    .Exchanges
-                    .SelectMany(e => e.Queues)
-                    .Select(q => q.Name)
-                    .Distinct();
-
-                var tasks = queues.Select(async queue =>
+                try
                 {
-                    var queueChannel = await connection.CreateChannelAsync();
+                    using var scope = _serviceProvider.CreateScope();
 
-                    var consumer = new GenericEventConsumer(
-                        queueChannel,
-                        eventDispatcher,
-                        loggerFactory.CreateLogger<GenericEventConsumer>(),
-                        eventTypeRegistry);
+                    var rabbitOptions = scope.ServiceProvider.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+                    var connectionManager = scope.ServiceProvider.GetRequiredService<ConnectionManager>();
+                    var eventDispatcher = scope.ServiceProvider.GetRequiredService<IEventDispatcher>();
+                    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+                    var eventTypeRegistry = scope.ServiceProvider.GetRequiredService<IEventTypeRegistry>();
 
-                    await consumer.StartAsync(queue, stoppingToken);
+                    var connection = await connectionManager.GetConnectionAsync();
+                    var channel = await connection.CreateChannelAsync();
 
-                    _logger.LogInformation("Started consumer for queue: {Queue}", queue);
-                });
+                    await RabbitMqTopology.EnsureTopologyAsync(channel, rabbitOptions);
 
-                await Task.WhenAll(tasks);
-                await Task.Delay(Timeout.Infinite, stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("UserService Event Consumer Hosted Service stopping...");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in UserService Event Consumer Hosted Service");
-                throw;
+                    var queues = rabbitOptions
+                        .Exchanges
+                        .SelectMany(e => e.Queues)
+                        .Select(q => q.Name)
+                        .Distinct();
+
+                    var tasks = queues.Select(async queue =>
+                    {
+                        var queueChannel = await connection.CreateChannelAsync();
+
+                        var consumer = new GenericEventConsumer(
+                            queueChannel,
+                            eventDispatcher,
+                            loggerFactory.CreateLogger<GenericEventConsumer>(),
+                            eventTypeRegistry);
+
+                        await consumer.StartAsync(queue, stoppingToken);
+
+                        _logger.LogInformation("Started consumer for queue: {Queue}", queue);
+                    });
+
+                    await Task.WhenAll(tasks);
+                    await Task.Delay(Timeout.Infinite, stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("UserService Event Consumer Hosted Service stopping...");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "UserService Event Consumer Hosted Service could not start. Retrying in 5 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
             }
         }
     }

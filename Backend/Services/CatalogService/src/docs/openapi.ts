@@ -123,6 +123,11 @@ export const openApiSpec = {
         properties: {
           merchantId: { type: "string", example: "merchant-user-id-or-uuid" },
           categoryId: { type: "string", format: "uuid", nullable: true, example: null },
+          taxonomy: {
+            type: "string",
+            enum: ["FOOD", "DRINK", "DESSERT", "OTHER"],
+            example: "DRINK",
+          },
           name: { type: "string", example: "Vietnamese Milk Coffee" },
           description: { type: "string", nullable: true, example: "Traditional coffee with condensed milk" },
           imageUrl: { type: "string", nullable: true, example: "https://cdn.example.com/product/coffee.jpg" },
@@ -184,9 +189,9 @@ export const openApiSpec = {
       },
       ReviewCreateRequest: {
         type: "object",
-        required: ["userId", "orderId", "rating"],
+        required: ["orderId", "rating"],
+        description: "Authenticated user is derived from the bearer token; do not send userId.",
         properties: {
-          userId: { type: "string", example: "customer-user-id-or-uuid" },
           orderId: { type: "string", format: "uuid", example: "33333333-3333-3333-3333-333333333333" },
           merchantId: { type: "string", format: "uuid", nullable: true, example: null },
           productId: { type: "string", format: "uuid", nullable: true, example: null },
@@ -204,12 +209,18 @@ export const openApiSpec = {
         },
       },
       ReviewUpdateRequest: {
-        allOf: [
-          { $ref: "#/components/schemas/ReviewCreateRequest" },
-          {
-            description: "At least one field is required.",
+        type: "object",
+        description: "Only mutable review fields are allowed here.",
+        properties: {
+          rating: { type: "integer", minimum: 1, maximum: 5, example: 5 },
+          comment: { type: "string", nullable: true, example: "Updated review text" },
+          images: {
+            type: "array",
+            nullable: true,
+            items: { type: "string", format: "uri" },
+            example: ["https://cdn.example.com/review/1.png"],
           },
-        ],
+        },
       },
       ReviewReplyRequest: {
         type: "object",
@@ -385,6 +396,11 @@ export const openApiSpec = {
           { name: "search", in: "query", schema: { type: "string" } },
           { name: "merchantId", in: "query", schema: { type: "string" } },
           { name: "categoryId", in: "query", schema: { type: "string" } },
+          {
+            name: "taxonomy",
+            in: "query",
+            schema: { type: "string", enum: ["FOOD", "DRINK", "DESSERT", "OTHER"] },
+          },
           { name: "status", in: "query", schema: { type: "string" } },
         ],
         responses: { "200": { description: "Paginated product list" } },
@@ -409,6 +425,18 @@ export const openApiSpec = {
         tags: ["Products"],
         summary: "Get my merchant products",
         security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: "page", in: "query", schema: { type: "integer", minimum: 1, default: 1 } },
+          { name: "limit", in: "query", schema: { type: "integer", minimum: 1, default: 20 } },
+          { name: "search", in: "query", schema: { type: "string" } },
+          { name: "categoryId", in: "query", schema: { type: "string" } },
+          {
+            name: "taxonomy",
+            in: "query",
+            schema: { type: "string", enum: ["FOOD", "DRINK", "DESSERT", "OTHER"] },
+          },
+          { name: "status", in: "query", schema: { type: "string" } },
+        ],
         responses: { "200": { description: "Merchant products" } },
       },
     },

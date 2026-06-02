@@ -29,8 +29,7 @@ export const reviewQuerySchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
-export const baseReviewBodySchema = z.object({
-  userId: z.string().uuid("User ID must be a valid UUID"),
+export const reviewCreateBodySchema = z.object({
   orderId: z.string().uuid("Order ID must be a valid UUID"),
   merchantId: z
     .string()
@@ -72,10 +71,29 @@ export const baseReviewBodySchema = z.object({
   repliedAt: z.coerce.date().nullable().optional(),
 });
 
-export const createReviewBodySchema = baseReviewBodySchema;
+export const reviewUpdateBodySchema = z.object({
+  rating: z
+    .number({ error: "Rating must be a number" })
+    .int("Rating must be an integer")
+    .min(1, "Rating must be between 1 and 5")
+    .max(5, "Rating must be between 1 and 5")
+    .optional(),
+  comment: z
+    .string()
+    .trim()
+    .max(2000, "Comment must be at most 2000 characters")
+    .nullable()
+    .optional(),
+  images: z
+    .array(z.string().trim().url("Each image must be a valid URL"))
+    .max(5, "Images can contain at most 5 items")
+    .nullable()
+    .optional(),
+});
 
-export const updateReviewBodySchema = baseReviewBodySchema
-  .partial()
+export const createReviewBodySchema = reviewCreateBodySchema;
+
+export const updateReviewBodySchema = reviewUpdateBodySchema
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field is required for update",
   });

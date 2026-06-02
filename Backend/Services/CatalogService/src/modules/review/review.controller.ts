@@ -34,6 +34,14 @@ export class ReviewController {
     }
   }
 
+  private async ensureReviewOwnership(req: Request, reviewId: string) {
+    if (!req.auth || req.auth.roles.includes(ROLES.ADMIN)) {
+      return;
+    }
+
+    await reviewService.assertReviewOwnedByUser(reviewId, req.auth.userId);
+  }
+
   getAllReviews = asyncHandler(async (req: Request, res: Response) => {
     const filters = (req.validated?.query ?? {}) as ReviewQueryDto;
     const reviews = await reviewService.getAllReviews(filters);
@@ -73,8 +81,14 @@ export class ReviewController {
   });
 
   createReview = asyncHandler(async (req: Request, res: Response) => {
+    const auth = req.auth;
+
+    if (!auth?.userId || !auth.token) {
+      throw new ApiError(HTTP_STATUS.UNAUTHORIZED, "Invalid user context");
+    }
+
     const payload = req.validated?.body as CreateReviewDto;
-    const review = await reviewService.createReview(payload);
+    const review = await reviewService.createReview(auth.userId, auth.token, payload);
 
     return Send.success(
       res,
@@ -86,6 +100,7 @@ export class ReviewController {
 
   updateReview = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureReviewOwnership(req, id);
     const payload = req.validated?.body as UpdateReviewDto;
     const review = await reviewService.updateReview(id, payload);
 
@@ -125,6 +140,7 @@ export class ReviewController {
 
   deleteReview = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.validated?.params as { id: string };
+    await this.ensureReviewOwnership(req, id);
     const review = await reviewService.deleteReview(id);
 
     return Send.success(res, review, "Review deleted successfully");

@@ -62,4 +62,49 @@ namespace AuthenticationService.Validations
                 .Equal(request => request.NewPassword).WithMessage("Confirm password must match new password");
         }
     }
+
+    public class ForgotPasswordRequestValidation : AbstractValidator<ForgotPasswordRequest>
+    {
+        public ForgotPasswordRequestValidation()
+        {
+            RuleFor(request => request.Email)
+                .NotEmpty().WithMessage("Email is required")
+                .EmailAddress().WithMessage("Invalid email address");
+        }
+    }
+
+    public class VerifyResetOtpRequestValidation : AbstractValidator<VerifyResetOtpRequest>
+    {
+        public VerifyResetOtpRequestValidation()
+        {
+            RuleFor(request => request.Email)
+                .NotEmpty().WithMessage("Email is required")
+                .EmailAddress().WithMessage("Invalid email address");
+
+            RuleFor(request => request.Otp)
+                .NotEmpty().WithMessage("OTP is required")
+                .Length(6).WithMessage("OTP must be 6 digits");
+        }
+    }
+
+    public class ResetPasswordRequestValidation : AbstractValidator<ResetPasswordRequest>
+    {
+        public ResetPasswordRequestValidation()
+        {
+            RuleFor(request => request.Email)
+                .NotEmpty().WithMessage("Email is required")
+                .EmailAddress().WithMessage("Invalid email address");
+
+            RuleFor(request => request.ResetToken)
+                .NotEmpty().WithMessage("Reset token is required");
+
+            RuleFor(request => request.NewPassword)
+                .NotEmpty().WithMessage("New password is required")
+                .MinimumLength(6).WithMessage("New password must be at least 6 characters");
+
+            RuleFor(request => request.ConfirmPassword)
+                .NotEmpty().WithMessage("Confirm password is required")
+                .Equal(request => request.NewPassword).WithMessage("Confirm password must match new password");
+        }
+    }
 }

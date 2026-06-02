@@ -8,6 +8,9 @@ namespace AuthenticationService.Services.Interfaces
         Task<ApiResponse<RegisterResponse>> RegisterCustomerAsync(CustomerRegistrationRequest request);
         Task<ApiResponse<VerifyOtpResponse>> VerifyOtpAsync(VerifyOtpRequest request);
         Task<ApiResponse<SendOtpResponse>> ResendOtpAsync(string email);
+        Task<ApiResponse<SendOtpResponse>> ForgotPasswordAsync(ForgotPasswordRequest request);
+        Task<ApiResponse<VerifyResetOtpResponse>> VerifyResetOtpAsync(VerifyResetOtpRequest request);
+        Task<ApiResponse<ConfirmationResponse>> ResetPasswordAsync(ResetPasswordRequest request);
         Task<ApiResponse<LoginResponse>> Login(LoginRequest request);
         Task<ApiResponse<LogoutResponse>> Logout(LogoutRequest request);
         Task<ApiResponse<LoginResponse>> RefreshToken(RefreshTokenRequest request);

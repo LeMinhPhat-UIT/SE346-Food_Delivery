@@ -275,12 +275,12 @@ namespace DeliveryService.Services.Implements
                 user);
         }
 
-        public async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(Guid assignmentId, AcceptAssignmentRequest request, ClaimsPrincipal user)
+        public async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(Guid assignmentId, AcceptAssignmentRequest? request, ClaimsPrincipal user)
         {
             if (assignmentId == Guid.Empty)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
 
-            if (request.OfferId.HasValue && request.OfferId.Value != assignmentId)
+            if (request?.OfferId.HasValue == true && request.OfferId.Value != assignmentId)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Offer id does not match assignment id");
 
             var shipperId = await ResolveCurrentShipperIdAsync(user);
@@ -451,7 +451,8 @@ namespace DeliveryService.Services.Implements
             if (!IsCurrentUserAdmin(user))
             {
                 var assignments = await _deliveryRepository.GetAllShipperAssignmentsByOrderIdAsync(orderId);
-                if (!assignments.Any(assignment => CanAccessAssignment(user, assignment)))
+                var assignmentList = assignments.ToList();
+                if (!assignmentList.Any(assignment => CanAccessAssignment(user, assignment)))
                     return new ApiResponse<PagedResult<ShipperLocationHistory>>(StatusCodes.Status403Forbidden, "You can only access location history for your own orders or assignments");
             }
 

@@ -111,6 +111,7 @@ namespace UserService.Services.Implements
 
             var address = _mapper.ToAddress(request);
             address.UserId = userId;
+            address.District = string.Empty;
             address.CreatedAt = DateTime.UtcNow;
 
             var result = await _userRepository.CreateUserAddressAsync(address);
@@ -133,9 +134,6 @@ namespace UserService.Services.Implements
 
             if (!string.IsNullOrEmpty(request.Ward))
                 address.Ward = request.Ward;
-
-            if (!string.IsNullOrEmpty(request.District))
-                address.District = request.District;
 
             if (!string.IsNullOrEmpty(request.City))
                 address.City = request.City;

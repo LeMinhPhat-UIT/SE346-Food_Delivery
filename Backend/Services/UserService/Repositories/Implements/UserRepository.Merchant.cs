@@ -82,6 +82,15 @@ namespace UserService.Repositories.Implements
                 .FirstOrDefaultAsync(mr => mr.UserId == userId && mr.VerificationStatus == VerificationStatus.Pending);
         }
 
+        public async Task<MerchantRequest?> GetLatestMerchantRequestByUserIdAsync(Guid userId)
+        {
+            return await _context.MerchantRequests
+                .Where(mr => mr.UserId == userId)
+                .OrderByDescending(mr => mr.CreatedAt)
+                .ThenByDescending(mr => mr.Id)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task UpdateMerchantRequestAsync(MerchantRequest merchantRequest)
         {
             _context.MerchantRequests.Update(merchantRequest);

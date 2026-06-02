@@ -37,6 +37,7 @@ namespace UserService.Mappers
         [MapperIgnoreTarget(nameof(Address.CreatedAt))]
         [MapperIgnoreTarget(nameof(Address.UpdatedAt))]
         [MapperIgnoreTarget(nameof(Address.DeletedAt))]
+        [MapperIgnoreTarget(nameof(Address.District))]
         public partial Address ToAddress(CreateUserAddressRequest request);
 
         [MapperIgnoreSource(nameof(Address.User))]

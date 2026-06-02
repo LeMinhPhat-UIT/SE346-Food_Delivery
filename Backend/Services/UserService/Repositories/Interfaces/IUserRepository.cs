@@ -21,6 +21,7 @@ namespace UserService.Repositories.Interfaces
         Task<IQueryable<MerchantRequest>> GetAllMerchantRequestAsync();
         Task<MerchantRequest?> GetMerchantRequestByIdAsync(Guid requestId);
         Task<MerchantRequest?> GetPendingMerchantRequestByUserIdAsync(Guid userId);
+        Task<MerchantRequest?> GetLatestMerchantRequestByUserIdAsync(Guid userId);
         Task UpdateMerchantRequestAsync(MerchantRequest merchantRequest);
 
         Task<bool> CreateMerchantAsync(Merchant merchant);
@@ -39,6 +40,7 @@ namespace UserService.Repositories.Interfaces
         Task<IQueryable<ShipperRequest>> GetAllShipperRequestAsync();
         Task<ShipperRequest?> GetShipperRequestByIdAsync(Guid requestId);
         Task<ShipperRequest?> GetPendingShipperRequestByUserIdAsync(Guid userId);
+        Task<ShipperRequest?> GetLatestShipperRequestByUserIdAsync(Guid userId);
         Task UpdateShipperRequestAsync(ShipperRequest shipperRequest);
 
         Task<bool> CreateShipperAsync(Shipper shipper);

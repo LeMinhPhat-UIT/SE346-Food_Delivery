@@ -246,11 +246,11 @@ namespace DeliveryService.Controllers
 
         [HttpPost("assignments/{assignmentId:guid}/accept")]
         [Authorize(Policy = "ShipperOrAdmin")]
-        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> AcceptAssignmentOffer([FromRoute] Guid assignmentId, [FromBody] AcceptAssignmentRequest request)
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> AcceptAssignmentOffer([FromRoute] Guid assignmentId)
         {
             try
             {
-                var response = await _deliveryService.AcceptAssignmentAsync(assignmentId, request, User);
+                var response = await _deliveryService.AcceptAssignmentAsync(assignmentId, null, User);
 
                 if (!response.Success)
                     return StatusCode(response.StatusCode, response);

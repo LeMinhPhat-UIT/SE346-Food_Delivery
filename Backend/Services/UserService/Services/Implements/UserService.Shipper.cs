@@ -21,11 +21,15 @@ namespace UserService.Services.Implements
             if (existingShipper != null)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "You are already a shipper");
 
-            var existingPendingShipper = await _userRepository.GetPendingShipperRequestByUserIdAsync(userId);
-            if (existingPendingShipper != null)
+            var latestRequest = await _userRepository.GetLatestShipperRequestByUserIdAsync(userId);
+            if (latestRequest?.VerificationStatus == VerificationStatus.Pending)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "You already have a pending shipper request");
 
+            if (latestRequest?.VerificationStatus == VerificationStatus.Approved)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "Your shipper request has already been approved");
+
             var shipperRequest = _mapper.ToShipperRequest(request);
+            shipperRequest.Id = Guid.NewGuid();
             shipperRequest.UserId = userId;
             shipperRequest.VerificationStatus = VerificationStatus.Pending;
             shipperRequest.RejectedReason = string.Empty;
@@ -112,9 +116,6 @@ namespace UserService.Services.Implements
 
             if (!string.IsNullOrWhiteSpace(request.VehiclePlate))
                 shipper.VehiclePlate = request.VehiclePlate.Trim();
-
-            if (request.Status.HasValue)
-                shipper.Status = request.Status.Value;
 
             shipper.UpdatedAt = DateTime.UtcNow;
 

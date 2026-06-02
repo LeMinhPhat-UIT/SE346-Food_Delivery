@@ -27,6 +27,15 @@ namespace NotificationService.Consuming
                     @event.UserId,
                     @event.Email);
 
+                var isPasswordReset = string.Equals(@event.OtpType, "password-reset", StringComparison.OrdinalIgnoreCase);
+                var header = isPasswordReset ? "Password Reset" : "Email Verification";
+                var intro = isPasswordReset
+                    ? "Please use the following OTP code to reset your Food Delivery password:"
+                    : "Thank you for registering with Food Delivery! Please use the following OTP code to verify your email address:";
+                var subject = isPasswordReset
+                    ? "Your Password Reset Code - Food Delivery"
+                    : "Your Email Verification Code - Food Delivery";
+
                 var emailBody = $@"
 <!DOCTYPE html>
 <html>
@@ -43,11 +52,11 @@ namespace NotificationService.Consuming
 <body>
     <div class=""container"">
         <div class=""header"">
-            <h1>Email Verification</h1>
+            <h1>{header}</h1>
         </div>
         <div class=""content"">
             <p>Hello,</p>
-            <p>Thank you for registering with Food Delivery! Please use the following OTP code to verify your email address:</p>
+            <p>{intro}</p>
             <div class=""otp-code"">{@event.Otp}</div>
             <p><strong>This code will expire at: {@event.ExpiresAt:yyyy-MM-dd HH:mm:ss} UTC</strong></p>
             <p>If you didn't request this code, please ignore this email.</p>
@@ -64,7 +73,7 @@ namespace NotificationService.Consuming
                     From = _emailOptions.Value.FromEmail,
                     To = @event.Email,
                     Body = emailBody,
-                    Subject = "Your Email Verification Code - Food Delivery"
+                    Subject = subject
                 };
 
                 SmtpClient client = new SmtpClient(_emailOptions.Value.Host, _emailOptions.Value.Port)

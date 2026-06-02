@@ -193,6 +193,90 @@ namespace AuthenticationService.Services.Implements
             });
         }
 
+        public async Task<ApiResponse<SendOtpResponse>> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            var user = await _authRepository.FindByEmailAsync(request.Email);
+            if (user == null)
+                return new ApiResponse<SendOtpResponse>(StatusCodes.Status404NotFound, "Email invalid");
+
+            if (!user.IsOtpVerified)
+                return new ApiResponse<SendOtpResponse>(StatusCodes.Status409Conflict, "User email is not verified");
+
+            var otp = GenerateOtp();
+            user.Otp = otp;
+            user.OtpExpiresAt = DateTime.UtcNow.AddSeconds(OTP_EXPIRY_SECONDS);
+
+            await _authRepository.UpdateUserAsync(user);
+
+            var otpSendRequestedEvent = new OtpSendRequestedEvent(user.Id, user.Email!, otp)
+            {
+                OtpType = "password-reset",
+                ExpiresAt = user.OtpExpiresAt.Value
+            };
+
+            await PublishOtpEventAsync(otpSendRequestedEvent);
+
+            return new ApiResponse<SendOtpResponse>(StatusCodes.Status200OK, new SendOtpResponse
+            {
+                Message = "Password reset OTP sent successfully",
+                ExpiresInSeconds = OTP_EXPIRY_SECONDS
+            });
+        }
+
+        public async Task<ApiResponse<VerifyResetOtpResponse>> VerifyResetOtpAsync(VerifyResetOtpRequest request)
+        {
+            var user = await _authRepository.FindByEmailAsync(request.Email);
+            if (user == null)
+                return new ApiResponse<VerifyResetOtpResponse>(StatusCodes.Status404NotFound, "Email invalid");
+
+            if (!user.IsOtpVerified)
+                return new ApiResponse<VerifyResetOtpResponse>(StatusCodes.Status409Conflict, "User email is not verified");
+
+            if (!user.OtpExpiresAt.HasValue || user.OtpExpiresAt.Value < DateTime.UtcNow)
+                return new ApiResponse<VerifyResetOtpResponse>(StatusCodes.Status410Gone, "OTP has expired");
+
+            if (user.Otp != request.Otp)
+                return new ApiResponse<VerifyResetOtpResponse>(StatusCodes.Status400BadRequest, "OTP invalid");
+
+            var resetToken = await _authRepository.GeneratePasswordResetTokenAsync(user);
+
+            user.Otp = null;
+            user.OtpExpiresAt = null;
+            await _authRepository.UpdateUserAsync(user);
+
+            return new ApiResponse<VerifyResetOtpResponse>(StatusCodes.Status200OK, new VerifyResetOtpResponse
+            {
+                Message = "Reset OTP verified successfully",
+                ResetToken = resetToken
+            });
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            if (request.NewPassword != request.ConfirmPassword)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "New password and confirmation password do not match");
+
+            var user = await _authRepository.FindByEmailAsync(request.Email);
+            if (user == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "Email invalid");
+
+            var result = await _authRepository.ResetPasswordAsync(user, request.ResetToken, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                return new ApiResponse<ConfirmationResponse>(
+                    StatusCodes.Status400BadRequest,
+                    result.Errors.Select(error => error.Description).ToList());
+            }
+
+            user.Otp = null;
+            user.OtpExpiresAt = null;
+            await _authRepository.UpdateUserAsync(user);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Reset password successfully"));
+        }
+
         public async Task<ApiResponse<LoginResponse>> Login(LoginRequest request)
         {
             var deviceId = NormalizeRequiredHeaderValue(request.DeviceId);

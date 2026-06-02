@@ -24,11 +24,12 @@ export class ReportService {
   async getAdminOverview(query: DateRangeInput): Promise<ReportOverviewResponseDto<AdminDailyMetricDto>> {
     const { from, to } = this.resolveDateRange(query);
     const rows = await this.reportRepository.findAdminDailyMetrics(from, to);
+    const uniqueCounts = await this.reportRepository.findAdminUniqueCounts(from, to);
 
     return {
       from: from.toISOString(),
       to: to.toISOString(),
-      summary: this.buildAdminSummary(rows),
+      summary: this.buildAdminSummary(rows, uniqueCounts),
       daily: rows.map((row) => ({
         metricDate: row.metricDate.toISOString(),
         grossRevenue: toNumber(row.grossRevenue),
@@ -105,51 +106,25 @@ export class ReportService {
 
   async getTopMerchants(query: DateRangeInput): Promise<{ from: string; to: string; items: TopMerchantDto[] }> {
     const { from, to } = this.resolveDateRange(query);
-    const rows = await this.reportRepository.findTopMerchants(from, to, 10);
+    const rows = await this.reportRepository.findTopMerchants(from, to);
+    const items = this.groupTopMerchants(rows).slice(0, 10);
 
     return {
       from: from.toISOString(),
       to: to.toISOString(),
-      items: rows.map((row) => ({
-        metricDate: row.metricDate.toISOString(),
-        merchantId: row.merchantId,
-        grossRevenue: toNumber(row.grossRevenue),
-        netRevenue: toNumber(row.netRevenue),
-        merchantCommissionTotal: toNumber(row.merchantCommissionTotal),
-        orderCount: row.orderCount,
-        paidOrderCount: row.paidOrderCount,
-        cancelledOrderCount: row.cancelledOrderCount,
-        subtotalRevenue: toNumber(row.subtotalRevenue),
-        deliveryFeeRevenue: toNumber(row.deliveryFeeRevenue),
-        discountTotal: toNumber(row.discountTotal),
-        voucherUsageCount: row.voucherUsageCount,
-        avgOrderValue: toNumber(row.avgOrderValue),
-      })),
+      items,
     };
   }
 
   async getTopShippers(query: DateRangeInput): Promise<{ from: string; to: string; items: TopShipperDto[] }> {
     const { from, to } = this.resolveDateRange(query);
-    const rows = await this.reportRepository.findTopShippers(from, to, 10);
+    const rows = await this.reportRepository.findTopShippers(from, to);
+    const items = this.groupTopShippers(rows).slice(0, 10);
 
     return {
       from: from.toISOString(),
       to: to.toISOString(),
-      items: rows.map((row) => ({
-        metricDate: row.metricDate.toISOString(),
-        shipperId: row.shipperId,
-        grossRevenue: toNumber(row.grossRevenue),
-        netEarnings: toNumber(row.netEarnings),
-        shipperCommissionTotal: toNumber(row.shipperCommissionTotal),
-        assignedOrderCount: row.assignedOrderCount,
-        pickedUpOrderCount: row.pickedUpOrderCount,
-        deliveredOrderCount: row.deliveredOrderCount,
-        cancelledOrderCount: row.cancelledOrderCount,
-        completionRate: toNumber(row.completionRate),
-        avgDeliveryTimeMinutes: toNumber(row.avgDeliveryTimeMinutes),
-        totalDistanceKm: toNumber(row.totalDistanceKm),
-        deliveryFeeHandled: toNumber(row.deliveryFeeHandled),
-      })),
+      items,
     };
   }
 
@@ -192,7 +167,10 @@ export class ReportService {
     return parsed;
   }
 
-  private buildAdminSummary(rows: Awaited<ReturnType<ReportRepository["findAdminDailyMetrics"]>>) {
+  private buildAdminSummary(
+    rows: Awaited<ReturnType<ReportRepository["findAdminDailyMetrics"]>>,
+    uniqueCounts: Awaited<ReturnType<ReportRepository["findAdminUniqueCounts"]>>,
+  ) {
     return rows.reduce(
       (summary, row) => ({
         grossRevenue: summary.grossRevenue + toNumber(row.grossRevenue),
@@ -210,9 +188,9 @@ export class ReportService {
         voucherUsageCount: summary.voucherUsageCount + row.voucherUsageCount,
         codOrderCount: summary.codOrderCount + row.codOrderCount,
         vnpayOrderCount: summary.vnpayOrderCount + row.vnpayOrderCount,
-        uniqueCustomers: summary.uniqueCustomers + row.uniqueCustomers,
-        uniqueMerchants: summary.uniqueMerchants + row.uniqueMerchants,
-        uniqueShippers: summary.uniqueShippers + row.uniqueShippers,
+        uniqueCustomers: uniqueCounts.uniqueCustomers,
+        uniqueMerchants: uniqueCounts.uniqueMerchants,
+        uniqueShippers: uniqueCounts.uniqueShippers,
       }),
       {
         grossRevenue: 0,
@@ -228,9 +206,9 @@ export class ReportService {
         voucherUsageCount: 0,
         codOrderCount: 0,
         vnpayOrderCount: 0,
-        uniqueCustomers: 0,
-        uniqueMerchants: 0,
-        uniqueShippers: 0,
+        uniqueCustomers: uniqueCounts.uniqueCustomers,
+        uniqueMerchants: uniqueCounts.uniqueMerchants,
+        uniqueShippers: uniqueCounts.uniqueShippers,
       },
     );
   }
@@ -271,6 +249,15 @@ export class ReportService {
   }
 
   private buildShipperSummary(rows: Awaited<ReturnType<ReportRepository["findShipperDailyMetrics"]>>) {
+    const weightedCompletionDenominator = rows.reduce(
+      (acc, row) => acc + row.assignedOrderCount,
+      0,
+    );
+    const weightedDeliveryTimeDenominator = rows.reduce(
+      (acc, row) => acc + row.deliveredOrderCount,
+      0,
+    );
+
     const summary = rows.reduce(
       (acc, row) => ({
         grossRevenue: acc.grossRevenue + toNumber(row.grossRevenue),
@@ -303,8 +290,181 @@ export class ReportService {
 
     return {
       ...summary,
-      completionRate: rows.length ? summary.completionRate / rows.length : 0,
-      avgDeliveryTimeMinutes: rows.length ? summary.avgDeliveryTimeMinutes / rows.length : 0,
+      completionRate: weightedCompletionDenominator
+        ? this.roundMoney(
+            (summary.deliveredOrderCount / weightedCompletionDenominator) * 100,
+          )
+        : 0,
+      avgDeliveryTimeMinutes: weightedDeliveryTimeDenominator
+        ? this.roundMoney(
+            summary.avgDeliveryTimeMinutes / weightedDeliveryTimeDenominator,
+          )
+        : 0,
     };
+  }
+
+  private groupTopMerchants(rows: Awaited<ReturnType<ReportRepository["findTopMerchants"]>>) {
+    const grouped = new Map<
+      string,
+      {
+        merchantId: string;
+        metricDate: Date;
+        grossRevenue: number;
+        netRevenue: number;
+        merchantCommissionTotal: number;
+        orderCount: number;
+        paidOrderCount: number;
+        cancelledOrderCount: number;
+        subtotalRevenue: number;
+        deliveryFeeRevenue: number;
+        discountTotal: number;
+        voucherUsageCount: number;
+      }
+    >();
+
+    for (const row of rows) {
+      const existing = grouped.get(row.merchantId);
+      const metricDate = row.metricDate;
+
+      if (!existing) {
+        grouped.set(row.merchantId, {
+          merchantId: row.merchantId,
+          metricDate,
+          grossRevenue: toNumber(row.grossRevenue),
+          netRevenue: toNumber(row.netRevenue),
+          merchantCommissionTotal: toNumber(row.merchantCommissionTotal),
+          orderCount: row.orderCount,
+          paidOrderCount: row.paidOrderCount,
+          cancelledOrderCount: row.cancelledOrderCount,
+          subtotalRevenue: toNumber(row.subtotalRevenue),
+          deliveryFeeRevenue: toNumber(row.deliveryFeeRevenue),
+          discountTotal: toNumber(row.discountTotal),
+          voucherUsageCount: row.voucherUsageCount,
+        });
+        continue;
+      }
+
+      existing.metricDate = existing.metricDate > metricDate ? existing.metricDate : metricDate;
+      existing.grossRevenue = this.roundMoney(existing.grossRevenue + toNumber(row.grossRevenue));
+      existing.netRevenue = this.roundMoney(existing.netRevenue + toNumber(row.netRevenue));
+      existing.merchantCommissionTotal = this.roundMoney(
+        existing.merchantCommissionTotal + toNumber(row.merchantCommissionTotal),
+      );
+      existing.orderCount += row.orderCount;
+      existing.paidOrderCount += row.paidOrderCount;
+      existing.cancelledOrderCount += row.cancelledOrderCount;
+      existing.subtotalRevenue = this.roundMoney(
+        existing.subtotalRevenue + toNumber(row.subtotalRevenue),
+      );
+      existing.deliveryFeeRevenue = this.roundMoney(
+        existing.deliveryFeeRevenue + toNumber(row.deliveryFeeRevenue),
+      );
+      existing.discountTotal = this.roundMoney(existing.discountTotal + toNumber(row.discountTotal));
+      existing.voucherUsageCount += row.voucherUsageCount;
+    }
+
+    return Array.from(grouped.values())
+      .sort((left, right) => right.netRevenue - left.netRevenue || right.orderCount - left.orderCount)
+      .map((row) => ({
+        metricDate: row.metricDate.toISOString(),
+        merchantId: row.merchantId,
+        grossRevenue: this.roundMoney(row.grossRevenue),
+        netRevenue: this.roundMoney(row.netRevenue),
+        merchantCommissionTotal: this.roundMoney(row.merchantCommissionTotal),
+        orderCount: row.orderCount,
+        paidOrderCount: row.paidOrderCount,
+        cancelledOrderCount: row.cancelledOrderCount,
+        subtotalRevenue: this.roundMoney(row.subtotalRevenue),
+        deliveryFeeRevenue: this.roundMoney(row.deliveryFeeRevenue),
+        discountTotal: this.roundMoney(row.discountTotal),
+        voucherUsageCount: row.voucherUsageCount,
+        avgOrderValue: row.orderCount ? this.roundMoney(row.netRevenue / row.orderCount) : 0,
+      }));
+  }
+
+  private groupTopShippers(rows: Awaited<ReturnType<ReportRepository["findTopShippers"]>>) {
+    const grouped = new Map<
+      string,
+      {
+        shipperId: string;
+        metricDate: Date;
+        grossRevenue: number;
+        netEarnings: number;
+        shipperCommissionTotal: number;
+        assignedOrderCount: number;
+        pickedUpOrderCount: number;
+        deliveredOrderCount: number;
+        cancelledOrderCount: number;
+        totalDistanceKm: number;
+        deliveryFeeHandled: number;
+        weightedDeliveryTimeMinutes: number;
+      }
+    >();
+
+    for (const row of rows) {
+      const existing = grouped.get(row.shipperId);
+      const metricDate = row.metricDate;
+      const deliveryTimeWeight = row.deliveredOrderCount || 0;
+
+      if (!existing) {
+        grouped.set(row.shipperId, {
+          shipperId: row.shipperId,
+          metricDate,
+          grossRevenue: toNumber(row.grossRevenue),
+          netEarnings: toNumber(row.netEarnings),
+          shipperCommissionTotal: toNumber(row.shipperCommissionTotal),
+          assignedOrderCount: row.assignedOrderCount,
+          pickedUpOrderCount: row.pickedUpOrderCount,
+          deliveredOrderCount: row.deliveredOrderCount,
+          cancelledOrderCount: row.cancelledOrderCount,
+          totalDistanceKm: toNumber(row.totalDistanceKm),
+          deliveryFeeHandled: toNumber(row.deliveryFeeHandled),
+          weightedDeliveryTimeMinutes: toNumber(row.avgDeliveryTimeMinutes) * deliveryTimeWeight,
+        });
+        continue;
+      }
+
+      existing.metricDate = existing.metricDate > metricDate ? existing.metricDate : metricDate;
+      existing.grossRevenue = this.roundMoney(existing.grossRevenue + toNumber(row.grossRevenue));
+      existing.netEarnings = this.roundMoney(existing.netEarnings + toNumber(row.netEarnings));
+      existing.shipperCommissionTotal = this.roundMoney(
+        existing.shipperCommissionTotal + toNumber(row.shipperCommissionTotal),
+      );
+      existing.assignedOrderCount += row.assignedOrderCount;
+      existing.pickedUpOrderCount += row.pickedUpOrderCount;
+      existing.deliveredOrderCount += row.deliveredOrderCount;
+      existing.cancelledOrderCount += row.cancelledOrderCount;
+      existing.totalDistanceKm = this.roundMoney(existing.totalDistanceKm + toNumber(row.totalDistanceKm));
+      existing.deliveryFeeHandled = this.roundMoney(
+        existing.deliveryFeeHandled + toNumber(row.deliveryFeeHandled),
+      );
+      existing.weightedDeliveryTimeMinutes += toNumber(row.avgDeliveryTimeMinutes) * deliveryTimeWeight;
+    }
+
+    return Array.from(grouped.values())
+      .sort((left, right) => right.deliveredOrderCount - left.deliveredOrderCount || right.assignedOrderCount - left.assignedOrderCount)
+      .map((row) => ({
+        metricDate: row.metricDate.toISOString(),
+        shipperId: row.shipperId,
+        grossRevenue: this.roundMoney(row.grossRevenue),
+        netEarnings: this.roundMoney(row.netEarnings),
+        shipperCommissionTotal: this.roundMoney(row.shipperCommissionTotal),
+        assignedOrderCount: row.assignedOrderCount,
+        pickedUpOrderCount: row.pickedUpOrderCount,
+        deliveredOrderCount: row.deliveredOrderCount,
+        cancelledOrderCount: row.cancelledOrderCount,
+        completionRate: row.assignedOrderCount
+          ? this.roundMoney((row.deliveredOrderCount / row.assignedOrderCount) * 100)
+          : 0,
+        avgDeliveryTimeMinutes: row.deliveredOrderCount
+          ? this.roundMoney(row.weightedDeliveryTimeMinutes / row.deliveredOrderCount)
+          : 0,
+        totalDistanceKm: this.roundMoney(row.totalDistanceKm),
+        deliveryFeeHandled: this.roundMoney(row.deliveryFeeHandled),
+      }));
+  }
+
+  private roundMoney(value: number) {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const productTaxonomySchema = z.enum(["FOOD", "DRINK", "DESSERT", "OTHER"]);
+
 export const productIdParamSchema = z.object({
   id: z.string().uuid("Product id must be a valid UUID"),
 });
@@ -14,6 +16,7 @@ export const baseProductQuerySchema = z.object({
   search: z.string().trim().optional(),
   merchantId: z.string().uuid("Merchant ID must be a valid UUID").optional(),
   categoryId: z.string().uuid("Category ID must be a valid UUID").optional(),
+  taxonomy: productTaxonomySchema.optional(),
   isAvailable: z.coerce.boolean().optional(),
   isFeatured: z.coerce.boolean().optional(),
   includeDeleted: z.coerce.boolean().default(false),
@@ -98,6 +101,7 @@ export const baseProductBodySchema = z.object({
   basePrice: z
     .number({ error: "Base price must be a number" })
     .positive("Base price must be greater than 0"),
+  taxonomy: productTaxonomySchema.optional(),
   discountPrice: z
     .number({ error: "Discount price must be a number" })
     .min(0, "Discount price must be greater than or equal to 0")

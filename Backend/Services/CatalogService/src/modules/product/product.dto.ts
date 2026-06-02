@@ -4,6 +4,7 @@ import {
   createProductBodySchema,
   createProductOptionSchema,
   productOptionIdParamSchema,
+  productTaxonomySchema,
   updateProductBodySchema,
   productOptionSchema,
   productOptionValueSchema,
@@ -17,6 +18,7 @@ export type UpdateProductDto = z.infer<typeof updateProductBodySchema>;
 export type CreateProductOptionDto = z.infer<typeof productOptionSchema>;
 export type CreateProductOptionValueDto = z.infer<typeof productOptionValueSchema>;
 export type ProductQueryDto = z.infer<typeof productQuerySchema>;
+export type ProductTaxonomyDto = z.infer<typeof productTaxonomySchema>;
 export type UpdateProductAvailabilityDto = z.infer<
   typeof updateProductAvailabilityBodySchema
 >;
@@ -51,6 +53,7 @@ export type ProductResponseDto = {
   id: string;
   merchantId: string;
   categoryId: string | null;
+  taxonomy: ProductTaxonomyDto;
   name: string;
   description: string | null;
   imageUrl: string | null;

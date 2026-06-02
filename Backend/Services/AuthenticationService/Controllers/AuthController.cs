@@ -84,6 +84,66 @@ namespace AuthenticationService.Controllers
             }
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult<ApiResponse<SendOtpResponse>>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                var response = await _authService.ForgotPasswordAsync(request);
+
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("verify-reset-otp")]
+        public async Task<ActionResult<ApiResponse<VerifyResetOtpResponse>>> VerifyResetOtp([FromBody] VerifyResetOtpRequest request)
+        {
+            try
+            {
+                var response = await _authService.VerifyResetOtpAsync(request);
+
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                var response = await _authService.ResetPasswordAsync(request);
+
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpPost("login")]
         public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(
             [FromBody] LoginRequest request,

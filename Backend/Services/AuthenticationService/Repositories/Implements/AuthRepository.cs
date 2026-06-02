@@ -46,6 +46,17 @@ namespace AuthenticationService.Repositories.Implements
             return await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         }
 
+        public async Task<string> GeneratePasswordResetTokenAsync(ApplicationUser user)
+        {
+            return await _userManager.GeneratePasswordResetTokenAsync(user);
+        }
+
+        public async Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string resetToken, string newPassword)
+        {
+            user.UpdatedAt = DateTime.UtcNow;
+            return await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+        }
+
         public async Task<IdentityResult> AccessFailedAsync(ApplicationUser user)
         {
             return await _userManager.AccessFailedAsync(user);

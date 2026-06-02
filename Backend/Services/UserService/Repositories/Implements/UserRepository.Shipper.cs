@@ -33,6 +33,15 @@ namespace UserService.Repositories.Implements
                 .FirstOrDefaultAsync(sr => sr.UserId == userId && sr.VerificationStatus == Enums.VerificationStatus.Pending);
         }
 
+        public async Task<ShipperRequest?> GetLatestShipperRequestByUserIdAsync(Guid userId)
+        {
+            return await _context.ShipperRequests
+                .Where(sr => sr.UserId == userId)
+                .OrderByDescending(sr => sr.CreatedAt)
+                .ThenByDescending(sr => sr.Id)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task UpdateShipperRequestAsync(ShipperRequest shipperRequest)
         {
             _context.ShipperRequests.Update(shipperRequest);

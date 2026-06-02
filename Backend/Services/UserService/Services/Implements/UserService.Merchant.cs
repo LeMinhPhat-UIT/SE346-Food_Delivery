@@ -22,11 +22,15 @@ namespace UserService.Services.Implements
             if (existingMerchant != null)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "You are already a merchant");
 
-            var existingPendingRequest = await _userRepository.GetPendingMerchantRequestByUserIdAsync(userId);
-            if (existingPendingRequest != null)
+            var latestRequest = await _userRepository.GetLatestMerchantRequestByUserIdAsync(userId);
+            if (latestRequest?.VerificationStatus == VerificationStatus.Pending)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "You already have a pending merchant request");
 
+            if (latestRequest?.VerificationStatus == VerificationStatus.Approved)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status409Conflict, "Your merchant request has already been approved");
+
             var merchantRequest = _mapper.ToMerchantRequest(request);
+            merchantRequest.Id = Guid.NewGuid();
             merchantRequest.UserId = userId;
             merchantRequest.VerificationStatus = VerificationStatus.Pending;
             merchantRequest.RejectedReason = string.Empty;

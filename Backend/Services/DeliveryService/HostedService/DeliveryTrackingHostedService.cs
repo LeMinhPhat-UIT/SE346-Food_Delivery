@@ -43,51 +43,55 @@ namespace DeliveryService.HostedService
         {
             _logger.LogInformation("Delivery tracking worker starting");
 
-            try
+            while (!stoppingToken.IsCancellationRequested)
             {
-                _connection = await _connectionManager.GetConnectionAsync();
-                _channel = await _connection.CreateChannelAsync();
-
-                var rabbitOptions = _rabbitMqOptions.Value;
-                var trackingQueue = rabbitOptions.Exchanges
-                    .SelectMany(exchange => exchange.Queues)
-                    .FirstOrDefault(queue => queue.Name == TrackingQueueName || queue.RoutingKeys.Contains(TrackingRoutingKey))
-                    ?? throw new InvalidOperationException("Tracking queue is not configured under RabbitMq:Exchanges");
-
-                await RabbitMqTopology.EnsureTopologyAsync(_channel, rabbitOptions);
-
-                var consumer = new AsyncEventingBasicConsumer(_channel);
-                consumer.ReceivedAsync += HandleLocationEventAsync;
-
-                await _channel.BasicConsumeAsync(
-                    queue: trackingQueue.Name,
-                    autoAck: false,
-                    consumer: consumer,
-                    cancellationToken: stoppingToken);
-
-                using var timer = new PeriodicTimer(TimeSpan.FromSeconds(trackingQueue.FlushIntervalSeconds));
-
-                while (await timer.WaitForNextTickAsync(stoppingToken))
+                try
                 {
-                    while (await FlushPendingEventsAsync(stoppingToken))
-                    { }
+                    _connection = await _connectionManager.GetConnectionAsync();
+                    _channel = await _connection.CreateChannelAsync();
+
+                    var rabbitOptions = _rabbitMqOptions.Value;
+                    var trackingQueue = rabbitOptions.Exchanges
+                        .SelectMany(exchange => exchange.Queues)
+                        .FirstOrDefault(queue => queue.Name == TrackingQueueName || queue.RoutingKeys.Contains(TrackingRoutingKey))
+                        ?? throw new InvalidOperationException("Tracking queue is not configured under RabbitMq:Exchanges");
+
+                    await RabbitMqTopology.EnsureTopologyAsync(_channel, rabbitOptions);
+
+                    var consumer = new AsyncEventingBasicConsumer(_channel);
+                    consumer.ReceivedAsync += HandleLocationEventAsync;
+
+                    await _channel.BasicConsumeAsync(
+                        queue: trackingQueue.Name,
+                        autoAck: false,
+                        consumer: consumer,
+                        cancellationToken: stoppingToken);
+
+                    using var timer = new PeriodicTimer(TimeSpan.FromSeconds(trackingQueue.FlushIntervalSeconds));
+
+                    while (await timer.WaitForNextTickAsync(stoppingToken))
+                    {
+                        while (await FlushPendingEventsAsync(stoppingToken))
+                        { }
+                    }
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Delivery tracking worker stopping");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Delivery tracking worker failed");
-                throw;
-            }
-            finally
-            {
-                if (_channel != null)
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
-                    while (await FlushPendingEventsAsync(CancellationToken.None))
-                    { }
+                    _logger.LogInformation("Delivery tracking worker stopping");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Delivery tracking worker could not start. Retrying in 5 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
+                finally
+                {
+                    if (_channel != null)
+                    {
+                        while (await FlushPendingEventsAsync(CancellationToken.None))
+                        { }
+                    }
                 }
             }
         }

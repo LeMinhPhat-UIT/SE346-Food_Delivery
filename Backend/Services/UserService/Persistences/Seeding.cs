@@ -26,7 +26,7 @@ namespace UserService.Persistences
                 {
                     Id = adminUserId,
                     FullName = "Seeded Admin",
-                    AvatarUrl = "https://example.com/avatars/admin.png",
+                    AvatarUrl = "users/55555555-5555-4555-8555-555555555555/avatars/admin.png",
                     PhoneNumber = "0900000000",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
@@ -35,7 +35,7 @@ namespace UserService.Persistences
                 {
                     Id = customerUserId,
                     FullName = "Seeded Customer",
-                    AvatarUrl = "https://example.com/avatars/customer.png",
+                    AvatarUrl = "users/aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa/avatars/customer.png",
                     PhoneNumber = "0900000001",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
@@ -44,7 +44,7 @@ namespace UserService.Persistences
                 {
                     Id = merchantUserId,
                     FullName = "Seeded Merchant Owner",
-                    AvatarUrl = "https://example.com/avatars/merchant.png",
+                    AvatarUrl = "users/bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb/avatars/merchant.png",
                     PhoneNumber = "0900000002",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
@@ -53,7 +53,7 @@ namespace UserService.Persistences
                 {
                     Id = shipperUserId,
                     FullName = "Seeded Shipper",
-                    AvatarUrl = "https://example.com/avatars/shipper.png",
+                    AvatarUrl = "users/99999999-9999-4999-9999-999999999999/avatars/shipper.png",
                     PhoneNumber = "0900000003",
                     Status = UserStatus.Active,
                     CreatedAt = seededAt
@@ -118,8 +118,8 @@ namespace UserService.Persistences
                     UserId = merchantUserId,
                     StoreName = "Seeded Merchant Store",
                     StoreDescription = "Default merchant store for local development.",
-                    StoreLogoUrl = "https://example.com/stores/logo.png",
-                    StoreBannerUrl = "https://example.com/stores/banner.png",
+                    StoreLogoUrl = "merchants/cccccccc-cccc-4ccc-8ccc-cccccccccccc/logo.png",
+                    StoreBannerUrl = "merchants/cccccccc-cccc-4ccc-8ccc-cccccccccccc/banner.png",
                     BusinessLicense = "BL-SEED-0001",
                     TaxId = "TAX-SEED-0001",
                     IsOpen = true,
@@ -153,11 +153,11 @@ namespace UserService.Persistences
                     Id = shipperRequestId,
                     UserId = shipperUserId,
                     LicenseNumber = "DL-SEED-0001",
-                    LicenseFrontUrl = "https://example.com/shipper/license-front.jpg",
-                    LicenseBackUrl = "https://example.com/shipper/license-back.jpg",
-                    IdCardFrontUrl = "https://example.com/shipper/id-front.jpg",
-                    IdCardBackUrl = "https://example.com/shipper/id-back.jpg",
-                    SelfieUrl = "https://example.com/shipper/selfie.jpg",
+                    LicenseFrontUrl = "shippers/99999999-9999-4999-9999-999999999999/license-front.jpg",
+                    LicenseBackUrl = "shippers/99999999-9999-4999-9999-999999999999/license-back.jpg",
+                    IdCardFrontUrl = "shippers/99999999-9999-4999-9999-999999999999/id-front.jpg",
+                    IdCardBackUrl = "shippers/99999999-9999-4999-9999-999999999999/id-back.jpg",
+                    SelfieUrl = "shippers/99999999-9999-4999-9999-999999999999/selfie.jpg",
                     IdNumber = "079202600001",
                     FullName = "Seeded Shipper",
                     DateOfBirth = new DateTime(1998, 4, 12, 0, 0, 0, DateTimeKind.Utc),

@@ -8,13 +8,13 @@ namespace UserService.DTOs.ShipperDTOs
         public Guid UserId { get; set; }
 
         public string LicenseNumber { get; set; } = null!;
-        public string LicenseFrontUrl { get; set; } = null!;
-        public string LicenseBackUrl { get; set; } = null!;
+        public string LicenseFrontFileKey { get; set; } = null!;
+        public string LicenseBackFileKey { get; set; } = null!;
 
-        public string IdFrontUrl { get; set; } = null!;
-        public string IdBackUrl { get; set; } = null!;
+        public string IdCardFrontFileKey { get; set; } = null!;
+        public string IdCardBackFileKey { get; set; } = null!;
 
-        public string SelfieUrl { get; set; } = null!;
+        public string SelfieFileKey { get; set; } = null!;
 
         public string IdNumber { get; set; } = null!;
 

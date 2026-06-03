@@ -10,8 +10,8 @@ namespace UserService.DTOs.MerchantDTOs
         public string StoreName { get; set; } = null!;
         public string StoreDescription { get; set; } = null!;
 
-        public string StoreLogoUrl { get; set; } = null!;
-        public string StoreBannerUrl { get; set; } = null!;
+        public string StoreLogoFileKey { get; set; } = null!;
+        public string StoreBannerFileKey { get; set; } = null!;
 
         public string BusinessLicense { get; set; } = null!;
         public string TaxId { get; set; } = null!;

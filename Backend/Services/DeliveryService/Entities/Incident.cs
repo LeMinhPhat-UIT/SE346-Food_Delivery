@@ -1,5 +1,6 @@
 ﻿using DeliveryService.Enums;
 using Messaging.Contracts.Common.Models;
+using System.Text.Json.Serialization;
 
 namespace DeliveryService.Entities
 {
@@ -9,6 +10,7 @@ namespace DeliveryService.Entities
         public Guid ReportedBy { get; set; }
         public IncidentType Type { get; set; }
         public string Description { get; set; } = null!;
+        [JsonPropertyName("proofFileKeys")]
         public IEnumerable<string> ProofUrl { get; set; } = null!;
         public IncidentStatus Status { get; set; } = IncidentStatus.Pending;
         public string Resolution { get; set; } = null!;

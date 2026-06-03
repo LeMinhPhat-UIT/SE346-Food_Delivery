@@ -273,6 +273,46 @@ namespace AuthenticationService.Controllers
             }
         }
 
+        [HttpGet("users/{userId:guid}/roles")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<UserRolesResponse>>> GetUserRoles([FromRoute] Guid userId)
+        {
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                if (!currentUserId.HasValue)
+                {
+                    var invalidContextResponse = new ApiResponse<UserRolesResponse>(
+                        StatusCodes.Status401Unauthorized,
+                        "Invalid user context");
+
+                    return StatusCode(invalidContextResponse.StatusCode, invalidContextResponse);
+                }
+
+                if (!IsCurrentUserAdmin() && currentUserId.Value != userId)
+                {
+                    var forbiddenResponse = new ApiResponse<UserRolesResponse>(
+                        StatusCodes.Status403Forbidden,
+                        "You can only view your own roles");
+
+                    return StatusCode(forbiddenResponse.StatusCode, forbiddenResponse);
+                }
+
+                var response = await _authService.GetUserRolesAsync(userId);
+
+                if (!response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         private Guid? GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -281,6 +321,15 @@ namespace AuthenticationService.Controllers
                 ?? User.FindFirstValue("userId");
 
             return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
+
+        private bool IsCurrentUserAdmin()
+        {
+            var roles = User.FindAll(ClaimTypes.Role)
+                .Select(c => c.Value)
+                .Concat(User.FindAll("role").Select(c => c.Value));
+
+            return roles.Any(role => string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase));
         }
 
         private static string? NormalizeHeaderValue(string? value)

@@ -8,6 +8,7 @@ using System.Text;
 using UserService.Consuming;
 using UserService.Enums;
 using UserService.HostedService;
+using UserService.Integrations;
 using UserService.Mappers;
 using UserService.Persistences;
 using UserService.Repositories.Implements;
@@ -21,6 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -92,6 +94,14 @@ builder.Services.AddEventTypeRegistry();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService.Services.Implements.UserService>();
 builder.Services.AddSingleton<UserMapper>();
+builder.Services.AddHttpClient<IAuthenticationServiceClient, AuthenticationServiceClient>(client =>
+{
+    var baseUrl = builder.Configuration["AuthenticationService:BaseUrl"];
+    if (string.IsNullOrWhiteSpace(baseUrl))
+        baseUrl = "http://authentication-service:8080";
+
+    client.BaseAddress = new Uri(baseUrl.TrimEnd('/'));
+});
 builder.Services.AddTransient<Messaging.Abstractions.Dispatching.IEventHandler<Messaging.Contracts.Events.UserCreatedEvent>, UserCreatedEventHandler>();
 builder.Services.AddTransient<Messaging.Abstractions.Dispatching.IEventHandler<Messaging.Contracts.Events.OtpVerifiedEvent>, OtpVerifiedEventHandler>();
 builder.Services.AddHostedService<EventConsumerHostedService>();

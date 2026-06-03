@@ -420,6 +420,26 @@ namespace AuthenticationService.Services.Implements
                 new ConfirmationResponse("Change password successfully"));
         }
 
+        public async Task<ApiResponse<UserRolesResponse>> GetUserRolesAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return new ApiResponse<UserRolesResponse>(StatusCodes.Status400BadRequest, "Invalid user id");
+
+            var user = await _authRepository.FindByIdAsync(userId);
+            if (user is null)
+                return new ApiResponse<UserRolesResponse>(StatusCodes.Status404NotFound, "User not found");
+
+            var roles = await _authRepository.GetRolesAsync(user);
+
+            return new ApiResponse<UserRolesResponse>(
+                StatusCodes.Status200OK,
+                new UserRolesResponse
+                {
+                    UserId = userId,
+                    Roles = roles.ToArray()
+                });
+        }
+
         private static string GenerateOtp()
         {
             return RandomNumberGenerator.GetInt32(100000, 1000000).ToString();

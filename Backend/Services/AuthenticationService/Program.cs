@@ -1,4 +1,6 @@
 using AuthenticationService.Entities;
+using AuthenticationService.Consuming;
+using AuthenticationService.HostedService;
 using AuthenticationService.Mappers;
 using AuthenticationService.Options;
 using AuthenticationService.Persistences;
@@ -6,6 +8,8 @@ using AuthenticationService.Repositories.Implements;
 using AuthenticationService.Repositories.Interfaces;
 using AuthenticationService.Services.Implements;
 using AuthenticationService.Services.Interfaces;
+using Messaging.Abstractions.Dispatching;
+using Messaging.Contracts.Events;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Messaging.RabbitMq.Extensions;
@@ -21,6 +25,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<AuthenticationDbContext>(options =>
 {
@@ -55,7 +60,6 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<CustomerRegisterRequestMapper>();
-builder.Services.AddRabbitMqPublisher();
 
 builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection("AuthenticationSettings"));
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtSettings"));
@@ -81,6 +85,11 @@ builder.Services
 
 builder.Services.AddRabbitMq(builder.Configuration);
 builder.Services.AddRabbitMqPublisher();
+builder.Services.AddEventDispatcher();
+builder.Services.AddEventTypeRegistry();
+builder.Services.AddTransient<IEventHandler<MerchantRequestReviewedEvent>, MerchantRequestReviewedEventHandler>();
+builder.Services.AddTransient<IEventHandler<ShipperRequestReviewedEvent>, ShipperRequestReviewedEventHandler>();
+builder.Services.AddHostedService<EventConsumerHostedService>();
 
 builder.Services.AddOpenApi(options =>
 {

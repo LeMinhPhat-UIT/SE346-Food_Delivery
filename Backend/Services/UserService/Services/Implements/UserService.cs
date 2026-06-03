@@ -2,6 +2,7 @@
 using Messaging.Contracts.Extensions;
 using Messaging.RabbitMq.Publishing;
 using UserService.DTOs.User;
+using UserService.Integrations;
 using UserService.Mappers;
 using UserService.Repositories.Interfaces;
 using UserService.Services.Interfaces;
@@ -12,12 +13,18 @@ namespace UserService.Services.Implements
     {
         private readonly IUserRepository _userRepository;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IAuthenticationServiceClient _authenticationServiceClient;
         private readonly UserMapper _mapper;
 
-        public UserService(IUserRepository userRepository, IEventPublisher eventPublisher, UserMapper mapper)
+        public UserService(
+            IUserRepository userRepository,
+            IEventPublisher eventPublisher,
+            IAuthenticationServiceClient authenticationServiceClient,
+            UserMapper mapper)
         {
             _userRepository = userRepository;
             _eventPublisher = eventPublisher;
+            _authenticationServiceClient = authenticationServiceClient;
             _mapper = mapper;
         }
 
@@ -26,7 +33,9 @@ namespace UserService.Services.Implements
             var userList = await _userRepository.GetAllUserAsync();
             var pagedUserList = await userList.ToPagedResultAsync(paginationRequest);
 
-            var response = _mapper.ToUserProfileResponseList(pagedUserList.Items);
+            var response = _mapper.ToUserProfileResponseList(pagedUserList.Items).ToList();
+            await PopulateRolesAsync(response);
+
             var result = new PagedResult<UserProfileResponse>(response, pagedUserList.PaginationRequest, pagedUserList.TotalCount);
 
             return new ApiResponse<PagedResult<UserProfileResponse>>(
@@ -45,8 +54,19 @@ namespace UserService.Services.Implements
                 return new ApiResponse<UserProfileResponse>(StatusCodes.Status404NotFound, "No user found");
 
             var response = _mapper.ToUserProfileResponse(user);
+            await PopulateRolesAsync(new[] { response });
 
             return new ApiResponse<UserProfileResponse>(StatusCodes.Status200OK, response);
+        }
+
+        private async Task PopulateRolesAsync(IEnumerable<UserProfileResponse> users)
+        {
+            var tasks = users.Select(async user =>
+            {
+                user.Roles = await _authenticationServiceClient.GetUserRolesAsync(user.Id);
+            });
+
+            await Task.WhenAll(tasks);
         }
 
         public async Task<ApiResponse<ConfirmationResponse>> DeleteUserAsync(Guid id)

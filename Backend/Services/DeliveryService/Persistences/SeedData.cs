@@ -166,6 +166,7 @@ namespace DeliveryService.Persistences
                     ShipperId = shipperId,
                     Status = ShipperWorkStatus.Delivering,
                     CurrentOrderId = orderId,
+                    CurrentAssignmentId = assignmentId,
                     CurrentLat = 10.7735m,
                     CurrentLng = 106.6975m,
                     LastSeenAt = seededAt.AddMinutes(5),

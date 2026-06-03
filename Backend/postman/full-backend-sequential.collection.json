@@ -16,6 +16,9 @@
           "  const now = Date.now();",
           "  const suffix = String(now).slice(-8);",
           "  pm.collectionVariables.set(\"runId\", String(now));",
+          "  pm.collectionVariables.set(\"reviewId\", \"\");",
+          "  pm.collectionVariables.set(\"activeOfferAssignmentId\", \"\");",
+          "  pm.collectionVariables.set(\"activeOfferOrderId\", \"\");",
           "  pm.collectionVariables.set(\"tempCustomerEmail\", \"fullflow.\" + now + \"@example.local\");",
           "  pm.collectionVariables.set(\"tempCustomerPhone\", \"09\" + suffix);",
           "  pm.collectionVariables.set(\"categoryName\", \"Full Flow Category \" + now);",
@@ -3845,6 +3848,29 @@
           }
         },
         {
+          "name": "Shipper Online Before Ready Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{shipperToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/deliveries/availability/toggle?shipperId={{shipperId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isGoOnline\": true,\n  \"lat\": 10.7769,\n  \"lng\": 106.7009\n}"
+            }
+          }
+        },
+        {
           "name": "Merchant Ready Order",
           "request": {
             "method": "PATCH",
@@ -3866,6 +3892,200 @@
               "raw": "{\n  \"status\": \"READY\",\n  \"note\": \"Full flow ready\"\n}"
             }
           }
+        },
+        {
+          "name": "Get Active Offer For COD Order",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{shipperToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/deliveries/shippers/me/active-offer"
+          },
+          "description": "Captures the offer created from the COD order ready event.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"activeOfferAssignmentId\", \"\");",
+                  "pm.collectionVariables.set(\"activeOfferOrderId\", \"\");",
+                  "",
+                  "const waitUntil = Date.now() + 1500;",
+                  "while (Date.now() < waitUntil) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function readJson() {",
+                  "  try { return pm.response.json(); } catch (error) { return null; }",
+                  "}",
+                  "function prop(obj, key) {",
+                  "  if (!obj || typeof obj !== \"object\") return undefined;",
+                  "  if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];",
+                  "  const pascal = key.charAt(0).toUpperCase() + key.slice(1);",
+                  "  if (Object.prototype.hasOwnProperty.call(obj, pascal)) return obj[pascal];",
+                  "  const camel = key.charAt(0).toLowerCase() + key.slice(1);",
+                  "  if (Object.prototype.hasOwnProperty.call(obj, camel)) return obj[camel];",
+                  "  return undefined;",
+                  "}",
+                  "function get(obj, path) {",
+                  "  return String(path).split(\".\").reduce((current, key) => {",
+                  "    if (current === undefined || current === null) return undefined;",
+                  "    if (/^\\d+$/.test(key)) return current[Number(key)];",
+                  "    return prop(current, key);",
+                  "  }, obj);",
+                  "}",
+                  "function dataOf(body) {",
+                  "  if (!body) return null;",
+                  "  return prop(body, \"data\") ?? body;",
+                  "}",
+                  "function itemsOf(body) {",
+                  "  const data = dataOf(body);",
+                  "  return prop(data, \"items\") ?? prop(data, \"Items\") ?? [];",
+                  "}",
+                  "function setVar(name, value) {",
+                  "  if (value !== undefined && value !== null && value !== \"\") {",
+                  "    pm.collectionVariables.set(name, String(value));",
+                  "  }",
+                  "}",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const body = readJson();",
+                  "  const data = dataOf(body);",
+                  "  ",
+                  "  const offerOrderId = get(data, \"orderId\");",
+                  "  if (get(data, \"hasActiveOffer\") && offerOrderId === pm.collectionVariables.get(\"orderId\")) {",
+                  "    const assignmentId = get(data, \"assignmentId\") || get(data, \"offerId\");",
+                  "    setVar(\"activeOfferAssignmentId\", assignmentId);",
+                  "    setVar(\"assignmentId\", assignmentId);",
+                  "    setVar(\"activeOfferOrderId\", offerOrderId);",
+                  "  }",
+                  "  ",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept Active Offer For COD Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{shipperToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/accept",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pickup COD Assignment Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{shipperToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PickedUp\",\n  \"note\": \"Full flow COD order picked up\",\n  \"proofFileKey\": \"{{deliveryFileKey}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delivered COD Assignment Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{shipperToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Delivered\",\n  \"note\": \"Full flow COD order delivered\",\n  \"proofFileKey\": \"deliveries/{{orderId}}/{{shipperId}}/delivered/full-flow-proof.jpg\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Payment By COD Order",
@@ -4686,7 +4906,9 @@
                   "  const data = dataOf(body);",
                   "  ",
                   "  if (get(data, \"hasActiveOffer\")) {",
-                  "    setVar(\"activeOfferAssignmentId\", get(data, \"assignmentId\") || get(data, \"offerId\"));",
+                  "    const assignmentId = get(data, \"assignmentId\") || get(data, \"offerId\");",
+                  "    setVar(\"activeOfferAssignmentId\", assignmentId);",
+                  "    setVar(\"assignmentId\", assignmentId);",
                   "    setVar(\"activeOfferOrderId\", get(data, \"orderId\"));",
                   "  }",
                   "  ",
@@ -4717,7 +4939,21 @@
               "mode": "raw",
               "raw": "{\n  \"assignmentId\": \"{{activeOfferAssignmentId}}\",\n  \"offerId\": \"{{activeOfferAssignmentId}}\",\n  \"isAccepted\": true,\n  \"rejectReason\": null\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Path Accept Assignment Offer",
@@ -4740,7 +4976,21 @@
               "mode": "raw",
               "raw": "{}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Path Reject Assignment Offer",
@@ -4763,7 +5013,21 @@
               "mode": "raw",
               "raw": "{\n  \"offerId\": \"{{activeOfferAssignmentId}}\",\n  \"reason\": \"Full flow rejection coverage\"\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Pickup Assignment Status",
@@ -4781,12 +5045,26 @@
                 "type": "text"
               }
             ],
-            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{assignmentId}}/status",
+            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"PickedUp\",\n  \"note\": \"Full flow picked up\",\n  \"proofFileKey\": \"{{deliveryFileKey}}\"\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Delivered Assignment Status",
@@ -4804,12 +5082,26 @@
                 "type": "text"
               }
             ],
-            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{assignmentId}}/status",
+            "url": "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"Delivered\",\n  \"note\": \"Full flow delivered\",\n  \"proofFileKey\": \"deliveries/{{orderId}}/{{shipperId}}/delivered/full-flow-proof.jpg\"\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"activeOfferAssignmentId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Report Incident",
@@ -5072,12 +5364,91 @@
           ]
         },
         {
+          "name": "Capture Review By Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayBaseUrl}}/api/catalog/reviews?orderId={{orderId}}&productId={{productId}}&page=1&limit=20&sortBy=createdAt&sortOrder=desc"
+          },
+          "description": "Fallback capture so review-id routes never run with an empty id.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function readJson() {",
+                  "  try { return pm.response.json(); } catch (error) { return null; }",
+                  "}",
+                  "function prop(obj, key) {",
+                  "  if (!obj || typeof obj !== \"object\") return undefined;",
+                  "  if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];",
+                  "  const pascal = key.charAt(0).toUpperCase() + key.slice(1);",
+                  "  if (Object.prototype.hasOwnProperty.call(obj, pascal)) return obj[pascal];",
+                  "  const camel = key.charAt(0).toLowerCase() + key.slice(1);",
+                  "  if (Object.prototype.hasOwnProperty.call(obj, camel)) return obj[camel];",
+                  "  return undefined;",
+                  "}",
+                  "function get(obj, path) {",
+                  "  return String(path).split(\".\").reduce((current, key) => {",
+                  "    if (current === undefined || current === null) return undefined;",
+                  "    if (/^\\d+$/.test(key)) return current[Number(key)];",
+                  "    return prop(current, key);",
+                  "  }, obj);",
+                  "}",
+                  "function dataOf(body) {",
+                  "  if (!body) return null;",
+                  "  return prop(body, \"data\") ?? body;",
+                  "}",
+                  "function itemsOf(body) {",
+                  "  const data = dataOf(body);",
+                  "  return prop(data, \"items\") ?? prop(data, \"Items\") ?? [];",
+                  "}",
+                  "function setVar(name, value) {",
+                  "  if (value !== undefined && value !== null && value !== \"\") {",
+                  "    pm.collectionVariables.set(name, String(value));",
+                  "  }",
+                  "}",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const body = readJson();",
+                  "  const data = dataOf(body);",
+                  "  ",
+                  "  const items = itemsOf(body);",
+                  "  const match = items.find((item) => {",
+                  "    ",
+                  "    return get(item, \"orderId\") === pm.collectionVariables.get(\"orderId\") &&",
+                  "      get(item, \"productId\") === pm.collectionVariables.get(\"productId\");",
+                  "    ",
+                  "  }) || items[0];",
+                  "  setVar(\"reviewId\", get(match, \"id\"));",
+                  "  ",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Get Review By Id",
           "request": {
             "method": "GET",
             "header": [],
             "url": "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update Review PUT",
@@ -5100,7 +5471,21 @@
               "mode": "raw",
               "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Full flow review updated\",\n  \"images\": [\n    \"https://example.com/reviews/full-flow-updated.jpg\"\n  ]\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update Review PATCH",
@@ -5123,7 +5508,21 @@
               "mode": "raw",
               "raw": "{\n  \"comment\": \"Full flow review patched\"\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Merchant Reply To Review",
@@ -5146,7 +5545,21 @@
               "mode": "raw",
               "raw": "{\n  \"merchantReply\": \"Thank you for the full flow test review.\"\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Delete Review Reply",
@@ -5160,7 +5573,21 @@
               }
             ],
             "url": "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}/reply"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Delete Review",
@@ -5174,7 +5601,21 @@
               }
             ],
             "url": "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Restore Review",
@@ -5188,7 +5629,21 @@
               }
             ],
             "url": "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}/restore"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const missing = [\"reviewId\"].filter((name) => !pm.collectionVariables.get(name));",
+                  "if (missing.length > 0) {",
+                  "  throw new Error(\"Missing required collection variable(s): \" + missing.join(\", \"));",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

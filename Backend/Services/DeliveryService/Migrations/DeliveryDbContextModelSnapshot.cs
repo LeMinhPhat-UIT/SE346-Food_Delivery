@@ -605,6 +605,7 @@ namespace DeliveryService.Migrations
                         {
                             Id = new Guid("66666666-6666-4666-8666-666666666666"),
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CurrentAssignmentId = new Guid("64444444-4444-4444-8444-444444444444"),
                             CurrentLat = 10.7735m,
                             CurrentLng = 106.6975m,
                             CurrentOrderId = new Guid("62222222-2222-4222-8222-222222222222"),

@@ -4,6 +4,7 @@ using DeliveryService.Persistences;
 using DeliveryService.Repositories;
 using DeliveryService.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace DeliveryService.Repositories.Implements
@@ -11,10 +12,12 @@ namespace DeliveryService.Repositories.Implements
     public class DeliveryRepository : IDeliveryRepository
     {
         private readonly DeliveryDbContext _context;
+        private readonly ILogger<DeliveryRepository> _logger;
 
-        public DeliveryRepository(DeliveryDbContext context)
+        public DeliveryRepository(DeliveryDbContext context, ILogger<DeliveryRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task CreateShipperAvailabilityAsync(ShipperAvailability shipperAvailability)
@@ -62,16 +65,9 @@ namespace DeliveryService.Repositories.Implements
             return await strategy.ExecuteAsync(async () =>
             {
                 await using var transaction = await _context.Database.BeginTransactionAsync();
+                var now = DateTime.UtcNow;
 
-                var affectedRows = await _context.ShipperAvailabilities
-                    .Where(sa => sa.ShipperId == shipperAssignment.ShipperId &&
-                                 sa.Status == ShipperWorkStatus.ActiveIdle &&
-                                 sa.CurrentOfferedAssignmentId == null)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(sa => sa.Status, ShipperWorkStatus.Offering)
-                        .SetProperty(sa => sa.CurrentOfferedAssignmentId, shipperAssignment.Id)
-                        .SetProperty(sa => sa.OfferingExpiresAt, expiresAt)
-                        .SetProperty(sa => sa.LastSeenAt, DateTime.UtcNow));
+                var affectedRows = await TryLockAvailabilityForOfferAsync(shipperAssignment, expiresAt, now);
 
                 if (affectedRows == 0)
                 {
@@ -83,16 +79,27 @@ namespace DeliveryService.Repositories.Implements
                 {
                     shipperAssignment.Status = AssignmentStatus.Offering;
                     shipperAssignment.OfferExpiresAt = expiresAt;
+
                     await _context.ShipperAssignments.AddAsync(shipperAssignment);
                     await _context.SaveChangesAsync();
 
                     await transaction.CommitAsync();
                     return true;
                 }
-                catch (DbUpdateException)
+                catch (DbUpdateException ex) when (IsUniqueViolation(ex))
                 {
                     await transaction.RollbackAsync();
                     return false;
+                }
+                catch (DbUpdateException ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(
+                        ex,
+                        "Failed to create assignment offer for order {OrderId} and shipper {ShipperId}",
+                        shipperAssignment.OrderId,
+                        shipperAssignment.ShipperId);
+                    throw;
                 }
                 catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
                 {
@@ -175,13 +182,17 @@ namespace DeliveryService.Repositories.Implements
                                          sa.Status == ShipperWorkStatus.Offering)
                             .ExecuteUpdateAsync(setters => setters
                                 .SetProperty(sa => sa.Status, ShipperWorkStatus.ActiveIdle)
+                                .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
+                                .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
                                 .SetProperty(sa => sa.CurrentOfferedAssignmentId, (Guid?)null)
                                 .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null)
                                 .SetProperty(sa => sa.LastSeenAt, now));
                     }
 
                     var acceptedAvailabilityRows = await _context.ShipperAvailabilities
-                        .Where(sa => sa.ShipperId == shipperId)
+                        .Where(sa => sa.ShipperId == shipperId &&
+                                     sa.Status == ShipperWorkStatus.Offering &&
+                                     sa.CurrentOfferedAssignmentId == assignmentId)
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(sa => sa.Status, ShipperWorkStatus.Busy)
                             .SetProperty(sa => sa.CurrentOrderId, existingAssignment.OrderId)
@@ -192,16 +203,8 @@ namespace DeliveryService.Repositories.Implements
 
                     if (acceptedAvailabilityRows == 0)
                     {
-                        await _context.ShipperAvailabilities.AddAsync(new ShipperAvailability
-                        {
-                            Id = Guid.NewGuid(),
-                            ShipperId = shipperId,
-                            Status = ShipperWorkStatus.Busy,
-                            CurrentOrderId = existingAssignment.OrderId,
-                            CurrentAssignmentId = assignmentId,
-                            LastSeenAt = now
-                        });
-                        await _context.SaveChangesAsync();
+                        await transaction.RollbackAsync();
+                        return AssignmentAcceptanceResult.FromOutcome(AssignmentAcceptanceOutcome.NotAvailable, existingAssignment);
                     }
 
                     await transaction.CommitAsync();
@@ -268,6 +271,8 @@ namespace DeliveryService.Repositories.Implements
                                  sa.Status == ShipperWorkStatus.Offering)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(sa => sa.Status, ShipperWorkStatus.ActiveIdle)
+                        .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
+                        .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
                         .SetProperty(sa => sa.CurrentOfferedAssignmentId, (Guid?)null)
                         .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null)
                         .SetProperty(sa => sa.LastSeenAt, now));
@@ -307,6 +312,8 @@ namespace DeliveryService.Repositories.Implements
                              sa.Status == ShipperWorkStatus.Offering)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(sa => sa.Status, ShipperWorkStatus.ActiveIdle)
+                    .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
+                    .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
                     .SetProperty(sa => sa.CurrentOfferedAssignmentId, (Guid?)null)
                     .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null)
                     .SetProperty(sa => sa.LastSeenAt, now), cancellationToken);
@@ -530,6 +537,29 @@ namespace DeliveryService.Repositories.Implements
         {
             await _context.DeliveryFeeQuotes.AddAsync(quote, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task<int> TryLockAvailabilityForOfferAsync(ShipperAssignment assignment, DateTime expiresAt, DateTime now)
+        {
+            return await _context.ShipperAvailabilities
+                .Where(sa => sa.ShipperId == assignment.ShipperId &&
+                             sa.Status == ShipperWorkStatus.ActiveIdle &&
+                             sa.CurrentOrderId == null &&
+                             sa.CurrentAssignmentId == null &&
+                             sa.CurrentOfferedAssignmentId == null)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(sa => sa.Status, ShipperWorkStatus.Offering)
+                    .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
+                    .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
+                    .SetProperty(sa => sa.CurrentOfferedAssignmentId, assignment.Id)
+                    .SetProperty(sa => sa.OfferingExpiresAt, expiresAt)
+                    .SetProperty(sa => sa.LastSeenAt, now));
+        }
+
+        private static bool IsUniqueViolation(DbUpdateException ex)
+        {
+            return ex.InnerException is PostgresException postgresException &&
+                   postgresException.SqlState == PostgresErrorCodes.UniqueViolation;
         }
     }
 }

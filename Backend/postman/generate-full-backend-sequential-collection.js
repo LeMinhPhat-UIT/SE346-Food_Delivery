@@ -151,12 +151,31 @@ setVar("${varName}", get(match, "id"));
 `);
 }
 
+function requireVariables(...names) {
+  return `
+const missing = ${JSON.stringify(names)}.filter((name) => !pm.collectionVariables.get(name));
+if (missing.length > 0) {
+  throw new Error("Missing required collection variable(s): " + missing.join(", "));
+}
+`;
+}
+
+function waitForAsyncProcessing(milliseconds) {
+  return `
+const waitUntil = Date.now() + ${milliseconds};
+while (Date.now() < waitUntil) {}
+`;
+}
+
 const collectionPrerequest = `
 const shouldReset = pm.info.requestName === "Initialize generated run data";
 if (shouldReset || !pm.collectionVariables.get("runId")) {
   const now = Date.now();
   const suffix = String(now).slice(-8);
   pm.collectionVariables.set("runId", String(now));
+  pm.collectionVariables.set("reviewId", "");
+  pm.collectionVariables.set("activeOfferAssignmentId", "");
+  pm.collectionVariables.set("activeOfferOrderId", "");
   pm.collectionVariables.set("tempCustomerEmail", "fullflow." + now + "@example.local");
   pm.collectionVariables.set("tempCustomerPhone", "09" + suffix);
   pm.collectionVariables.set("categoryName", "Full Flow Category " + now);
@@ -882,9 +901,54 @@ setVar("cartItemId", get(match, "id"));
     auth: "merchantToken",
     json: { status: "PREPARING", note: "Full flow preparing" },
   }),
+  request("Shipper Online Before Ready Order", "POST", "{{gatewayBaseUrl}}/api/deliveries/availability/toggle?shipperId={{shipperId}}", {
+    auth: "shipperToken",
+    json: { isGoOnline: true, lat: 10.7769, lng: 106.7009 },
+  }),
   request("Merchant Ready Order", "PATCH", "{{gatewayBaseUrl}}/api/orders/merchant/my/{{orderId}}/status", {
     auth: "merchantToken",
     json: { status: "READY", note: "Full flow ready" },
+  }),
+  request("Get Active Offer For COD Order", "GET", "{{gatewayBaseUrl}}/api/deliveries/shippers/me/active-offer", {
+    auth: "shipperToken",
+    prerequest: `
+pm.collectionVariables.set("activeOfferAssignmentId", "");
+pm.collectionVariables.set("activeOfferOrderId", "");
+${waitForAsyncProcessing(1500)}
+`,
+    tests: capture(`
+const offerOrderId = get(data, "orderId");
+if (get(data, "hasActiveOffer") && offerOrderId === pm.collectionVariables.get("orderId")) {
+  const assignmentId = get(data, "assignmentId") || get(data, "offerId");
+  setVar("activeOfferAssignmentId", assignmentId);
+  setVar("assignmentId", assignmentId);
+  setVar("activeOfferOrderId", offerOrderId);
+}
+`),
+    description: "Captures the offer created from the COD order ready event.",
+  }),
+  request("Accept Active Offer For COD Order", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/accept", {
+    auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
+    json: {},
+  }),
+  request("Pickup COD Assignment Status", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status", {
+    auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
+    json: {
+      status: "PickedUp",
+      note: "Full flow COD order picked up",
+      proofFileKey: "{{deliveryFileKey}}",
+    },
+  }),
+  request("Delivered COD Assignment Status", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status", {
+    auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
+    json: {
+      status: "Delivered",
+      note: "Full flow COD order delivered",
+      proofFileKey: "deliveries/{{orderId}}/{{shipperId}}/delivered/full-flow-proof.jpg",
+    },
   }),
   request("Get Payment By COD Order", "GET", "{{gatewayBaseUrl}}/api/orders/payments/{{orderId}}", {
     auth: "customerToken",
@@ -1028,7 +1092,9 @@ const delivery = folder("07 - Delivery Service", [
     auth: "shipperToken",
     tests: capture(`
 if (get(data, "hasActiveOffer")) {
-  setVar("activeOfferAssignmentId", get(data, "assignmentId") || get(data, "offerId"));
+  const assignmentId = get(data, "assignmentId") || get(data, "offerId");
+  setVar("activeOfferAssignmentId", assignmentId);
+  setVar("assignmentId", assignmentId);
   setVar("activeOfferOrderId", get(data, "orderId"));
 }
 `),
@@ -1036,6 +1102,7 @@ if (get(data, "hasActiveOffer")) {
   }),
   request("Legacy Accept Or Reject Assignment", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/accept", {
     auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
     json: {
       assignmentId: "{{activeOfferAssignmentId}}",
       offerId: "{{activeOfferAssignmentId}}",
@@ -1045,22 +1112,26 @@ if (get(data, "hasActiveOffer")) {
   }),
   request("Path Accept Assignment Offer", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/accept", {
     auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
     json: {},
   }),
   request("Path Reject Assignment Offer", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/reject", {
     auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
     json: { offerId: "{{activeOfferAssignmentId}}", reason: "Full flow rejection coverage" },
   }),
-  request("Pickup Assignment Status", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{assignmentId}}/status", {
+  request("Pickup Assignment Status", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status", {
     auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
     json: {
       status: "PickedUp",
       note: "Full flow picked up",
       proofFileKey: "{{deliveryFileKey}}",
     },
   }),
-  request("Delivered Assignment Status", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{assignmentId}}/status", {
+  request("Delivered Assignment Status", "POST", "{{gatewayBaseUrl}}/api/deliveries/assignments/{{activeOfferAssignmentId}}/status", {
     auth: "shipperToken",
+    prerequest: requireVariables("activeOfferAssignmentId"),
     json: {
       status: "Delivered",
       note: "Full flow delivered",
@@ -1110,9 +1181,19 @@ const reviews = folder("08 - Catalog Reviews", [
     tests: captureId("reviewId"),
     description: "Requires the referenced order to be DELIVERED in OrderService.",
   }),
-  request("Get Review By Id", "GET", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}"),
+  request("Capture Review By Order", "GET", "{{gatewayBaseUrl}}/api/catalog/reviews?orderId={{orderId}}&productId={{productId}}&page=1&limit=20&sortBy=createdAt&sortOrder=desc", {
+    tests: captureListItemId("reviewId", `
+return get(item, "orderId") === pm.collectionVariables.get("orderId") &&
+  get(item, "productId") === pm.collectionVariables.get("productId");
+`),
+    description: "Fallback capture so review-id routes never run with an empty id.",
+  }),
+  request("Get Review By Id", "GET", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}", {
+    prerequest: requireVariables("reviewId"),
+  }),
   request("Update Review PUT", "PUT", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}", {
     auth: "customerToken",
+    prerequest: requireVariables("reviewId"),
     json: {
       rating: 4,
       comment: "Full flow review updated",
@@ -1121,17 +1202,26 @@ const reviews = folder("08 - Catalog Reviews", [
   }),
   request("Update Review PATCH", "PATCH", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}", {
     auth: "customerToken",
+    prerequest: requireVariables("reviewId"),
     json: { comment: "Full flow review patched" },
   }),
   request("Merchant Reply To Review", "PATCH", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}/reply", {
     auth: "merchantToken",
+    prerequest: requireVariables("reviewId"),
     json: { merchantReply: "Thank you for the full flow test review." },
   }),
   request("Delete Review Reply", "DELETE", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}/reply", {
     auth: "merchantToken",
+    prerequest: requireVariables("reviewId"),
   }),
-  request("Delete Review", "DELETE", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}", { auth: "customerToken" }),
-  request("Restore Review", "PATCH", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}/restore", { auth: "adminToken" }),
+  request("Delete Review", "DELETE", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}", {
+    auth: "customerToken",
+    prerequest: requireVariables("reviewId"),
+  }),
+  request("Restore Review", "PATCH", "{{gatewayBaseUrl}}/api/catalog/reviews/{{reviewId}}/restore", {
+    auth: "adminToken",
+    prerequest: requireVariables("reviewId"),
+  }),
 ], "Review creation depends on a delivered order in OrderService.");
 
 const chat = folder("09 - Chat Service", [

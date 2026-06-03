@@ -162,6 +162,8 @@ namespace DeliveryService.Consuming
             var allShippers = await _deliveryRepository.GetAllShipperAvailabilityAsync();
             var candidateQuery = allShippers
                 .Where(s => s.Status == ShipperWorkStatus.ActiveIdle &&
+                            s.CurrentOrderId == null &&
+                            s.CurrentAssignmentId == null &&
                             s.CurrentOfferedAssignmentId == null &&
                             nearbyShipperIds.Contains(s.ShipperId));
 

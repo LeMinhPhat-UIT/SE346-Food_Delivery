@@ -58,15 +58,21 @@ namespace UserService.Mappers
 
         [MapperIgnoreSource(nameof(ShipperRequest.User))]
         [MapperIgnoreSource(nameof(ShipperRequest.ReviewedUser))]
-        [MapProperty(nameof(ShipperRequest.IdCardFrontUrl), nameof(ShipperRequestResponse.IdFrontUrl))]
-        [MapProperty(nameof(ShipperRequest.IdCardBackUrl), nameof(ShipperRequestResponse.IdBackUrl))]
+        [MapProperty(nameof(ShipperRequest.LicenseFrontUrl), nameof(ShipperRequestResponse.LicenseFrontFileKey))]
+        [MapProperty(nameof(ShipperRequest.LicenseBackUrl), nameof(ShipperRequestResponse.LicenseBackFileKey))]
+        [MapProperty(nameof(ShipperRequest.IdCardFrontUrl), nameof(ShipperRequestResponse.IdCardFrontFileKey))]
+        [MapProperty(nameof(ShipperRequest.IdCardBackUrl), nameof(ShipperRequestResponse.IdCardBackFileKey))]
+        [MapProperty(nameof(ShipperRequest.SelfieUrl), nameof(ShipperRequestResponse.SelfieFileKey))]
         [MapProperty(nameof(ShipperRequest.VerificationStatus), nameof(ShipperRequestResponse.Status))]
         public partial IEnumerable<ShipperRequestResponse> ToShipperRequestResponseList(IEnumerable<ShipperRequest> shipperRequests);
 
         [MapperIgnoreSource(nameof(ShipperRequest.User))]
         [MapperIgnoreSource(nameof(ShipperRequest.ReviewedUser))]
-        [MapProperty(nameof(ShipperRequest.IdCardFrontUrl), nameof(ShipperRequestResponse.IdFrontUrl))]
-        [MapProperty(nameof(ShipperRequest.IdCardBackUrl), nameof(ShipperRequestResponse.IdBackUrl))]
+        [MapProperty(nameof(ShipperRequest.LicenseFrontUrl), nameof(ShipperRequestResponse.LicenseFrontFileKey))]
+        [MapProperty(nameof(ShipperRequest.LicenseBackUrl), nameof(ShipperRequestResponse.LicenseBackFileKey))]
+        [MapProperty(nameof(ShipperRequest.IdCardFrontUrl), nameof(ShipperRequestResponse.IdCardFrontFileKey))]
+        [MapProperty(nameof(ShipperRequest.IdCardBackUrl), nameof(ShipperRequestResponse.IdCardBackFileKey))]
+        [MapProperty(nameof(ShipperRequest.SelfieUrl), nameof(ShipperRequestResponse.SelfieFileKey))]
         [MapProperty(nameof(ShipperRequest.VerificationStatus), nameof(ShipperRequestResponse.Status))]
         public partial ShipperRequestResponse ToShipperRequestResponse(ShipperRequest shipperRequest);
     }

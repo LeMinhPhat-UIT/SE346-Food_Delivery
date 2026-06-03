@@ -181,8 +181,8 @@ namespace DeliveryService.Persistences
                     Description = "Customer reported one missing item from the delivered order.",
                     ProofUrl = new[]
                     {
-                        "https://example.com/incidents/order-2-photo-1.jpg",
-                        "https://example.com/incidents/order-2-photo-2.jpg"
+                        "deliveries/75555555-5555-4555-8555-555555555555/56565656-5656-4656-8656-565656565656/incident/order-2-photo-1.jpg",
+                        "deliveries/75555555-5555-4555-8555-555555555555/56565656-5656-4656-8656-565656565656/incident/order-2-photo-2.jpg"
                     },
                     Status = IncidentStatus.Investigating,
                     Resolution = "Awaiting support review and customer confirmation.",

@@ -17,6 +17,8 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(User.CreatedAt))]
         [MapperIgnoreSource(nameof(User.UpdatedAt))]
         [MapperIgnoreSource(nameof(User.DeletedAt))]
+        [MapperIgnoreTarget(nameof(UserProfileResponse.Roles))]
+        [MapProperty(nameof(User.AvatarUrl), nameof(UserProfileResponse.AvatarFileKey))]
         public partial IEnumerable<UserProfileResponse> ToUserProfileResponseList(IEnumerable<User> userList);
 
         [MapperIgnoreSource(nameof(User.MerchantId))]
@@ -29,6 +31,8 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(User.CreatedAt))]
         [MapperIgnoreSource(nameof(User.UpdatedAt))]
         [MapperIgnoreSource(nameof(User.DeletedAt))]
+        [MapperIgnoreTarget(nameof(UserProfileResponse.Roles))]
+        [MapProperty(nameof(User.AvatarUrl), nameof(UserProfileResponse.AvatarFileKey))]
         public partial UserProfileResponse ToUserProfileResponse(User user);
 
         [MapperIgnoreTarget(nameof(Address.UserId))]

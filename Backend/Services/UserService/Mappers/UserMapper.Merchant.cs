@@ -19,10 +19,12 @@ namespace UserService.Mappers
 
         [MapperIgnoreSource(nameof(MerchantRequest.User))]
         [MapperIgnoreSource(nameof(MerchantRequest.ReviewedUser))]
+        [MapProperty(nameof(MerchantRequest.BusinessLicenseUrl), nameof(MerchantRequestResponse.BusinessLicenseFileKey))]
         public partial IEnumerable<MerchantRequestResponse> ToMerchantRequestResponseList(IEnumerable<MerchantRequest> merchantRequests);
 
         [MapperIgnoreSource(nameof(MerchantRequest.User))]
         [MapperIgnoreSource(nameof(MerchantRequest.ReviewedUser))]
+        [MapProperty(nameof(MerchantRequest.BusinessLicenseUrl), nameof(MerchantRequestResponse.BusinessLicenseFileKey))]
         public partial MerchantRequestResponse ToMerchantRequestResponse(MerchantRequest merchantRequest);
 
         [MapperIgnoreTarget(nameof(Merchant.Id))]
@@ -53,11 +55,15 @@ namespace UserService.Mappers
         [MapperIgnoreSource(nameof(Merchant.Addresses))]
         [MapperIgnoreSource(nameof(Merchant.User))]
         [MapperIgnoreSource(nameof(Merchant.DeletedAt))]
+        [MapProperty(nameof(Merchant.StoreLogoUrl), nameof(MerchantResponse.StoreLogoFileKey))]
+        [MapProperty(nameof(Merchant.StoreBannerUrl), nameof(MerchantResponse.StoreBannerFileKey))]
         public partial IEnumerable<MerchantResponse> ToMerchantResponseList(IEnumerable<Merchant> merchants);
 
         [MapperIgnoreSource(nameof(Merchant.Addresses))]
         [MapperIgnoreSource(nameof(Merchant.User))]
         [MapperIgnoreSource(nameof(Merchant.DeletedAt))]
+        [MapProperty(nameof(Merchant.StoreLogoUrl), nameof(MerchantResponse.StoreLogoFileKey))]
+        [MapProperty(nameof(Merchant.StoreBannerUrl), nameof(MerchantResponse.StoreBannerFileKey))]
         public partial MerchantResponse ToMerchantResponse(Merchant merchant);
 
         [MapperIgnoreSource(nameof(MerchantAddress.Merchant))]

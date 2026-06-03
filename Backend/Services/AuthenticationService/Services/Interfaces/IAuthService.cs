@@ -15,6 +15,7 @@ namespace AuthenticationService.Services.Interfaces
         Task<ApiResponse<LogoutResponse>> Logout(LogoutRequest request);
         Task<ApiResponse<LoginResponse>> RefreshToken(RefreshTokenRequest request);
         Task<ApiResponse<ConfirmationResponse>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
+        Task<ApiResponse<UserRolesResponse>> GetUserRolesAsync(Guid userId);
         //Task<AuthResult> UpdatePhoneNumberAsync(UpdatePhoneNumberDTO dto);
     }
 }

@@ -11,7 +11,7 @@ namespace UserService.DTOs.MerchantDTOs
         public string StoreDescription { get; set; } = null!;
 
         public string BusinessLicense { get; set; } = null!;
-        public string BusinessLicenseUrl { get; set; } = null!;
+        public string BusinessLicenseFileKey { get; set; } = null!;
 
         public string TaxId { get; set; } = null!;
 

@@ -53,6 +53,40 @@ const shipperMetricSelect = {
 } as const;
 
 export class ReportRepository {
+  async findAdminUniqueCounts(from: Date, to: Date) {
+    const [orders, deliveries] = await prisma.$transaction([
+      prisma.reportOrderFact.findMany({
+        where: {
+          createdAt: {
+            gte: from,
+            lte: to,
+          },
+        },
+        select: {
+          customerId: true,
+          merchantId: true,
+        },
+      }),
+      prisma.reportDeliveryFact.findMany({
+        where: {
+          createdAt: {
+            gte: from,
+            lte: to,
+          },
+        },
+        select: {
+          shipperId: true,
+        },
+      }),
+    ]);
+
+    return {
+      uniqueCustomers: new Set(orders.map((row) => row.customerId)).size,
+      uniqueMerchants: new Set(orders.map((row) => row.merchantId)).size,
+      uniqueShippers: new Set(deliveries.map((row) => row.shipperId).filter(Boolean)).size,
+    };
+  }
+
   async findAdminDailyMetrics(from: Date, to: Date) {
     return prisma.reportAdminDailyMetric.findMany({
       where: {
@@ -100,7 +134,7 @@ export class ReportRepository {
     });
   }
 
-  async findTopMerchants(from: Date, to: Date, limit: number) {
+  async findTopMerchants(from: Date, to: Date) {
     return prisma.reportMerchantDailyMetric.findMany({
       where: {
         metricDate: {
@@ -108,16 +142,11 @@ export class ReportRepository {
           lte: to,
         },
       },
-      orderBy: [
-        { netRevenue: "desc" },
-        { orderCount: "desc" },
-      ],
-      take: limit,
       select: merchantMetricSelect,
     });
   }
 
-  async findTopShippers(from: Date, to: Date, limit: number) {
+  async findTopShippers(from: Date, to: Date) {
     return prisma.reportShipperDailyMetric.findMany({
       where: {
         metricDate: {
@@ -125,11 +154,6 @@ export class ReportRepository {
           lte: to,
         },
       },
-      orderBy: [
-        { deliveredOrderCount: "desc" },
-        { completionRate: "desc" },
-      ],
-      take: limit,
       select: shipperMetricSelect,
     });
   }

@@ -49,6 +49,7 @@ router.get("/:id", validate(reviewIdSchema), reviewController.getReviewById);
 router.post(
   "/",
   authenticate,
+  requireRoles(ROLES.CUSTOMER, ROLES.ADMIN),
   validate(createReviewSchema),
   reviewController.createReview
 );
@@ -56,6 +57,7 @@ router.post(
 router.put(
   "/:id",
   authenticate,
+  requireRoles(ROLES.CUSTOMER, ROLES.ADMIN),
   validate(updateReviewSchema),
   reviewController.updateReview
 );
@@ -63,6 +65,7 @@ router.put(
 router.patch(
   "/:id",
   authenticate,
+  requireRoles(ROLES.CUSTOMER, ROLES.ADMIN),
   validate(updateReviewSchema),
   reviewController.updateReview,
 );
@@ -94,6 +97,7 @@ router.patch(
 router.delete(
   "/:id",
   authenticate,
+  requireRoles(ROLES.CUSTOMER, ROLES.ADMIN),
   validate(reviewIdSchema),
   reviewController.deleteReview
 );

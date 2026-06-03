@@ -27,6 +27,7 @@ export const toProductResponseDto = (
     id: product.id,
     merchantId: product.merchantId,
     categoryId: product.categoryId,
+    taxonomy: product.taxonomy,
     name: product.name,
     description: product.description,
     imageUrl: product.imageUrl,

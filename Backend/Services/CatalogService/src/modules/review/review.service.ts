@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { HTTP_STATUS } from "../../constants/httpStatus";
 import { ApiError } from "../../utils/apiError";
+import { OrderServiceClient } from "../../integrations/order.service";
 import { ProductRepository } from "../product/product.repository";
 import { UploadService } from "../upload/upload.service";
 import {
@@ -17,6 +18,7 @@ import { ReviewRepository } from "./review.repository";
 
 export class ReviewService {
   private readonly uploadService = new UploadService();
+  private readonly orderServiceClient = new OrderServiceClient();
 
   constructor(
     private readonly reviewRepository: ReviewRepository,
@@ -83,12 +85,52 @@ export class ReviewService {
     return toReviewResponseDto(review);
   }
 
-  async createReview(data: CreateReviewDto): Promise<ReviewResponseDto> {
-    if (data.productId) {
-      await this.ensureProductExists(data.productId);
+  async createReview(
+    userId: string,
+    token: string,
+    data: CreateReviewDto,
+  ): Promise<ReviewResponseDto> {
+    const order = await this.orderServiceClient.getOrderById(data.orderId, token);
+
+    if (order.userId !== userId) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "You can only review your own orders",
+      );
     }
 
-    const normalizedData = this.normalizeCreateReviewPayload(data);
+    if (order.status !== "DELIVERED") {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "You can only review a delivered order",
+      );
+    }
+
+    const merchantId = order.merchantId;
+    if (data.merchantId && data.merchantId !== merchantId) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Merchant ID does not match the reviewed order",
+      );
+    }
+
+    if (data.productId) {
+      await this.ensureProductExists(data.productId);
+
+      const isInOrder = order.items.some((item) => item.productId === data.productId);
+      if (!isInOrder) {
+        throw new ApiError(
+          HTTP_STATUS.BAD_REQUEST,
+          "Product must belong to the reviewed order",
+        );
+      }
+    }
+
+    const normalizedData = this.normalizeCreateReviewPayload({
+      ...data,
+      userId,
+      merchantId,
+    });
     const review = await this.reviewRepository.create(normalizedData);
 
     if (review.productId) {
@@ -118,6 +160,19 @@ export class ReviewService {
       throw new ApiError(
         HTTP_STATUS.FORBIDDEN,
         "You can only reply to reviews of your own products",
+      );
+    }
+
+    return review;
+  }
+
+  async assertReviewOwnedByUser(reviewId: string, userId: string) {
+    const review = await this.ensureReviewExists(reviewId);
+
+    if (review.userId !== userId) {
+      throw new ApiError(
+        HTTP_STATUS.FORBIDDEN,
+        "You can only modify your own reviews",
       );
     }
 
@@ -198,10 +253,6 @@ export class ReviewService {
     const existingReview = await this.ensureReviewExists(id);
     const oldImages = this.normalizeImages(existingReview.images);
 
-    if (data.productId !== undefined && data.productId !== null) {
-      await this.ensureProductExists(data.productId);
-    }
-
     const normalizedData = this.normalizeUpdateReviewPayload(data);
     const review = await this.reviewRepository.update(id, normalizedData);
 
@@ -268,20 +319,20 @@ export class ReviewService {
   }
 
   private normalizeCreateReviewPayload(
-    data: CreateReviewDto
+    data: CreateReviewDto & { userId: string; merchantId: string | null }
   ): Prisma.ReviewUncheckedCreateInput {
     const normalizedData: Prisma.ReviewUncheckedCreateInput = {
-      ...data,
+      userId: data.userId,
+      orderId: data.orderId,
+      merchantId: data.merchantId ?? null,
+      productId: data.productId ?? null,
+      shipperId: data.shipperId ?? null,
+      rating: data.rating,
+      comment: data.comment ?? null,
+      merchantReply: null,
+      repliedAt: null,
       images: data.images ?? Prisma.JsonNull,
     };
-
-    if (data.merchantReply && data.merchantReply.trim().length > 0) {
-      normalizedData.repliedAt = data.repliedAt ?? new Date();
-    }
-
-    if (data.merchantReply === null) {
-      normalizedData.repliedAt = null;
-    }
 
     return normalizedData;
   }
@@ -291,28 +342,11 @@ export class ReviewService {
   ): Prisma.ReviewUncheckedUpdateInput {
     const normalizedData: Prisma.ReviewUncheckedUpdateInput = {};
 
-    if (data.userId !== undefined) normalizedData.userId = data.userId;
-    if (data.orderId !== undefined) normalizedData.orderId = data.orderId;
-    if (data.merchantId !== undefined) normalizedData.merchantId = data.merchantId;
-    if (data.productId !== undefined) normalizedData.productId = data.productId;
-    if (data.shipperId !== undefined) normalizedData.shipperId = data.shipperId;
     if (data.rating !== undefined) normalizedData.rating = data.rating;
     if (data.comment !== undefined) normalizedData.comment = data.comment;
 
     if (data.images !== undefined) {
       normalizedData.images = data.images ?? Prisma.JsonNull;
-    }
-
-    if (data.merchantReply !== undefined) {
-      normalizedData.merchantReply = data.merchantReply;
-
-      if (data.merchantReply && data.merchantReply.trim().length > 0) {
-        normalizedData.repliedAt = data.repliedAt ?? new Date();
-      } else if (data.merchantReply === null) {
-        normalizedData.repliedAt = null;
-      }
-    } else if (data.repliedAt !== undefined) {
-      normalizedData.repliedAt = data.repliedAt;
     }
 
     return normalizedData;

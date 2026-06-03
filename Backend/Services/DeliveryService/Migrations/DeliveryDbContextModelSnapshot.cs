@@ -406,7 +406,7 @@ namespace DeliveryService.Migrations
                             CreatedAt = new DateTime(2025, 12, 31, 23, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Customer reported one missing item from the delivered order.",
                             OrderId = new Guid("75555555-5555-4555-8555-555555555555"),
-                            ProofUrl = new[] { "https://example.com/incidents/order-2-photo-1.jpg", "https://example.com/incidents/order-2-photo-2.jpg" },
+                            ProofUrl = new[] { "deliveries/75555555-5555-4555-8555-555555555555/56565656-5656-4656-8656-565656565656/incident/order-2-photo-1.jpg", "deliveries/75555555-5555-4555-8555-555555555555/56565656-5656-4656-8656-565656565656/incident/order-2-photo-2.jpg" },
                             ReportedBy = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
                             Resolution = "Awaiting support review and customer confirmation.",
                             Status = "Investigating",

@@ -19,6 +19,50 @@ namespace NotificationService.Controllers
             _notificationService = notificationService;
         }
 
+        [HttpGet]
+        public async Task<ActionResult<ApiResponse<PagedResult<NotificationResponse>>>> GetMyNotifications([FromQuery] PaginationRequest paginationRequest)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                    return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                var response = await _notificationService.GetAllNotificationsByUserIdAsync(userId.Value, paginationRequest);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPatch("{notificationId:guid}/read")]
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> MarkNotificationAsRead(Guid notificationId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                    return StatusCode(StatusCodes.Status401Unauthorized, "Invalid user context");
+
+                var response = await _notificationService.MarkNotificationAsReadAsync(userId.Value, notificationId);
+
+                if (!response.Success)
+                    return StatusCode(response.StatusCode, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
         [HttpPost("devices")]
         public async Task<ActionResult<ApiResponse<UserDeviceResponse>>> RegisterDevice([FromBody] RegisterDeviceRequest request)
         {

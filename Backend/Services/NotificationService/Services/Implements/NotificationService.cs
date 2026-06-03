@@ -11,12 +11,61 @@ namespace NotificationService.Services.Implements
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _repository;
-        private readonly UserDeviceMapper _mapper;
+        private readonly UserDeviceMapper _userDeviceMapper;
+        private readonly NotificationMapper _notificationMapper;
 
-        public NotificationService(INotificationRepository repository, UserDeviceMapper mapper)
+        public NotificationService(
+            INotificationRepository repository,
+            UserDeviceMapper userDeviceMapper,
+            NotificationMapper notificationMapper)
         {
             _repository = repository;
-            _mapper = mapper;
+            _userDeviceMapper = userDeviceMapper;
+            _notificationMapper = notificationMapper;
+        }
+
+        public async Task<ApiResponse<PagedResult<NotificationResponse>>> GetAllNotificationsByUserIdAsync(Guid userId, PaginationRequest paginationRequest)
+        {
+            if (userId == Guid.Empty)
+                return new ApiResponse<PagedResult<NotificationResponse>>(StatusCodes.Status400BadRequest, "Invalid user id");
+
+            var notifications = await _repository.GetAllNotificationsByUserIdAsync(userId);
+            var pagedNotifications = await notifications.ToPagedResultAsync(paginationRequest);
+
+            if (pagedNotifications.TotalCount == 0)
+                return new ApiResponse<PagedResult<NotificationResponse>>(StatusCodes.Status404NotFound, "No notifications found");
+
+            var response = _notificationMapper.ToNotificationResponseList(pagedNotifications.Items);
+            var result = new PagedResult<NotificationResponse>(response, pagedNotifications.PaginationRequest, pagedNotifications.TotalCount);
+
+            return new ApiResponse<PagedResult<NotificationResponse>>(StatusCodes.Status200OK, result);
+        }
+
+        public async Task<ApiResponse<ConfirmationResponse>> MarkNotificationAsReadAsync(Guid userId, Guid notificationId)
+        {
+            if (userId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid user id");
+
+            if (notificationId == Guid.Empty)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid notification id");
+
+            var notification = await _repository.GetNotificationByIdAsync(notificationId);
+
+            if (notification == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No notification found");
+
+            if (notification.UserId != userId)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own notifications");
+
+            if (!notification.IsRead)
+            {
+                notification.IsRead = true;
+                await _repository.UpdateNotificationAsync(notification);
+            }
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Notification marked as read successfully"));
         }
 
         public async Task<ApiResponse<PagedResult<UserDeviceResponse>>> GetAllUserDevicesAysnc(PaginationRequest paginationRequest)
@@ -27,7 +76,7 @@ namespace NotificationService.Services.Implements
                 return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status404NotFound, "No user devices found");
 
             var pagedUserDevices = await userDevices.ToPagedResultAsync(paginationRequest);
-            var response = _mapper.ToUserDeviceResponseList(pagedUserDevices.Items);
+            var response = _userDeviceMapper.ToUserDeviceResponseList(pagedUserDevices.Items);
             var result = new PagedResult<UserDeviceResponse>(response, pagedUserDevices.PaginationRequest, pagedUserDevices.TotalCount);
 
             return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status200OK, result);
@@ -44,7 +93,7 @@ namespace NotificationService.Services.Implements
                 return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status404NotFound, "No user devices found");
 
             var pagedUserDevices = await userDevices.ToPagedResultAsync(paginationRequest);
-            var response = _mapper.ToUserDeviceResponseList(pagedUserDevices.Items);
+            var response = _userDeviceMapper.ToUserDeviceResponseList(pagedUserDevices.Items);
             var result = new PagedResult<UserDeviceResponse>(response, pagedUserDevices.PaginationRequest, pagedUserDevices.TotalCount);
 
             return new ApiResponse<PagedResult<UserDeviceResponse>>(StatusCodes.Status200OK, result);
@@ -86,7 +135,7 @@ namespace NotificationService.Services.Implements
                 await _repository.UpdateUserDeviceAsync(existingDevice);
             }
 
-            var response = _mapper.ToUserDeviceResponse(existingDevice);
+            var response = _userDeviceMapper.ToUserDeviceResponse(existingDevice);
             return new ApiResponse<UserDeviceResponse>(StatusCodes.Status200OK, response);
         }
 

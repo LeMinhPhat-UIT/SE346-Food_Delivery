@@ -313,7 +313,7 @@ export const openApiSpec = {
         responses: { "200": { description: "Checkout preview result" } },
       },
     },
-    "/api/orders": {
+    "/api/orders/my": {
       get: {
         tags: ["Orders"],
         summary: "Get my orders",

@@ -47,7 +47,13 @@ namespace NotificationService.Consuming
                 type = "ASSIGNMENT_ACCEPTED",
                 assignmentId = @event.AssignmentId,
                 offerId = @event.OfferId,
-                orderId = @event.OrderId
+                orderId = @event.OrderId,
+                customer = new
+                {
+                    id = @event.CustomerId,
+                    name = @event.CustomerName,
+                    phone = @event.CustomerPhone
+                }
             };
 
             await DeliverToShipperAsync(
@@ -62,7 +68,9 @@ namespace NotificationService.Consuming
                     ["Type"] = "ASSIGNMENT_ACCEPTED",
                     ["AssignmentId"] = @event.AssignmentId.ToString(),
                     ["OfferId"] = @event.OfferId.ToString(),
-                    ["OrderId"] = @event.OrderId.ToString()
+                    ["OrderId"] = @event.OrderId.ToString(),
+                    ["CustomerName"] = @event.CustomerName,
+                    ["CustomerPhone"] = @event.CustomerPhone
                 });
         }
 

@@ -370,6 +370,7 @@ export class OrderService {
         pickupLng: Number(merchantAddress.lng),
         deliveryLat: Number(userAddress.lat),
         deliveryLng: Number(userAddress.lng),
+        subtotal: cart.subtotal,
       },
       token,
     );

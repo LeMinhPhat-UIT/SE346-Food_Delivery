@@ -10,6 +10,8 @@ namespace DeliveryService.Entities
         public Guid MerchantId { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
         public Guid ShipperId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerPhone { get; set; } = string.Empty;
         public string MerchantName { get; set; } = string.Empty;
         public string PickupAddress { get; set; } = string.Empty;
         public decimal PickupLatitude { get; set; }

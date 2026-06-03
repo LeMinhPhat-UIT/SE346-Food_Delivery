@@ -432,6 +432,14 @@ namespace DeliveryService.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CustomerPhone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("DeliveredAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -520,6 +528,8 @@ namespace DeliveryService.Migrations
                             AcceptedAt = new DateTime(2026, 1, 1, 0, 1, 0, 0, DateTimeKind.Utc),
                             AssignedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CustomerId = new Guid("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"),
+                            CustomerName = "Seeded Customer",
+                            CustomerPhone = "0900000001",
                             DeliveryFee = 21000m,
                             DistanceKm = 2.2m,
                             DropoffAddress = "Seed dropoff address",

@@ -119,6 +119,8 @@ namespace DeliveryService.Persistences
                     MerchantId = merchantId,
                     OrderNumber = "ORD-SEED-0001",
                     ShipperId = shipperId,
+                    CustomerName = "Seeded Customer",
+                    CustomerPhone = "0900000001",
                     MerchantName = "Seed Merchant",
                     PickupAddress = "Seed pickup address",
                     PickupLatitude = 10.7769m,

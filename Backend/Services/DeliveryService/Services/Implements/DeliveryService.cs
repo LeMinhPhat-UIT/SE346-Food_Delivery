@@ -300,6 +300,8 @@ namespace DeliveryService.Services.Implements
                     OrderId = result.Assignment.OrderId,
                     OrderNumber = result.Assignment.OrderNumber,
                     CustomerId = result.Assignment.CustomerId,
+                    CustomerName = result.Assignment.CustomerName,
+                    CustomerPhone = result.Assignment.CustomerPhone,
                     MerchantId = result.Assignment.MerchantId,
                     AcceptedByShipperId = result.Assignment.ShipperId,
                     CancelledOfferIds = result.CancelledAssignments.Select(assignment => assignment.Id).ToArray(),
@@ -384,6 +386,8 @@ namespace DeliveryService.Services.Implements
                     AssignmentId = offer.Id,
                     OfferId = offer.Id,
                     OrderId = offer.OrderId,
+                    CustomerName = offer.CustomerName,
+                    CustomerPhone = offer.CustomerPhone,
                     ExpiresAt = offer.OfferExpiresAt
                 });
         }

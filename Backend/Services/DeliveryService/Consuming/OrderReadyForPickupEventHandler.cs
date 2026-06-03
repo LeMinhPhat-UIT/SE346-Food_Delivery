@@ -49,6 +49,8 @@ namespace DeliveryService.Consuming
                 MerchantStoreName = @event.MerchantStoreName,
                 MerchantAddress = @event.MerchantAddress,
                 CustomerId = @event.UserId,
+                CustomerName = @event.CustomerName,
+                CustomerPhone = @event.CustomerPhone,
                 DeliveryAddress = @event.DeliveryAddress,
                 TotalAmount = @event.TotalAmount,
                 DeliveryFee = @event.DeliveryFee,
@@ -67,6 +69,8 @@ namespace DeliveryService.Consuming
                 MerchantStoreName = @event.MerchantStoreName,
                 MerchantAddress = @event.MerchantAddress,
                 CustomerId = @event.UserId,
+                CustomerName = @event.CustomerName,
+                CustomerPhone = @event.CustomerPhone,
                 DeliveryAddress = @event.DeliveryAddress,
                 TotalAmount = @event.TotalAmount,
                 DeliveryFee = @event.DeliveryFee,
@@ -191,6 +195,8 @@ namespace DeliveryService.Consuming
                     MerchantId = payload.MerchantId,
                     OrderNumber = payload.OrderNumber,
                     ShipperId = candidate.ShipperId,
+                    CustomerName = payload.CustomerName,
+                    CustomerPhone = payload.CustomerPhone,
                     MerchantName = payload.MerchantStoreName,
                     PickupAddress = payload.MerchantAddress?.AddressLine ?? string.Empty,
                     PickupLatitude = merchantLatDecimal,
@@ -220,6 +226,8 @@ namespace DeliveryService.Consuming
                 OrderId = payload.OrderId,
                 OrderNumber = payload.OrderNumber,
                 CustomerId = payload.CustomerId,
+                CustomerName = payload.CustomerName,
+                CustomerPhone = payload.CustomerPhone,
                 MerchantId = payload.MerchantId,
                 MerchantName = payload.MerchantStoreName,
                 PickupLocation = new LocationPayload
@@ -255,6 +263,8 @@ namespace DeliveryService.Consuming
             public string MerchantStoreName { get; init; } = string.Empty;
             public MerchantAddressBaseDto? MerchantAddress { get; init; }
             public Guid CustomerId { get; init; }
+            public string CustomerName { get; init; } = string.Empty;
+            public string CustomerPhone { get; init; } = string.Empty;
             public UserAddressBaseDto? DeliveryAddress { get; init; }
             public decimal TotalAmount { get; init; }
             public decimal DeliveryFee { get; init; }

@@ -9,6 +9,8 @@ namespace Messaging.Contracts.Events
         public Guid OrderId { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
         public Guid CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerPhone { get; set; } = string.Empty;
         public Guid MerchantId { get; set; }
         public string MerchantName { get; set; } = string.Empty;
         public LocationPayload PickupLocation { get; set; } = new();
@@ -25,6 +27,8 @@ namespace Messaging.Contracts.Events
         public Guid OrderId { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
         public Guid CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerPhone { get; set; } = string.Empty;
         public Guid MerchantId { get; set; }
         public Guid AcceptedByShipperId { get; set; }
         public IReadOnlyList<Guid> CancelledOfferIds { get; set; } = Array.Empty<Guid>();

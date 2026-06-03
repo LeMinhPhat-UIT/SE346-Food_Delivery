@@ -13,6 +13,7 @@ export type EstimateDeliveryFeePayload = {
   pickupLng: number;
   deliveryLat: number;
   deliveryLng: number;
+  subtotal: number;
 };
 
 export type EstimateDeliveryFeeResult = {
@@ -57,13 +58,17 @@ export class DeliveryServiceClient {
         pickupLng: payload.pickupLng,
         deliveryLat: payload.deliveryLat,
         deliveryLng: payload.deliveryLng,
+        subtotal: payload.subtotal,
       }),
     });
 
     if (!response.ok) {
+      const errorPayload = await this.tryParseApiResponse(response);
+
       throw new ApiError(
         HTTP_STATUS.BAD_REQUEST,
-        "Failed to estimate delivery fee from Delivery Service",
+        errorPayload?.errors?.join(", ") ||
+          "Failed to estimate delivery fee from Delivery Service",
       );
     }
 
@@ -86,5 +91,13 @@ export class DeliveryServiceClient {
       isWithinDeliveryRadius: result.data.isWithinDeliveryRadius,
       maxDeliveryDistanceKm: Number(result.data.maxDeliveryDistanceKm),
     };
+  }
+
+  private async tryParseApiResponse(response: Response): Promise<ApiResponse<unknown> | null> {
+    try {
+      return (await response.json()) as ApiResponse<unknown>;
+    } catch {
+      return null;
+    }
   }
 }

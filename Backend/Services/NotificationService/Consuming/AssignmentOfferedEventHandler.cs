@@ -46,6 +46,8 @@ namespace NotificationService.Consuming
                     ["OfferId"] = offer.OfferId.ToString(),
                     ["OrderId"] = @event.OrderId.ToString(),
                     ["ShipperId"] = offer.ShipperId.ToString(),
+                    ["CustomerName"] = @event.CustomerName,
+                    ["CustomerPhone"] = @event.CustomerPhone,
                     ["ExpiresAt"] = offer.ExpiresAt.ToString("O")
                 };
 
@@ -75,6 +77,12 @@ namespace NotificationService.Consuming
                         address = @event.PickupLocation.Address,
                         latitude = @event.PickupLocation.Latitude,
                         longitude = @event.PickupLocation.Longitude
+                    },
+                    customer = new
+                    {
+                        id = @event.CustomerId,
+                        name = @event.CustomerName,
+                        phone = @event.CustomerPhone
                     },
                     dropoff = new
                     {

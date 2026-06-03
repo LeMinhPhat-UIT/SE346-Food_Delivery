@@ -316,10 +316,13 @@ namespace DeliveryService.Repositories.Implements
 
         public async Task<ShipperAssignment?> GetActiveOfferForShipperAsync(Guid shipperId)
         {
+            var now = DateTime.UtcNow;
+
             return await _context.ShipperAssignments
                 .AsNoTracking()
                 .Where(sa => sa.ShipperId == shipperId &&
-                             (sa.Status == AssignmentStatus.Offering || sa.Status == AssignmentStatus.Pending))
+                             (sa.Status == AssignmentStatus.Offering || sa.Status == AssignmentStatus.Pending) &&
+                             (!sa.OfferExpiresAt.HasValue || sa.OfferExpiresAt.Value > now))
                 .OrderByDescending(sa => sa.AssignedAt)
                 .FirstOrDefaultAsync();
         }

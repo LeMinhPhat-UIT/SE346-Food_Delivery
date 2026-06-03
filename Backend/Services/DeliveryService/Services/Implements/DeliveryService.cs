@@ -393,6 +393,9 @@ namespace DeliveryService.Services.Implements
             if (assignmentId == Guid.Empty)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Invalid assignment id");
 
+            if (request == null)
+                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Delivery status request body is required");
+
             var assignment = await _deliveryRepository.GetShipperAssignmentByIdAsync(assignmentId);
             if (assignment == null)
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status404NotFound, "No shipper assignment found");
@@ -400,13 +403,17 @@ namespace DeliveryService.Services.Implements
             if (!CanAccessShipper(user, assignment.ShipperId))
                 return new ApiResponse<ConfirmationResponse>(StatusCodes.Status403Forbidden, "You can only update your own assignment");
 
-            if (request.Status == DeliveryStatus.PickedUp)
-                return await ConfirmPickupAsync(assignment, request);
-
-            if (request.Status == DeliveryStatus.Delivered)
-                return await ConfirmDeliveryAsync(assignment, request);
-
-            return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Unsupported delivery status transition");
+            return request.Status switch
+            {
+                DeliveryStatus.Pending => await MarkAssignmentPendingAsync(assignment),
+                DeliveryStatus.Assigned => await MarkAssignmentAssignedAsync(assignment),
+                DeliveryStatus.PickingUp => await MarkAssignmentAssignedAsync(assignment),
+                DeliveryStatus.PickedUp => await ConfirmPickupAsync(assignment, request),
+                DeliveryStatus.Delivering => await MarkAssignmentDeliveringAsync(assignment, request),
+                DeliveryStatus.Delivered => await ConfirmDeliveryAsync(assignment, request),
+                DeliveryStatus.Failed => await MarkAssignmentFailedAsync(assignment, request),
+                _ => new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Unsupported delivery status")
+            };
         }
 
         public async Task<ApiResponse<EstimateDeliveryFeeResponse>> EstimateDeliveryFeeAsync(EstimateDeliveryFeeRequest? request)
@@ -591,6 +598,70 @@ namespace DeliveryService.Services.Implements
                 new ConfirmationResponse("Resolve incident successfully"));
         }
 
+        private async Task<ApiResponse<ConfirmationResponse>> MarkAssignmentPendingAsync(ShipperAssignment assignment)
+        {
+            assignment.Status = AssignmentStatus.Pending;
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Assignment status updated to pending."));
+        }
+
+        private async Task<ApiResponse<ConfirmationResponse>> MarkAssignmentAssignedAsync(ShipperAssignment assignment)
+        {
+            var now = DateTime.UtcNow;
+
+            assignment.Status = AssignmentStatus.Accepted;
+            assignment.AcceptedAt ??= now;
+            assignment.RespondedAt ??= now;
+            assignment.RejectReason = null;
+            assignment.CancelledReason = null;
+
+            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.Busy, assignment.Id);
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Assignment status updated to assigned."));
+        }
+
+        private async Task<ApiResponse<ConfirmationResponse>> MarkAssignmentDeliveringAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
+        {
+            var now = DateTime.UtcNow;
+            var shouldPublishPickup = assignment.PickedUpAt == null;
+
+            assignment.Status = AssignmentStatus.Delivering;
+            assignment.PickedUpAt ??= now;
+            assignment.PickupProofFileKey ??= request.ProofFileKey;
+
+            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.Delivering, assignment.Id);
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            if (shouldPublishPickup)
+                await PublishPickupMilestoneAsync(assignment, request);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Assignment status updated to delivering."));
+        }
+
+        private async Task<ApiResponse<ConfirmationResponse>> MarkAssignmentFailedAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
+        {
+            assignment.Status = AssignmentStatus.Failed;
+            assignment.RespondedAt ??= DateTime.UtcNow;
+            assignment.CancelledReason = string.IsNullOrWhiteSpace(request.Note)
+                ? "DELIVERY_FAILED"
+                : request.Note.Trim();
+
+            await UpsertAvailabilityAsync(assignment.ShipperId, null, ShipperWorkStatus.ActiveIdle);
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Assignment status updated to failed."));
+        }
+
         private async Task<ApiResponse<ConfirmationResponse>> AcceptAssignmentAsync(ShipperAssignment assignment)
         {
             var acceptedAssignment = await _deliveryRepository.GetAcceptedShipperAssignmentByOrderIdAsync(assignment.OrderId);
@@ -603,7 +674,7 @@ namespace DeliveryService.Services.Implements
             assignment.RejectReason = null;
 
             await _deliveryRepository.UpdateShipperAssignment(assignment);
-            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.PendingAssignment);
+            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.PendingAssignment, assignment.Id);
             await CancelOtherPendingAssignmentsAsync(assignment);
 
             return new ApiResponse<ConfirmationResponse>(
@@ -629,16 +700,73 @@ namespace DeliveryService.Services.Implements
 
         private async Task<ApiResponse<ConfirmationResponse>> ConfirmPickupAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
         {
-            if (assignment.Status != AssignmentStatus.Accepted || assignment.PickedUpAt != null)
-                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment is not ready for pickup confirmation");
+            var shouldPublishPickup = assignment.PickedUpAt == null;
 
             assignment.Status = AssignmentStatus.PickedUp;
-            assignment.PickedUpAt = DateTime.UtcNow;
-            assignment.PickupProofFileKey = request.ProofFileKey;
+            assignment.PickedUpAt ??= DateTime.UtcNow;
+            assignment.PickupProofFileKey ??= request.ProofFileKey;
 
-            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.Delivering);
+            await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.Delivering, assignment.Id);
             await _deliveryRepository.UpdateShipperAssignment(assignment);
 
+            if (shouldPublishPickup)
+                await PublishPickupMilestoneAsync(assignment, request);
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Confirm pickup successfully"));
+        }
+
+        private async Task<ApiResponse<ConfirmationResponse>> ConfirmDeliveryAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
+        {
+            var now = DateTime.UtcNow;
+            var shouldPublishDelivery = assignment.DeliveredAt == null;
+
+            assignment.Status = AssignmentStatus.Completed;
+            assignment.PickedUpAt ??= now;
+            assignment.DeliveredAt ??= now;
+            assignment.DeliveryProofFileKey ??= request.ProofFileKey;
+            var deliveredAt = assignment.DeliveredAt.Value;
+
+            await UpsertAvailabilityAsync(assignment.ShipperId, null, ShipperWorkStatus.ActiveIdle);
+            await _deliveryRepository.UpdateShipperAssignment(assignment);
+
+            if (shouldPublishDelivery)
+            {
+                await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
+                {
+                    OrderId = assignment.OrderId,
+                    OrderNumber = assignment.OrderNumber,
+                    CustomerId = assignment.CustomerId,
+                    ShipperId = assignment.ShipperId,
+                    Milestone = DeliveryMilestoneType.Delivered,
+                    ProofFileKey = request.ProofFileKey,
+                    Note = request.Note
+                });
+
+                await _eventPublisher.PublishAsync(new DeliveryDeliveredEvent
+                {
+                    OrderId = assignment.OrderId,
+                    OrderNumber = assignment.OrderNumber,
+                    CustomerId = assignment.CustomerId,
+                    ShipperId = assignment.ShipperId,
+                    MerchantId = assignment.MerchantId,
+                    DeliveryFee = assignment.DeliveryFee,
+                    DistanceKm = assignment.DistanceKm,
+                    DeliveryAt = deliveredAt,
+                    Status = DeliveryStatus.Delivered.ToString(),
+                    ProofFileKey = request.ProofFileKey,
+                    Note = request.Note
+                });
+            }
+
+            return new ApiResponse<ConfirmationResponse>(
+                StatusCodes.Status200OK,
+                new ConfirmationResponse("Confirm delivery successfully"));
+        }
+
+        private async Task PublishPickupMilestoneAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
+        {
             await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
             {
                 OrderId = assignment.OrderId,
@@ -649,57 +777,9 @@ namespace DeliveryService.Services.Implements
                 ProofFileKey = request.ProofFileKey,
                 Note = request.Note
             });
-
-            return new ApiResponse<ConfirmationResponse>(
-                StatusCodes.Status200OK,
-                new ConfirmationResponse("Confirm pickup successfully"));
         }
 
-        private async Task<ApiResponse<ConfirmationResponse>> ConfirmDeliveryAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
-        {
-            if (assignment.PickedUpAt == null || assignment.DeliveredAt != null)
-                return new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, "Assignment is not ready for delivery confirmation");
-
-            assignment.Status = AssignmentStatus.Completed;
-            assignment.DeliveredAt = DateTime.UtcNow;
-            assignment.DeliveryProofFileKey = request.ProofFileKey;
-            var deliveredAt = assignment.DeliveredAt.Value;
-
-            await UpsertAvailabilityAsync(assignment.ShipperId, null, ShipperWorkStatus.ActiveIdle);
-            await _deliveryRepository.UpdateShipperAssignment(assignment);
-
-            await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
-            {
-                OrderId = assignment.OrderId,
-                OrderNumber = assignment.OrderNumber,
-                CustomerId = assignment.CustomerId,
-                ShipperId = assignment.ShipperId,
-                Milestone = DeliveryMilestoneType.Delivered,
-                ProofFileKey = request.ProofFileKey,
-                Note = request.Note
-            });
-
-            await _eventPublisher.PublishAsync(new DeliveryDeliveredEvent
-            {
-                OrderId = assignment.OrderId,
-                OrderNumber = assignment.OrderNumber,
-                CustomerId = assignment.CustomerId,
-                ShipperId = assignment.ShipperId,
-                MerchantId = assignment.MerchantId,
-                DeliveryFee = assignment.DeliveryFee,
-                DistanceKm = assignment.DistanceKm,
-                DeliveryAt = deliveredAt,
-                Status = DeliveryStatus.Delivered.ToString(),
-                ProofFileKey = request.ProofFileKey,
-                Note = request.Note
-            });
-
-            return new ApiResponse<ConfirmationResponse>(
-                StatusCodes.Status200OK,
-                new ConfirmationResponse("Confirm delivery successfully"));
-        }
-
-        private async Task UpsertAvailabilityAsync(Guid shipperId, Guid? orderId, ShipperWorkStatus status)
+        private async Task UpsertAvailabilityAsync(Guid shipperId, Guid? orderId, ShipperWorkStatus status, Guid? assignmentId = null)
         {
             var existingAvailability = await _deliveryRepository.GetShipperAvailabilityByShipperIdAsync(shipperId);
             var availability = existingAvailability ?? new ShipperAvailability
@@ -710,7 +790,7 @@ namespace DeliveryService.Services.Implements
 
             availability.CurrentOrderId = orderId;
             availability.Status = status;
-            availability.CurrentAssignmentId = status == ShipperWorkStatus.ActiveIdle ? null : availability.CurrentAssignmentId;
+            availability.CurrentAssignmentId = status == ShipperWorkStatus.ActiveIdle ? null : assignmentId ?? availability.CurrentAssignmentId;
             availability.CurrentOfferedAssignmentId = null;
             availability.OfferingExpiresAt = null;
             availability.LastSeenAt = DateTime.UtcNow;

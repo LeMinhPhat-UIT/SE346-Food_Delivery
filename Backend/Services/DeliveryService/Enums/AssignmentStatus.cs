@@ -11,6 +11,7 @@ namespace DeliveryService.Enums
         PickedUp,
         Delivering,
         Completed,
+        Failed,
         Rejected,
         Expired,
         Cancelled,

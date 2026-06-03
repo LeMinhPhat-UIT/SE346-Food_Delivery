@@ -6,6 +6,7 @@ using DeliveryService.Services.Interfaces;
 using Messaging.Abstractions.Dispatching;
 using Messaging.Contracts.Events;
 using Messaging.RabbitMq.Publishing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
@@ -124,32 +125,59 @@ namespace DeliveryService.Consuming
                 deliveryFee = estimate.DeliveryFee;
             }
 
-            var shippers = await _redisRepository.GetShipperLocationInRadiusAsync(
+            var shippers = (await _redisRepository.GetShipperLocationInRadiusAsync(
                 merchantLng,
                 merchantLat,
                 options.FindingShipperRadius,
-                options.RedisGeoUnit);
+                options.RedisGeoUnit)).ToArray();
 
-            var shipperMembers = shippers?.Select(s => s.Member).ToHashSet() ?? new HashSet<RedisValue>();
-            if (shipperMembers.Count == 0)
+            if (shippers.Length == 0)
             {
                 _logger.LogWarning("No nearby shipper locations found for order {OrderId}", payload.OrderId);
+                return;
+            }
+
+            var nearbyShipperIds = shippers
+                .Select(s => s.Member.ToString())
+                .Where(member => TryParseShipperId(member, out _))
+                .Select(member => Guid.Parse(member))
+                .Distinct()
+                .ToArray();
+
+            if (nearbyShipperIds.Length == 0)
+            {
+                _logger.LogWarning(
+                    "Nearby Redis shipper entries did not contain valid shipper ids for order {OrderId}. Members: {Members}",
+                    payload.OrderId,
+                    string.Join(", ", shippers.Select(s => s.Member.ToString())));
                 return;
             }
 
             var stalenessCutoff = now.AddSeconds(-Math.Max(options.AllowedLocationStalenessSeconds, 1));
             var maxShippers = Math.Max(options.MaxShippersPerBatch, 1);
             var allShippers = await _deliveryRepository.GetAllShipperAvailabilityAsync();
-            var candidates = allShippers
-                .AsEnumerable()
-                .Where(s => s != null &&
-                            s.Status == ShipperWorkStatus.ActiveIdle &&
+            var candidateQuery = allShippers
+                .Where(s => s.Status == ShipperWorkStatus.ActiveIdle &&
                             s.CurrentOfferedAssignmentId == null &&
-                            s.LastSeenAt.HasValue &&
-                            s.LastSeenAt.Value >= stalenessCutoff &&
-                            shipperMembers.Contains(s.ShipperId.ToString()))
+                            nearbyShipperIds.Contains(s.ShipperId));
+
+            var candidates = await candidateQuery
+                .Where(s => s.LastSeenAt.HasValue && s.LastSeenAt.Value >= stalenessCutoff)
+                .OrderByDescending(s => s.LastSeenAt)
                 .Take(maxShippers)
-                .ToList();
+                .ToListAsync();
+
+            if (candidates.Count == 0)
+            {
+                _logger.LogInformation(
+                    "No nearby shipper availability rows passed the staleness cutoff for order {OrderId}; using Redis proximity matches.",
+                    payload.OrderId);
+
+                candidates = await candidateQuery
+                    .OrderByDescending(s => s.LastSeenAt)
+                    .Take(maxShippers)
+                    .ToListAsync();
+            }
 
             var offeredAssignments = new List<ShipperAssignment>();
 
@@ -232,6 +260,16 @@ namespace DeliveryService.Consuming
             public decimal DeliveryFee { get; init; }
             public decimal DistanceKm { get; init; }
             public string? CorrelationId { get; init; }
+        }
+
+        private static bool TryParseShipperId(string? value, out Guid shipperId)
+        {
+            shipperId = default;
+
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            return Guid.TryParse(value.Trim(), out shipperId);
         }
     }
 }

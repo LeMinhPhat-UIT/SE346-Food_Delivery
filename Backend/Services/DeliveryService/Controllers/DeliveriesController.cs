@@ -1,9 +1,11 @@
 using DeliveryService.DTOs;
 using DeliveryService.Entities;
+using DeliveryService.Enums;
 using DeliveryService.Services.Interfaces;
 using Messaging.Contracts.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace DeliveryService.Controllers
 {
@@ -303,10 +305,18 @@ namespace DeliveryService.Controllers
 
         [HttpPost("assignments/{assignmentId:guid}/status")]
         [Authorize(Policy = "ShipperOrAdmin")]
-        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateAssignmentStatus([FromRoute] Guid assignmentId, [FromBody] UpdateDeliveryStatusRequest request)
+        public async Task<ActionResult<ApiResponse<ConfirmationResponse>>> UpdateAssignmentStatus([FromRoute] Guid assignmentId)
         {
             try
             {
+                var parsedRequest = await ReadUpdateDeliveryStatusRequestAsync();
+                if (parsedRequest.Error != null)
+                {
+                    var errorResponse = new ApiResponse<ConfirmationResponse>(StatusCodes.Status400BadRequest, parsedRequest.Error);
+                    return StatusCode(errorResponse.StatusCode, errorResponse);
+                }
+
+                var request = parsedRequest.Request!;
                 var response = await _deliveryService.UpdateAssignmentStatusAsync(assignmentId, request, User);
 
                 if (!response.Success)
@@ -318,6 +328,129 @@ namespace DeliveryService.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
+        }
+
+        private async Task<(UpdateDeliveryStatusRequest? Request, string? Error)> ReadUpdateDeliveryStatusRequestAsync()
+        {
+            using var reader = new StreamReader(Request.Body);
+            var body = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(body))
+                return (null, "Delivery status request body is required");
+
+            var trimmedBody = body.Trim();
+
+            if (trimmedBody.StartsWith("{"))
+                return ParseUpdateDeliveryStatusObject(trimmedBody);
+
+            if (trimmedBody.StartsWith("\""))
+            {
+                try
+                {
+                    var statusText = JsonSerializer.Deserialize<string>(trimmedBody);
+                    return ParseUpdateDeliveryStatusText(statusText);
+                }
+                catch (JsonException)
+                {
+                    return (null, "Invalid delivery status request body");
+                }
+            }
+
+            return ParseUpdateDeliveryStatusText(trimmedBody);
+        }
+
+        private static (UpdateDeliveryStatusRequest? Request, string? Error) ParseUpdateDeliveryStatusObject(string body)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(body);
+                var root = document.RootElement;
+
+                if (root.ValueKind != JsonValueKind.Object)
+                    return (null, "Delivery status request body must be an object or status string");
+
+                if (!TryGetProperty(root, nameof(UpdateDeliveryStatusRequest.Status), out var statusElement))
+                    return (null, "Status is required");
+
+                if (!TryReadDeliveryStatus(statusElement, out var status))
+                    return (null, "Invalid delivery status");
+
+                return (new UpdateDeliveryStatusRequest
+                {
+                    Status = status,
+                    Note = GetOptionalString(root, nameof(UpdateDeliveryStatusRequest.Note)) ?? string.Empty,
+                    ProofFileKey = GetOptionalString(root, nameof(UpdateDeliveryStatusRequest.ProofFileKey))
+                }, null);
+            }
+            catch (JsonException)
+            {
+                return (null, "Invalid delivery status request body");
+            }
+        }
+
+        private static (UpdateDeliveryStatusRequest? Request, string? Error) ParseUpdateDeliveryStatusText(string? statusText)
+        {
+            if (!TryParseDeliveryStatus(statusText, out var status))
+                return (null, "Invalid delivery status");
+
+            return (new UpdateDeliveryStatusRequest
+            {
+                Status = status,
+                Note = string.Empty
+            }, null);
+        }
+
+        private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement property)
+        {
+            foreach (var item in element.EnumerateObject())
+            {
+                if (string.Equals(item.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    property = item.Value;
+                    return true;
+                }
+            }
+
+            property = default;
+            return false;
+        }
+
+        private static string? GetOptionalString(JsonElement element, string propertyName)
+        {
+            if (!TryGetProperty(element, propertyName, out var property) || property.ValueKind == JsonValueKind.Null)
+                return null;
+
+            return property.ValueKind == JsonValueKind.String
+                ? property.GetString()
+                : property.ToString();
+        }
+
+        private static bool TryReadDeliveryStatus(JsonElement element, out DeliveryStatus status)
+        {
+            if (element.ValueKind == JsonValueKind.String)
+                return TryParseDeliveryStatus(element.GetString(), out status);
+
+            if (element.ValueKind == JsonValueKind.Number &&
+                element.TryGetInt32(out var value) &&
+                Enum.IsDefined(typeof(DeliveryStatus), value))
+            {
+                status = (DeliveryStatus)value;
+                return true;
+            }
+
+            status = default;
+            return false;
+        }
+
+        private static bool TryParseDeliveryStatus(string? value, out DeliveryStatus status)
+        {
+            var normalized = value?
+                .Replace("\uFEFF", string.Empty)
+                .Replace("\u200B", string.Empty)
+                .Trim();
+
+            return Enum.TryParse(normalized, ignoreCase: true, out status) &&
+                   Enum.IsDefined(typeof(DeliveryStatus), status);
         }
 
         [HttpPost("incidents")]

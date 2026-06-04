@@ -12,8 +12,8 @@ Seed setup:
 Seeded records:
 
 - 4 roles (`Customer`, `Merchant`, `Shipper`, `Admin`)
-- 4 accounts (`admin@fooddelivery.local`, `customer@fooddelivery.local`, `merchant@fooddelivery.local`, `shipper@fooddelivery.local`)
-- 4 role assignments matching those accounts
+- 6 accounts (`admin@fooddelivery.local`, `customer@fooddelivery.local`, `merchant@fooddelivery.local`, `lina.tran@fooddelivery.local`, `quang.pham@fooddelivery.local`, `shipper@fooddelivery.local`)
+- 8 role assignments. Every seeded merchant account has both `Customer` and `Merchant`.
 
 ## UserService
 
@@ -24,10 +24,11 @@ Seed setup:
 
 Seeded records:
 
-- 3 users (`Seeded Customer`, `Seeded Merchant Owner`, `Seeded Shipper`)
-- 3 user addresses (one default address per user)
-- 1 approved merchant linked to `Seeded Merchant Owner`
-- 1 merchant store address linked to that merchant
+- 6 users (`Seeded Admin`, `Seeded Customer`, `Seeded Merchant Owner`, `Lina Tran`, `Quang Pham`, `Seeded Shipper`)
+- 5 user addresses (one default address for the customer, each merchant, and the shipper)
+- 3 approved merchant requests. For every seeded merchant, the latest merchant request is approved.
+- 3 approved merchants linked to their owning users
+- 3 merchant store addresses linked to those merchants
 - 1 approved shipper linked to `Seeded Shipper`
 - 1 shipper onboarding request tied to that shipper
 

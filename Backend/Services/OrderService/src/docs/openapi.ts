@@ -328,7 +328,9 @@ export const openApiSpec = {
           { name: "sortOrder", in: "query", schema: { type: "string" } },
         ],
         responses: { "200": { description: "Order history list" } },
-      },
+      }
+    },
+    "/api/orders": {
       post: {
         tags: ["Orders"],
         summary: "Create order",

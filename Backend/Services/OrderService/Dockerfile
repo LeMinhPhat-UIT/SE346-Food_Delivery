@@ -3,6 +3,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+ARG DATABASE_URL=postgresql://localhost:5432/postgres
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY package*.json ./
 
 RUN npm install

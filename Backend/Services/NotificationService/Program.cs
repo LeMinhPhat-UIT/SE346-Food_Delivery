@@ -88,6 +88,7 @@ builder.Services.AddTransient<IEventHandler<MerchantRequestReviewedEvent>, Merch
 builder.Services.AddTransient<IEventHandler<ShipperRequestReviewedEvent>, ShipperRequestReviewedEventHandler>();
 builder.Services.AddTransient<IPushNotificationService, PushNotificationService>();
 builder.Services.AddTransient<UserDeviceMapper>();
+builder.Services.AddTransient<NotificationMapper>();
 builder.Services.AddSingleton<IRealtimeConnectionTracker, RealtimeConnectionTracker>();
 
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();

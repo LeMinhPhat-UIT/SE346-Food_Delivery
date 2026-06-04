@@ -20,6 +20,29 @@ namespace NotificationService.Repositories.Implements
             await _context.SaveChangesAsync();
         }
 
+        public Task<IQueryable<Notification>> GetAllNotificationsByUserIdAsync(Guid userId)
+        {
+            IQueryable<Notification> query = _context.Notifications
+                .Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.CreatedAt)
+                .AsNoTracking()
+                .AsQueryable();
+
+            return Task.FromResult(query);
+        }
+
+        public async Task<Notification?> GetNotificationByIdAsync(Guid notificationId)
+        {
+            return await _context.Notifications
+                .FirstOrDefaultAsync(n => n.Id == notificationId);
+        }
+
+        public async Task UpdateNotificationAsync(Notification notification)
+        {
+            _context.Notifications.Update(notification);
+            await _context.SaveChangesAsync();
+        }
+
         public Task<IQueryable<UserDevice>> GetAllUserDevicesAsync()
         {
             IQueryable<UserDevice> query = _context.UserDevices

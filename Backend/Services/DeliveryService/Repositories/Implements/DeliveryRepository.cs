@@ -287,38 +287,103 @@ namespace DeliveryService.Repositories.Implements
 
         public async Task<IReadOnlyList<ShipperAssignment>> ExpireStaleAssignmentOffersAsync(DateTime now, CancellationToken cancellationToken = default)
         {
-            var expiringAssignments = await _context.ShipperAssignments
-                .AsNoTracking()
-                .Where(sa => (sa.Status == AssignmentStatus.Offering || sa.Status == AssignmentStatus.Pending) &&
-                             sa.OfferExpiresAt.HasValue &&
-                             sa.OfferExpiresAt.Value <= now)
-                .ToListAsync(cancellationToken);
+            var strategy = _context.Database.CreateExecutionStrategy();
 
-            if (expiringAssignments.Count == 0)
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+                var expiringAssignments = await _context.ShipperAssignments
+                    .AsNoTracking()
+                    .Where(sa => (sa.Status == AssignmentStatus.Offering || sa.Status == AssignmentStatus.Pending) &&
+                                 sa.OfferExpiresAt.HasValue &&
+                                 sa.OfferExpiresAt.Value <= now)
+                    .ToListAsync(cancellationToken);
+
+                var expiringAssignmentIds = expiringAssignments.Select(sa => sa.Id).ToArray();
+                var staleOfferedAssignmentIds = await _context.ShipperAvailabilities
+                    .AsNoTracking()
+                    .Where(sa => sa.CurrentOfferedAssignmentId.HasValue)
+                    .Join(
+                        _context.ShipperAssignments
+                            .AsNoTracking()
+                            .Where(sa => sa.Status == AssignmentStatus.Expired ||
+                                         sa.Status == AssignmentStatus.Rejected ||
+                                         sa.Status == AssignmentStatus.Cancelled ||
+                                         ((sa.Status == AssignmentStatus.Offering || sa.Status == AssignmentStatus.Pending) &&
+                                          sa.OfferExpiresAt.HasValue &&
+                                          sa.OfferExpiresAt.Value <= now)),
+                        availability => availability.CurrentOfferedAssignmentId!.Value,
+                        assignment => assignment.Id,
+                        (_, assignment) => assignment.Id)
+                    .Distinct()
+                    .ToArrayAsync(cancellationToken);
+
+                var assignmentIdsToRelease = expiringAssignmentIds
+                    .Concat(staleOfferedAssignmentIds)
+                    .Distinct()
+                    .ToArray();
+
+                if (expiringAssignmentIds.Length > 0)
+                {
+                    await _context.ShipperAssignments
+                        .Where(sa => expiringAssignmentIds.Contains(sa.Id) &&
+                                     (sa.Status == AssignmentStatus.Offering || sa.Status == AssignmentStatus.Pending) &&
+                                     sa.OfferExpiresAt.HasValue &&
+                                     sa.OfferExpiresAt.Value <= now)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(sa => sa.Status, AssignmentStatus.Expired)
+                            .SetProperty(sa => sa.RespondedAt, now)
+                            .SetProperty(sa => sa.CancelledReason, "OFFER_EXPIRED"), cancellationToken);
+                }
+
+                if (assignmentIdsToRelease.Length > 0)
+                {
+                    await _context.ShipperAvailabilities
+                        .Where(sa => sa.CurrentOfferedAssignmentId.HasValue &&
+                                     assignmentIdsToRelease.Contains(sa.CurrentOfferedAssignmentId.Value) &&
+                                     sa.Status != ShipperWorkStatus.Offline &&
+                                     sa.CurrentAssignmentId == null)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(sa => sa.Status, ShipperWorkStatus.ActiveIdle)
+                            .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
+                            .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
+                            .SetProperty(sa => sa.CurrentOfferedAssignmentId, (Guid?)null)
+                            .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null)
+                            .SetProperty(sa => sa.LastSeenAt, now), cancellationToken);
+
+                    await _context.ShipperAvailabilities
+                        .Where(sa => sa.CurrentOfferedAssignmentId.HasValue &&
+                                     assignmentIdsToRelease.Contains(sa.CurrentOfferedAssignmentId.Value))
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(sa => sa.CurrentOfferedAssignmentId, (Guid?)null)
+                            .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null), cancellationToken);
+                }
+
+                await _context.ShipperAvailabilities
+                    .Where(sa => sa.CurrentOfferedAssignmentId == null &&
+                                 sa.OfferingExpiresAt.HasValue &&
+                                 sa.OfferingExpiresAt.Value <= now &&
+                                 sa.Status != ShipperWorkStatus.Offline &&
+                                 sa.CurrentAssignmentId == null)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(sa => sa.Status, ShipperWorkStatus.ActiveIdle)
+                        .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
+                        .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
+                        .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null)
+                        .SetProperty(sa => sa.LastSeenAt, now), cancellationToken);
+
+                await _context.ShipperAvailabilities
+                    .Where(sa => sa.CurrentOfferedAssignmentId == null &&
+                                 sa.OfferingExpiresAt.HasValue &&
+                                 sa.OfferingExpiresAt.Value <= now)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null), cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+
                 return expiringAssignments;
-
-            var assignmentIds = expiringAssignments.Select(sa => sa.Id).ToArray();
-
-            await _context.ShipperAssignments
-                .Where(sa => assignmentIds.Contains(sa.Id))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(sa => sa.Status, AssignmentStatus.Expired)
-                    .SetProperty(sa => sa.RespondedAt, now)
-                    .SetProperty(sa => sa.CancelledReason, "OFFER_EXPIRED"), cancellationToken);
-
-            await _context.ShipperAvailabilities
-                .Where(sa => sa.CurrentOfferedAssignmentId.HasValue &&
-                             assignmentIds.Contains(sa.CurrentOfferedAssignmentId.Value) &&
-                             sa.Status == ShipperWorkStatus.Offering)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(sa => sa.Status, ShipperWorkStatus.ActiveIdle)
-                    .SetProperty(sa => sa.CurrentOrderId, (Guid?)null)
-                    .SetProperty(sa => sa.CurrentAssignmentId, (Guid?)null)
-                    .SetProperty(sa => sa.CurrentOfferedAssignmentId, (Guid?)null)
-                    .SetProperty(sa => sa.OfferingExpiresAt, (DateTime?)null)
-                    .SetProperty(sa => sa.LastSeenAt, now), cancellationToken);
-
-            return expiringAssignments;
+            });
         }
 
         public async Task<ShipperAssignment?> GetActiveOfferForShipperAsync(Guid shipperId)

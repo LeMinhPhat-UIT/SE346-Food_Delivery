@@ -14,19 +14,12 @@ services:
       PORT: ${WALLET_SERVICE_CONTAINER_PORT:-8080}
       DATABASE_URL: postgresql://${WALLET_DB_USER:-wallet_service}:${WALLET_DB_PASSWORD:-wallet_strong_password}@${WALLET_DB_HOST:-wallet-db}:5432/${WALLET_DB_NAME:-wallet_db}?schema=public
       RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-appuser}:${RABBITMQ_DEFAULT_PASS:-app_password}@${RABBITMQ_HOST:-rabbitmq}:5672
-      JWT_SECRET: ${JWT_KEY:-2eae2772ac2b29af4fe6711697cec0dbc89dd73c811294620e7f5ef2e0c0dd79}
-      JWT_ISSUER: ${JWT_ISSUER:-https://auth.myapp.dev}
-      JWT_AUDIENCE: ${JWT_AUDIENCE:-https://api.myapp.dev}
-      USER_SERVICE_URL: ${WALLET_USER_SERVICE_URL:-http://user-service:8080/api}
-      ORDER_SERVICE_URL: ${WALLET_ORDER_SERVICE_URL:-http://order-service:8080/api/orders}
-      DELIVERY_SERVICE_URL: ${WALLET_DELIVERY_SERVICE_URL:-http://delivery-service:8080/api/deliveries}
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-notify-exchange}
-      WALLET_PLATFORM_OWNER_ID: ${WALLET_PLATFORM_OWNER_ID:-55555555-5555-5555-5555-555555555555}
-      WALLET_MERCHANT_COMMISSION_RATE: ${WALLET_MERCHANT_COMMISSION_RATE:-22}
-      WALLET_SHIPPER_COMMISSION_RATE: ${WALLET_SHIPPER_COMMISSION_RATE:-32}
     depends_on:
-      - wallet-db
-      - rabbitmq
+      wallet-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - backend-network
 

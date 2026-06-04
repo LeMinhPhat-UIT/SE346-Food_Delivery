@@ -5,6 +5,8 @@ namespace NotificationService.Services.Interfaces
 {
     public interface INotificationService
     {
+        Task<ApiResponse<PagedResult<NotificationResponse>>> GetAllNotificationsByUserIdAsync(Guid userId, PaginationRequest paginationRequest);
+        Task<ApiResponse<ConfirmationResponse>> MarkNotificationAsReadAsync(Guid userId, Guid notificationId);
         Task<ApiResponse<PagedResult<UserDeviceResponse>>> GetAllUserDevicesAysnc(PaginationRequest paginationRequest);
         Task<ApiResponse<PagedResult<UserDeviceResponse>>> GetAllUserDevicesByUserIdAsync(Guid userId, PaginationRequest paginationRequest);
         Task<ApiResponse<UserDeviceResponse>> RegisterDeviceAsync(Guid userId, RegisterDeviceRequest request);

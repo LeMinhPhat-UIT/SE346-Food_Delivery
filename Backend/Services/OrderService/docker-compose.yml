@@ -20,9 +20,12 @@ services:
     ports:
       - "${ORDER_SERVICE_HOST_PORT}:${ORDER_SERVICE_CONTAINER_PORT}"
     depends_on:
-      - order-db
-      - order-redis
-      - rabbitmq
+      order-db:
+        condition: service_healthy
+      order-redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - backend-network
 
@@ -36,6 +39,11 @@ services:
       - "${ORDER_DB_PORT}:5432"
     volumes:
       - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - backend-network
 
@@ -50,6 +58,11 @@ services:
       - "${ORDER_REDIS_PORT}:6379"
     volumes:
       - order_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$ORDER_REDIS_PASSWORD ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - backend-network
 

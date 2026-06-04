@@ -11,7 +11,8 @@ services:
     ports:
       - "${CATALOG_SERVICE_HOST_PORT}:${CATALOG_SERVICE_CONTAINER_PORT}"
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     networks:
       - backend-network
 

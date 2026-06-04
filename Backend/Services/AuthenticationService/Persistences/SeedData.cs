@@ -17,6 +17,8 @@ namespace AuthenticationService.Persistences
             var shipperRoleId = Guid.Parse("33333333-3333-4333-8333-333333333333");
             var customerUserId = Guid.Parse("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa");
             var merchantUserId = Guid.Parse("bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb");
+            var merchantTwoUserId = Guid.Parse("b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2");
+            var merchantThreeUserId = Guid.Parse("b3b3b3b3-b3b3-4b3b-8b3b-b3b3b3b3b3b3");
             var shipperUserId = Guid.Parse("99999999-9999-4999-9999-999999999999");
             var seededAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -79,6 +81,40 @@ namespace AuthenticationService.Persistences
                 PasswordHash = samplePasswordHash
             };
 
+            var merchantTwoUser = new ApplicationUser
+            {
+                Id = merchantTwoUserId,
+                FullName = "Lina Tran",
+                UserName = "lina.tran@fooddelivery.local",
+                NormalizedUserName = "LINA.TRAN@FOODDELIVERY.LOCAL",
+                Email = "lina.tran@fooddelivery.local",
+                NormalizedEmail = "LINA.TRAN@FOODDELIVERY.LOCAL",
+                EmailConfirmed = true,
+                SecurityStamp = "SEED-MERCHANT-TWO-SECURITY-STAMP",
+                ConcurrencyStamp = "SEED-MERCHANT-TWO-CONCURRENCY-STAMP",
+                IsOtpVerified = true,
+                Status = AuthStatus.Active,
+                CreatedAt = seededAt,
+                PasswordHash = samplePasswordHash
+            };
+
+            var merchantThreeUser = new ApplicationUser
+            {
+                Id = merchantThreeUserId,
+                FullName = "Quang Pham",
+                UserName = "quang.pham@fooddelivery.local",
+                NormalizedUserName = "QUANG.PHAM@FOODDELIVERY.LOCAL",
+                Email = "quang.pham@fooddelivery.local",
+                NormalizedEmail = "QUANG.PHAM@FOODDELIVERY.LOCAL",
+                EmailConfirmed = true,
+                SecurityStamp = "SEED-MERCHANT-THREE-SECURITY-STAMP",
+                ConcurrencyStamp = "SEED-MERCHANT-THREE-CONCURRENCY-STAMP",
+                IsOtpVerified = true,
+                Status = AuthStatus.Active,
+                CreatedAt = seededAt,
+                PasswordHash = samplePasswordHash
+            };
+
             var shipperUser = new ApplicationUser
             {
                 Id = shipperUserId,
@@ -96,7 +132,7 @@ namespace AuthenticationService.Persistences
                 PasswordHash = samplePasswordHash
             };
 
-            builder.Entity<ApplicationUser>().HasData(adminUser, customerUser, merchantUser, shipperUser);
+            builder.Entity<ApplicationUser>().HasData(adminUser, customerUser, merchantUser, merchantTwoUser, merchantThreeUser, shipperUser);
 
             builder.Entity<IdentityUserRole<Guid>>().HasData(
                 new IdentityUserRole<Guid>
@@ -112,6 +148,31 @@ namespace AuthenticationService.Persistences
                 new IdentityUserRole<Guid>
                 {
                     UserId = merchantUserId,
+                    RoleId = customerRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = merchantUserId,
+                    RoleId = merchantRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = merchantTwoUserId,
+                    RoleId = customerRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = merchantTwoUserId,
+                    RoleId = merchantRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = merchantThreeUserId,
+                    RoleId = customerRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = merchantThreeUserId,
                     RoleId = merchantRoleId
                 },
                 new IdentityUserRole<Guid>

@@ -23,18 +23,22 @@ export type OrderCompletedEventPayload = {
 };
 
 export type DeliveryMilestoneEventPayload = {
+  EventId?: string;
+  eventId?: string;
+  Data?: Record<string, unknown>;
+  data?: Record<string, unknown>;
   OrderId?: string;
   OrderNumber?: string;
   CustomerId?: string;
   ShipperId?: string;
-  Milestone?: "PickedUp" | "Delivered" | string;
+  Milestone?: "PickedUp" | "Delivering" | "Delivered" | string;
   ProofFileKey?: string | null;
   Note?: string | null;
   orderId?: string;
   orderNumber?: string;
   customerId?: string;
   shipperId?: string;
-  milestone?: "PickedUp" | "Delivered" | string;
+  milestone?: "PickedUp" | "Delivering" | "Delivered" | string;
   proofFileKey?: string | null;
   note?: string | null;
 };

@@ -141,6 +141,7 @@ type OrderListRecord = {
   id: string;
   orderNumber: string;
   merchantId: string;
+  shipperId: string | null;
   merchantName: string;
   merchantAvatar: string | null;
   subtotal: { toString(): string } | number;
@@ -169,6 +170,7 @@ export const toMyOrdersResponseDto = (
       id: order.id,
       orderNumber: order.orderNumber,
       merchantId: order.merchantId,
+      shipperId: order.shipperId,
       merchantName: order.merchantName,
       merchantAvatar: order.merchantAvatar,
       subtotal: Number(order.subtotal),
@@ -200,6 +202,7 @@ type OrderDetailRecord = {
   orderNumber: string;
   userId: string;
   merchantId: string;
+  shipperId: string | null;
   merchantName: string;
   merchantAvatar: string | null;
   deliveryAddress: string;
@@ -251,6 +254,7 @@ export const toOrderDetailResponseDto = (
     orderNumber: order.orderNumber,
     userId: order.userId,
     merchantId: order.merchantId,
+    shipperId: order.shipperId,
     merchantName: order.merchantName,
     merchantAvatar: order.merchantAvatar,
     deliveryAddress: order.deliveryAddress,

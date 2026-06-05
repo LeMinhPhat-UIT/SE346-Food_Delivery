@@ -633,7 +633,7 @@ namespace DeliveryService.Services.Implements
         private async Task<ApiResponse<ConfirmationResponse>> MarkAssignmentDeliveringAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
         {
             var now = DateTime.UtcNow;
-            var shouldPublishPickup = assignment.PickedUpAt == null;
+            var shouldPublishDelivering = assignment.Status != AssignmentStatus.Delivering;
 
             assignment.Status = AssignmentStatus.Delivering;
             assignment.PickedUpAt ??= now;
@@ -642,8 +642,8 @@ namespace DeliveryService.Services.Implements
             await UpsertAvailabilityAsync(assignment.ShipperId, assignment.OrderId, ShipperWorkStatus.Delivering, assignment.Id);
             await _deliveryRepository.UpdateShipperAssignment(assignment);
 
-            if (shouldPublishPickup)
-                await PublishPickupMilestoneAsync(assignment, request);
+            if (shouldPublishDelivering)
+                await PublishDeliveryMilestoneAsync(assignment, DeliveryMilestoneType.Delivering, request);
 
             return new ApiResponse<ConfirmationResponse>(
                 StatusCodes.Status200OK,
@@ -714,7 +714,7 @@ namespace DeliveryService.Services.Implements
             await _deliveryRepository.UpdateShipperAssignment(assignment);
 
             if (shouldPublishPickup)
-                await PublishPickupMilestoneAsync(assignment, request);
+                await PublishDeliveryMilestoneAsync(assignment, DeliveryMilestoneType.PickedUp, request);
 
             return new ApiResponse<ConfirmationResponse>(
                 StatusCodes.Status200OK,
@@ -737,16 +737,7 @@ namespace DeliveryService.Services.Implements
 
             if (shouldPublishDelivery)
             {
-                await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
-                {
-                    OrderId = assignment.OrderId,
-                    OrderNumber = assignment.OrderNumber,
-                    CustomerId = assignment.CustomerId,
-                    ShipperId = assignment.ShipperId,
-                    Milestone = DeliveryMilestoneType.Delivered,
-                    ProofFileKey = request.ProofFileKey,
-                    Note = request.Note
-                });
+                await PublishDeliveryMilestoneAsync(assignment, DeliveryMilestoneType.Delivered, request);
 
                 await _eventPublisher.PublishAsync(new DeliveryDeliveredEvent
                 {
@@ -769,7 +760,7 @@ namespace DeliveryService.Services.Implements
                 new ConfirmationResponse("Confirm delivery successfully"));
         }
 
-        private async Task PublishPickupMilestoneAsync(ShipperAssignment assignment, UpdateDeliveryStatusRequest request)
+        private async Task PublishDeliveryMilestoneAsync(ShipperAssignment assignment, DeliveryMilestoneType milestone, UpdateDeliveryStatusRequest request)
         {
             await _eventPublisher.PublishAsync(new DeliveryMilestoneEvent
             {
@@ -777,7 +768,7 @@ namespace DeliveryService.Services.Implements
                 OrderNumber = assignment.OrderNumber,
                 CustomerId = assignment.CustomerId,
                 ShipperId = assignment.ShipperId,
-                Milestone = DeliveryMilestoneType.PickedUp,
+                Milestone = milestone,
                 ProofFileKey = request.ProofFileKey,
                 Note = request.Note
             });

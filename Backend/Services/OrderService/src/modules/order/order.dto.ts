@@ -105,6 +105,7 @@ export type OrderHistoryItemDto = {
   id: string;
   orderNumber: string;
   merchantId: string;
+  shipperId: string | null;
   merchantName: string;
   merchantAvatar: string | null;
   subtotal: number;
@@ -138,6 +139,7 @@ export type OrderDetailResponseDto = {
   orderNumber: string;
   userId: string;
   merchantId: string;
+  shipperId: string | null;
   merchantName: string;
   merchantAvatar: string | null;
   deliveryAddress: string;

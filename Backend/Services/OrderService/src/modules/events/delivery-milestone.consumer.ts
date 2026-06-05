@@ -48,9 +48,10 @@ export class DeliveryMilestoneConsumer {
         }
 
         try {
-          const payload = JSON.parse(
+          const rawPayload = JSON.parse(
             message.content.toString("utf8"),
           ) as DeliveryMilestoneEventPayload;
+          const payload = this.unwrapPayload(rawPayload);
           await this.orderService.handleDeliveryMilestone(payload);
           channel.ack(message);
         } catch (error) {
@@ -64,6 +65,20 @@ export class DeliveryMilestoneConsumer {
         void this.tryStartConsuming();
       }, 5000);
     }
+  }
+
+  private unwrapPayload(payload: DeliveryMilestoneEventPayload) {
+    const data = payload.Data ?? payload.data;
+
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      return {
+        ...payload,
+        ...data,
+        Data: data,
+      } as DeliveryMilestoneEventPayload & Record<string, unknown>;
+    }
+
+    return payload;
   }
 }
 

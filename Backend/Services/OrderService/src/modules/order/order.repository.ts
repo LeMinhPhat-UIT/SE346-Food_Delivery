@@ -6,6 +6,7 @@ const orderListSelect = {
   id: true,
   orderNumber: true,
   merchantId: true,
+  shipperId: true,
   merchantName: true,
   merchantAvatar: true,
   subtotal: true,
@@ -35,6 +36,7 @@ const orderDetailSelect = {
   orderNumber: true,
   userId: true,
   merchantId: true,
+  shipperId: true,
   merchantName: true,
   merchantAvatar: true,
   deliveryAddress: true,
@@ -369,12 +371,14 @@ export class OrderRepository {
     cancelReason?: string | null;
     cancelledBy?: "CUSTOMER" | "MERCHANT" | "SHIPPER" | "SYSTEM" | null;
     createdBy: string;
+    shipperId?: string | null;
   }) {
     return prisma.$transaction(async (tx) => {
       const order = await tx.order.update({
         where: { id: payload.orderId },
         data: {
           status: payload.status,
+          shipperId: payload.shipperId ?? undefined,
           cancelReason: payload.status === "CANCELLED" ? payload.cancelReason ?? null : null,
           cancelledBy: payload.status === "CANCELLED" ? payload.cancelledBy ?? null : null,
           statusHistory: {

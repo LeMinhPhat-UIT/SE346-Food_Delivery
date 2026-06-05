@@ -7,6 +7,7 @@ namespace Messaging.Contracts.Events
     public enum DeliveryMilestoneType
     {
         PickedUp,
+        Delivering,
         Delivered
     }
 

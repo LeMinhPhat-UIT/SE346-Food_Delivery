@@ -324,6 +324,26 @@ export class OrderService {
         status: "PICKED_UP",
         note: note ?? "Order picked up by shipper",
         createdBy: shipperId,
+        shipperId,
+      });
+      return;
+    }
+
+    if (milestone === "delivering") {
+      if (!["CONFIRMED", "PREPARING", "READY", "PICKED_UP", "DELIVERING"].includes(existingOrder.status)) {
+        return;
+      }
+
+      if (existingOrder.status === "DELIVERING") {
+        return;
+      }
+
+      await this.orderRepository.updateOrderStatus({
+        orderId,
+        status: "DELIVERING",
+        note: note ?? "Order is being delivered by shipper",
+        createdBy: shipperId,
+        shipperId,
       });
       return;
     }
@@ -338,6 +358,7 @@ export class OrderService {
         status: "DELIVERED",
         note: note ?? "Order delivered successfully",
         createdBy: shipperId,
+        shipperId,
       });
     }
   }

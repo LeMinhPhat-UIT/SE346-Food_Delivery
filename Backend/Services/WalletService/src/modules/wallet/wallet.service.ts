@@ -25,12 +25,12 @@ type VnpayQuery = Record<string, string | string[] | undefined>;
 export class WalletService {
   constructor(private readonly walletRepository: WalletRepository) {}
 
-  async getMyWallet(ownerType: WalletOwnerType, ownerId: string): Promise<WalletResponseDto> {
-    const wallet = await this.walletRepository.findByOwner(ownerType, ownerId);
+  private async ensureWallet(ownerType: WalletOwnerType, ownerId: string) {
+    return this.walletRepository.upsertWallet(ownerType, ownerId);
+  }
 
-    if (!wallet) {
-      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Wallet not found");
-    }
+  async getMyWallet(ownerType: WalletOwnerType, ownerId: string): Promise<WalletResponseDto> {
+    const wallet = await this.ensureWallet(ownerType, ownerId);
 
     return toWalletResponseDto(wallet);
   }
@@ -40,16 +40,12 @@ export class WalletService {
     ownerId: string,
     query: ListTransactionsQueryDto,
   ): Promise<WalletWithTransactionsResponseDto> {
-    const { wallet, items, total } = await this.walletRepository.findTransactionsByOwner(
-      ownerType,
-      ownerId,
+    const wallet = await this.ensureWallet(ownerType, ownerId);
+    const { items, total } = await this.walletRepository.findTransactionsByWalletId(
+      wallet.id,
       query.page,
       query.limit,
     );
-
-    if (!wallet) {
-      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Wallet not found");
-    }
 
     return {
       wallet: toWalletResponseDto(wallet),
@@ -69,11 +65,7 @@ export class WalletService {
     reference: ReferenceTransactionParamDto,
     query: ListTransactionsQueryDto,
   ): Promise<WalletWithTransactionsResponseDto> {
-    const wallet = await this.walletRepository.findByOwner(ownerType, ownerId);
-
-    if (!wallet) {
-      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Wallet not found");
-    }
+    const wallet = await this.ensureWallet(ownerType, ownerId);
 
     const { items, total } = await this.walletRepository.findTransactionsByReference(
       wallet.id,
@@ -110,11 +102,6 @@ export class WalletService {
       },
       query,
     );
-  }
-
-  async ensureWallet(ownerType: WalletOwnerType, ownerId: string): Promise<WalletResponseDto> {
-    const wallet = await this.walletRepository.upsertWallet(ownerType, ownerId);
-    return toWalletResponseDto(wallet);
   }
 
   async createTopupPaymentUrl(
@@ -190,9 +177,10 @@ export class WalletService {
     ownerId: string,
     query: TopupQueryDto,
   ): Promise<TopupListResponseDto> {
+    const wallet = await this.ensureWallet(ownerType, ownerId);
     const { items, total } = await this.walletRepository.findTopupsByOwner(
       ownerType,
-      ownerId,
+      wallet.ownerId,
       query.page,
       query.limit,
     );
@@ -213,6 +201,7 @@ export class WalletService {
     ownerId: string,
     topupId: string,
   ): Promise<WalletTopupResponseDto> {
+    await this.ensureWallet(ownerType, ownerId);
     const topup = await this.walletRepository.findTopupByOwnerAndId(ownerType, ownerId, topupId);
     if (!topup) {
       throw new ApiError(HTTP_STATUS.NOT_FOUND, "Topup request not found");
